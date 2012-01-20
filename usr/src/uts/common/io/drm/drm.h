@@ -67,6 +67,7 @@
 #define _DRM_H_
 
 #include <sys/types32.h>
+#include "drm_mode.h"
 
 #ifndef __user
 #define __user
@@ -848,7 +849,31 @@ typedef struct drm_gem_open {
 
 #define DRM_IOCTL_WAIT_VBLANK		DRM_IOWR(0x3a, drm_wait_vblank_t)
 
-#define DRM_IOCTL_UPDATE_DRAW           DRM_IOW(0x3f, drm_update_draw_t)
+#define DRM_IOCTL_UPDATE_DRAW		DRM_IOW(0x3f, drm_update_draw_t)
+
+#define DRM_IOCTL_MODE_GETRESOURCES	DRM_IOW(0xa0, drm_dma_t)
+#define DRM_IOCTL_MODE_GETCRTC		DRM_IOW(0xa1, drm_dma_t)
+#define DRM_IOCTL_MODE_SETCRTC		DRM_IOW(0xa2, drm_dma_t)
+#define DRM_IOCTL_MODE_CURSOR		DRM_IOW(0xa3, drm_dma_t)
+#define DRM_IOCTL_MODE_GETGAMMA		DRM_IOW(0xa4, drm_dma_t)
+#define DRM_IOCTL_MODE_SETGAMMA		DRM_IOW(0xa5, drm_dma_t)
+#define DRM_IOCTL_MODE_GETENCODER	DRM_IOW(0xa6, struct drm_mode_get_encoder)
+#define DRM_IOCTL_MODE_GETCONNECTOR	DRM_IOW(0xa7, drm_dma_t)
+#define DRM_IOCTL_MODE_ATTACHMODE	DRM_IOW(0xa8, drm_dma_t)
+#define DRM_IOCTL_MODE_DETACHMODE	DRM_IOW(0xa9, drm_dma_t)
+
+#define DRM_IOCTL_MODE_GETPROPERTY	DRM_IOW(0xaa, drm_dma_t)
+#define DRM_IOCTL_MODE_SETPROPERTY	DRM_IOW(0xab, drm_dma_t)
+#define DRM_IOCTL_MODE_GETPROPBLOB	DRM_IOW(0xac, drm_dma_t)
+#define DRM_IOCTL_MODE_GETFB		DRM_IOW(0xad, drm_dma_t)
+#define DRM_IOCTL_MODE_ADDFB		DRM_IOW(0xae, drm_dma_t)
+#define DRM_IOCTL_MODE_RMFB		DRM_IOW(0xaf, drm_dma_t)
+#define DRM_IOCTL_MODE_PAGE_FLIP	DRM_IOW(0xb0, drm_dma_t)
+#define DRM_IOCTL_MODE_DIRTYFB		DRM_IOW(0xb1, drm_dma_t)
+
+#define DRM_IOCTL_MODE_CREATE_DUMB	DRM_IOW(0xb2, drm_dma_t)
+#define DRM_IOCTL_MODE_MAP_DUMB		DRM_IOW(0xb3, drm_dma_t)
+#define DRM_IOCTL_MODE_DESTROY_DUMB	DRM_IOW(0xb4, drm_dma_t)
 /*@}*/
 
 /**

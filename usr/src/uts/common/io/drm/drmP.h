@@ -57,6 +57,7 @@
 #include <sys/agpgart.h>
 #include <sys/time.h>
 #include <sys/sysmacros.h>
+
 #include "drm_atomic.h"
 #include "drm.h"
 #include "queue.h"
@@ -160,6 +161,11 @@
 
 #define	DRM_UDELAY(sec)  delay(drv_usectohz(sec *1000))
 #define	DRM_MEMORYBARRIER()
+
+#define DRM_MINOR_UNASSIGNED 0
+#define DRM_MINOR_LEGACY 1
+#define DRM_MINOR_CONTROL 2
+#define DRM_MINOR_RENDER 3
 
 typedef	struct drm_file		drm_file_t;
 typedef struct drm_device	drm_device_t;
@@ -336,9 +342,12 @@ typedef struct drm_pci_id_list
 	char *name;
 } drm_pci_id_list_t;
 
-#define	DRM_AUTH	0x1
-#define	DRM_MASTER	0x2
-#define	DRM_ROOT_ONLY	0x4
+#define	DRM_AUTH		0x01
+#define	DRM_MASTER		0x02
+#define	DRM_ROOT_ONLY		0x04
+#define	DRM_CONTROL_ALLOW	0x08
+#define	DRM_UNLOCKED		0x10
+
 typedef int drm_ioctl_t(DRM_IOCTL_ARGS);
 typedef struct drm_ioctl_desc {
 	int	(*func)(DRM_IOCTL_ARGS);
@@ -480,6 +489,8 @@ struct drm_gem_object {
 	pfn_t *pfnarray;
 };
 
+#include "drm_crtc.h"
+
 struct idr_list {
 	struct idr_list *next, *prev;
 	struct drm_gem_object *obj;
@@ -489,15 +500,15 @@ struct idr_list {
 
 struct drm_file {
 	TAILQ_ENTRY(drm_file) link;
-	int		  authenticated;
-	int		  master;
-	int		  minor;
-	pid_t		  pid;
-	uid_t		  uid;
-	int		  refs;
-	drm_magic_t	  magic;
-	unsigned long	  ioctl_count;
-	void		 *driver_priv;
+	int		   authenticated;
+	struct drm_master *master;
+	struct drm_minor  *minor;
+	pid_t		   pid;
+	uid_t		   uid;
+	int		   refs;
+	drm_magic_t	   magic;
+	unsigned long	   ioctl_count;
+	void		  *driver_priv;
 	/* Mapping of mm object handles to object pointers. */
 	struct idr_list object_idr;
 	/* Lock for synchronization of access to object_idr. */
@@ -505,6 +516,8 @@ struct drm_file {
 
 	dev_t dev;
 	cred_t *credp;
+
+	struct list_head fbs;
 };
 
 typedef struct drm_lock_data {
@@ -693,6 +706,8 @@ struct drm_driver_info {
 	const char *driver_desc;	/* Longer driver name		   */
 	const char *driver_date;	/* Date of last major changes.	   */
 
+	uint32_t driver_features;
+
 	unsigned use_agp :1;
 	unsigned require_agp :1;
 	unsigned use_sg :1;
@@ -704,6 +719,71 @@ struct drm_driver_info {
 	unsigned use_vbl_irq2 :1;
 	unsigned use_mtrr :1;
 	unsigned use_gem;
+};
+
+/**
+ * Info file list entry. This structure represents a debugfs or proc file to
+ * be created by the drm core
+ */
+struct drm_info_list {
+	const char *name; /** file name */
+//	int (*show)(struct seq_file*, void*); /** show callback */
+	u32 driver_features; /**< Required driver features for this entry */
+	void *data;
+};
+
+/**
+ * debugfs node structure. This structure represents a debugfs file.
+ */
+struct drm_info_node {
+	struct list_head list;
+	struct drm_minor *minor;
+	struct drm_info_list *info_ent;
+	struct dentry *dent;
+};
+
+/**
+ * DRM minor structure. This structure represents a drm minor number.
+ */
+struct drm_minor {
+	int index;			/**< Minor device number */
+	int type;                       /**< Control or render */
+	dev_t device;			/**< Device number for mknod */
+	//struct device kdev;		/**< Linux device */
+	struct drm_device *dev;
+
+	struct proc_dir_entry *proc_root;  /**< proc directory entry */
+	struct drm_info_node proc_nodes;
+	struct dentry *debugfs_root;
+	struct drm_info_node debugfs_nodes;
+
+	struct drm_master *master; /* currently active master for this node */
+	struct list_head master_list;
+	struct drm_mode_group mode_group;
+};
+
+struct drm_master {
+
+	//struct kref refcount; /* refcount for this master */
+
+	struct list_head head; /**< each minor contains a list of masters */
+	struct drm_minor *minor; /**< link back to minor we are a master for */
+
+	char *unique;			/**< Unique identifier: e.g., busid */
+	int unique_len;			/**< Length of unique field */
+	int unique_size;		/**< amount allocated */
+
+	int blocked;			/**< Blocked due to VC switch? */
+
+	/** \name Authentication */
+	/*@{ */
+	//struct drm_open_hash magiclist;
+	struct list_head magicfree;
+	/*@} */
+
+	struct drm_lock_data lock;	/**< Information on hardware lock */
+
+	void *driver_priv; /**< Private structure for driver to use */
 };
 
 /*
@@ -851,6 +931,8 @@ struct drm_device {
 	 * Saving S3 context
 	 */
 	void		  *s3_private;
+
+	struct drm_mode_config mode_config;
 };
 
 /* Memory management support (drm_memory.c) */
@@ -1035,6 +1117,25 @@ extern void drm_debug(const char *fmt, ...);
 extern void drm_error(const char *fmt, ...);
 extern void drm_info(const char *fmt, ...);
 
+#define DRIVER_USE_AGP     0x1
+#define DRIVER_REQUIRE_AGP 0x2
+#define DRIVER_USE_MTRR    0x4
+#define DRIVER_PCI_DMA     0x8
+#define DRIVER_SG          0x10
+#define DRIVER_HAVE_DMA    0x20
+#define DRIVER_HAVE_IRQ    0x40
+#define DRIVER_IRQ_SHARED  0x80
+#define DRIVER_IRQ_VBL     0x100
+#define DRIVER_DMA_QUEUE   0x200
+#define DRIVER_FB_DMA      0x400
+#define DRIVER_IRQ_VBL2    0x800
+#define DRIVER_GEM         0x1000
+#define DRIVER_MODESET     0x2000
+#define DRIVER_BUS_PCI 0x1
+
+#define DRIVER_BUS_PLATFORM 0x2
+#define DRIVER_BUS_USB 0x3
+
 #ifdef DEBUG
 #define	DRM_DEBUG		if (drm_debug_flag >= 2) drm_debug
 #define	DRM_INFO		if (drm_debug_flag >= 1) drm_info
@@ -1099,5 +1200,9 @@ int drm_gem_open_ioctl(DRM_IOCTL_ARGS);
 void drm_gem_open(struct drm_file *file_private);
 void drm_gem_release(struct drm_device *dev, struct drm_file *file_private);
 
+static __inline__ int drm_core_check_feature(struct drm_device *dev, int feature)
+{
+	return ((dev->driver->driver_features & feature) ? 1 : 0);
+}
 
 #endif	/* _DRMP_H */

@@ -103,7 +103,7 @@ drm_open_helper(drm_device_t *dev, drm_cminor_t *mp, int flags,
 		priv->pid		= pid;
 
 		priv->refs		= 1;
-		priv->minor		= 5;	/* just for hack */
+		//priv->minor		= 5;	/* just for hack */
 		priv->ioctl_count 	= 0;
 
 		/* for compatibility root is always authenticated */
@@ -122,7 +122,8 @@ drm_open_helper(drm_device_t *dev, drm_cminor_t *mp, int flags,
 		}
 
 		/* first opener automatically becomes master */
-		priv->master = TAILQ_EMPTY(&dev->files);
+		//TODO FIX THIS!!!!!!
+		//priv->master = TAILQ_EMPTY(&dev->files);
 		TAILQ_INSERT_TAIL(&dev->files, priv, link);
 	}
 	mp->fpriv = priv;
