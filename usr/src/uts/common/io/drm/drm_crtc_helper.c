@@ -546,15 +546,15 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
 	save_encoders = NULL; //kzalloc(dev->mode_config.num_encoder *
         //sizeof(struct drm_encoder), GFP_KERNEL);
 	if (!save_encoders) {
-		//kfree(save_crtcs);
+		kmem_free(save_crtcs, sizeof(*(save_crtcs)));
 		return -ENOMEM;
 	}
 
         save_connectors = NULL; //kzalloc(dev->mode_config.num_connector
 			//	sizeof(struct drm_connector), GFP_KERNEL);
 	if (!save_connectors) {
-                //		kfree(save_crtcs);
-		//kfree(save_encoders);
+                kmem_free(save_crtcs, sizeof(*(save_crtcs)));
+		kmem_free(save_encoders, sizeof(*(save_encoders)));
 		return -ENOMEM;
 	}
 
@@ -720,9 +720,9 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
 		}
 	}
 
-//kfree(save_connectors);
-//	kfree(save_encoders);
-//	kfree(save_crtcs);
+        kmem_free(save_connectors, sizeof(*(save_connectors)));
+	kmem_free(save_encoders, sizeof(*(save_encoders)));
+	kmem_free(save_crtcs, sizeof(*(save_crtcs)));
 	return 0;
 
 fail:
@@ -745,9 +745,9 @@ fail:
 		*connector = save_connectors[count++];
 	}
 
-//kfree(save_connectors);
-//	kfree(save_encoders);
-//	kfree(save_crtcs);
+        kmem_free(save_connectors, sizeof(*(save_connectors)));
+	kmem_free(save_encoders, sizeof(*(save_encoders)));
+	kmem_free(save_crtcs, sizeof(*(save_crtcs)));
 	return ret;
 }
 
