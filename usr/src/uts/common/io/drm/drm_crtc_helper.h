@@ -54,9 +54,9 @@ struct drm_crtc_helper_funcs {
 	void (*commit)(struct drm_crtc *crtc);
 
 	/* Provider can fixup or change mode timings before modeset occurs */
-	int (*mode_fixup)(struct drm_crtc *crtc,
-			   struct drm_display_mode *mode,
-			   struct drm_display_mode *adjusted_mode);
+	boolean_t (*mode_fixup)(struct drm_crtc *crtc,
+			        struct drm_display_mode *mode,
+			        struct drm_display_mode *adjusted_mode);
 	/* Actually set the mode */
 	int (*mode_set)(struct drm_crtc *crtc, struct drm_display_mode *mode,
 			struct drm_display_mode *adjusted_mode, int x, int y,
@@ -81,9 +81,9 @@ struct drm_encoder_helper_funcs {
 	void (*save)(struct drm_encoder *encoder);
 	void (*restore)(struct drm_encoder *encoder);
 
-	bool (*mode_fixup)(struct drm_encoder *encoder,
-			   struct drm_display_mode *mode,
-			   struct drm_display_mode *adjusted_mode);
+	boolean_t (*mode_fixup)(struct drm_encoder *encoder,
+			        struct drm_display_mode *mode,
+			        struct drm_display_mode *adjusted_mode);
 	void (*prepare)(struct drm_encoder *encoder);
 	void (*commit)(struct drm_encoder *encoder);
 	void (*mode_set)(struct drm_encoder *encoder,
@@ -107,12 +107,12 @@ struct drm_connector_helper_funcs {
 extern int drm_helper_probe_single_connector_modes(struct drm_connector *connector, uint32_t maxX, uint32_t maxY);
 extern void drm_helper_disable_unused_functions(struct drm_device *dev);
 extern int drm_crtc_helper_set_config(struct drm_mode_set *set);
-extern int drm_crtc_helper_set_mode(struct drm_crtc *crtc,
-				     struct drm_display_mode *mode,
-				     int x, int y,
-				     struct drm_framebuffer *old_fb);
-extern int drm_helper_crtc_in_use(struct drm_crtc *crtc);
-extern int drm_helper_encoder_in_use(struct drm_encoder *encoder);
+extern boolean_t drm_crtc_helper_set_mode(struct drm_crtc *crtc,
+				          struct drm_display_mode *mode,
+				          int x, int y,
+				          struct drm_framebuffer *old_fb);
+extern boolean_t drm_helper_crtc_in_use(struct drm_crtc *crtc);
+extern boolean_t drm_helper_encoder_in_use(struct drm_encoder *encoder);
 
 extern void drm_helper_connector_dpms(struct drm_connector *connector, int mode);
 
