@@ -54,8 +54,8 @@ static void drm_mode_validate_flag(struct drm_connector *connector,
 				!(flags & DRM_MODE_FLAG_DBLSCAN))
 			mode->status = MODE_NO_DBLESCAN;
 	}
+        return;
 #endif
-	return;
 }
 
 /**
@@ -158,8 +158,9 @@ prune:
 	}
 
 	return count;
-#endif
+#else
         return 0;
+#endif
 }
 
 /**
@@ -183,7 +184,7 @@ boolean_t drm_helper_encoder_in_use(struct drm_encoder *encoder)
 		if (connector->encoder == encoder)
 			return B_TRUE;
 #endif
-	return 0;
+	return B_FALSE;
 }
 
 /**
@@ -208,7 +209,7 @@ boolean_t drm_helper_crtc_in_use(struct drm_crtc *crtc)
 		if (encoder->crtc == crtc && drm_helper_encoder_in_use(encoder))
 			return B_TRUE;
 #endif
-	return 0;
+	return B_FALSE;
 }
 
 static void
@@ -298,7 +299,7 @@ static boolean_t drm_encoder_crtc_ok(struct drm_encoder *encoder,
 	if (encoder->possible_crtcs & crtc_mask)
 		return B_TRUE;
 #endif
-	return 0;
+	return B_FALSE;
 }
 
 /*
@@ -460,8 +461,9 @@ done:
 	}
 
 	return ret;
+#else
+        return B_FALSE;
 #endif
-        return 0;
 }
 
 
