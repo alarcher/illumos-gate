@@ -1918,10 +1918,10 @@ int drm_mode_dirtyfb_ioctl(struct drm_device *dev,
 			goto out_err1;
 		}
 
-		/*
-		ret = copy_from_user(clips, clips_ptr,
+
+		ret = copyin(clips, clips_ptr,
 				     num_clips * sizeof(*clips));
-		*/
+
 		if (ret) {
 			ret = -EFAULT;
 			goto out_err2;
@@ -2628,25 +2628,25 @@ int drm_mode_gamma_set_ioctl(struct drm_device *dev,
 
 	size = crtc_lut->gamma_size * (sizeof(uint16_t));
 	r_base = crtc->gamma_store;
-	/*
-	if (copy_from_user(r_base, (void __user *)(unsigned long)crtc_lut->red, size)) {
+
+	if (copyin(r_base, (void __user *)(unsigned long)crtc_lut->red, size)) {
 		ret = -EFAULT;
 		goto out;
-	}*/
+	}
 
 	//g_base = r_base + size;
-	/*
-	if (copy_from_user(g_base, (void __user *)(unsigned long)crtc_lut->green, size)) {
+
+	if (copyin(g_base, (void __user *)(unsigned long)crtc_lut->green, size)) {
 		ret = -EFAULT;
 		goto out;
-	}*/
+	}
 
 	//b_base = g_base + size;
-	/*
-	if (copy_from_user(b_base, (void __user *)(unsigned long)crtc_lut->blue, size)) {
+
+	if (copyin(b_base, (void __user *)(unsigned long)crtc_lut->blue, size)) {
 		ret = -EFAULT;
 		goto out;
-	}*/
+	}
 
 	crtc->funcs->gamma_set(crtc, r_base, g_base, b_base, 0, crtc->gamma_size);
 
