@@ -40,13 +40,14 @@ static boolean_t drm_kms_helper_poll = B_TRUE;
 static void drm_mode_validate_flag(struct drm_connector *connector,
 				   int flags)
 {
-#if 0
-	struct drm_display_mode *mode, *t;
+	struct drm_display_mode *mode;
+        struct list_head *list, *t;
 
 	if (flags == (DRM_MODE_FLAG_DBLSCAN | DRM_MODE_FLAG_INTERLACE))
 		return;
 
-	list_for_each_entry_safe(mode, t, &connector->modes, head) {
+	list_for_each_safe(list, t, &connector->modes) {
+                mode = list_entry(list, struct drm_display_mode, &connector->modes);
 		if ((mode->flags & DRM_MODE_FLAG_INTERLACE) &&
 				!(flags & DRM_MODE_FLAG_INTERLACE))
 			mode->status = MODE_NO_INTERLACE;
@@ -55,7 +56,6 @@ static void drm_mode_validate_flag(struct drm_connector *connector,
 			mode->status = MODE_NO_DBLESCAN;
 	}
         return;
-#endif
 }
 
 /**
@@ -83,19 +83,21 @@ static void drm_mode_validate_flag(struct drm_connector *connector,
 int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 					    uint32_t maxX, uint32_t maxY)
 {
-#if 0
 	struct drm_device *dev = connector->dev;
-	struct drm_display_mode *mode, *t;
+	struct drm_display_mode *mode;
 	struct drm_connector_helper_funcs *connector_funcs =
 		connector->helper_private;
 	int count = 0;
 	int mode_flags = 0;
+        struct list_head *list, *t;
 
-	DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n", connector->base.id,
-			drm_get_connector_name(connector));
+        //	DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n", connector->base.id,
+	//		drm_get_connector_name(connector));
 	/* set all modes to the unverified state */
-	list_for_each_entry_safe(mode, t, &connector->modes, head)
+	list_for_each_safe(list, t, &connector->modes) {
+                mode = list_entry(list, struct drm_display_mode, &connector->modes);
 		mode->status = MODE_UNVERIFIED;
+        }
 
 	if (connector->force) {
 		if (connector->force == DRM_FORCE_ON)
@@ -110,23 +112,23 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 	}
 
 	if (connector->status == connector_status_disconnected) {
-		DRM_DEBUG_KMS("[CONNECTOR:%d:%s] disconnected\n",
-			connector->base.id, drm_get_connector_name(connector));
-		drm_mode_connector_update_edid_property(connector, NULL);
+		//DRM_DEBUG_KMS("[CONNECTOR:%d:%s] disconnected\n",
+		//	connector->base.id, drm_get_connector_name(connector));
+                //		drm_mode_connector_update_edid_property(connector, NULL);
 		goto prune;
 	}
 
 	count = (*connector_funcs->get_modes)(connector);
 	if (count == 0 && connector->status == connector_status_connected)
-		count = drm_add_modes_noedid(connector, 1024, 768);
+		count = 0;//drm_add_modes_noedid(connector, 1024, 768);
 	if (count == 0)
 		goto prune;
 
-	drm_mode_connector_list_update(connector);
+	//drm_mode_connector_list_update(connector);
 
 	if (maxX && maxY)
-		drm_mode_validate_size(dev, &connector->modes, maxX,
-				       maxY, 0);
+                //	drm_mode_validate_size(dev, &connector->modes, maxX,
+		//		       maxY, 0);
 
 	if (connector->interlace_allowed)
 		mode_flags |= DRM_MODE_FLAG_INTERLACE;
@@ -134,33 +136,32 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 		mode_flags |= DRM_MODE_FLAG_DBLSCAN;
 	drm_mode_validate_flag(connector, mode_flags);
 
-	list_for_each_entry_safe(mode, t, &connector->modes, head) {
+	list_for_each_safe(list, t, &connector->modes) {
+                mode = list_entry(list, struct drm_display_mode, &connector->modes);
 		if (mode->status == MODE_OK)
 			mode->status = connector_funcs->mode_valid(connector,
 								   mode);
 	}
 
 prune:
-	drm_mode_prune_invalid(dev, &connector->modes, B_TRUE);
+        //	drm_mode_prune_invalid(dev, &connector->modes, B_TRUE);
 
 	if (list_empty(&connector->modes))
 		return 0;
 
-	drm_mode_sort(&connector->modes);
+	//drm_mode_sort(&connector->modes);
 
-	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] probed modes :\n", connector->base.id,
-			drm_get_connector_name(connector));
-	list_for_each_entry_safe(mode, t, &connector->modes, head) {
-		mode->vrefresh = drm_mode_vrefresh(mode);
+        //	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] probed modes :\n", connector->base.id,
+	//		drm_get_connector_name(connector));
+	list_for_each_safe(list, t, &connector->modes) {
+                mode = list_entry(list, struct drm_display_mode, &connector->modes);
+		//mode->vrefresh = drm_mode_vrefresh(mode);
 
 		drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
-		drm_mode_debug_printmodeline(mode);
+		//drm_mode_debug_printmodeline(mode);
 	}
 
 	return count;
-#else
-        return 0;
-#endif
 }
 
 /**
