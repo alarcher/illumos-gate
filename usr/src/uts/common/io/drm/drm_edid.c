@@ -191,7 +191,7 @@ bad:
 	}
 	return 0;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -216,7 +216,7 @@ boolean_t drm_edid_is_valid(struct edid *edid)
 
 	return B_TRUE;
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -266,7 +266,7 @@ drm_do_probe_ddc_edid(struct i2c_adapter *adapter, unsigned char *buf,
 
 	return ret == 2 ? 0 : -1;
 #else
-        return 0;
+	return 0;
 #endif
 }
 #endif
@@ -282,7 +282,7 @@ static boolean_t drm_edid_is_zero(u8 *in_edid, int length)
 			return B_FALSE;
 	return B_TRUE;
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -356,7 +356,7 @@ out:
 	kfree(block);
 	return NULL;
 #else
-        return NULL;
+	return NULL;
 #endif
 }
 #endif
@@ -376,7 +376,7 @@ drm_probe_ddc(struct i2c_adapter *adapter)
 
 	return (drm_do_probe_ddc_edid(adapter, &out, 0, 1) == 0);
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 #endif
@@ -405,7 +405,7 @@ struct edid *drm_get_edid(struct drm_connector *connector,
 
 	return edid;
 #else
-        return NULL;
+	return NULL;
 #endif
 }
 #endif
@@ -431,7 +431,7 @@ static boolean_t edid_vendor(struct edid *edid, char *vendor)
 
 	return !strncmp(edid_vendor, vendor, 3);
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -457,7 +457,7 @@ static u32 edid_get_quirks(struct edid *edid)
 
 	return 0;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -531,7 +531,7 @@ struct drm_display_mode *drm_mode_find_dmt(struct drm_device *dev,
 	}
 	return mode;
 #else
-        return NULL;
+	return NULL;
 #endif
 }
 
@@ -634,7 +634,7 @@ drm_monitor_supports_rb(struct edid *edid)
 
 	return ((edid->input & DRM_EDID_INPUT_DIGITAL) != 0);
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -657,7 +657,7 @@ drm_gtf2_hbreak(struct edid *edid)
 	drm_for_each_detailed_block((u8 *)edid, find_gtf2, &r);
 	return r ? (r[12] * 2) : 0;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -669,7 +669,7 @@ drm_gtf2_2c(struct edid *edid)
 	drm_for_each_detailed_block((u8 *)edid, find_gtf2, &r);
 	return r ? r[13] : 0;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -681,7 +681,7 @@ drm_gtf2_m(struct edid *edid)
 	drm_for_each_detailed_block((u8 *)edid, find_gtf2, &r);
 	return r ? (r[15] << 8) + r[14] : 0;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -693,7 +693,7 @@ drm_gtf2_k(struct edid *edid)
 	drm_for_each_detailed_block((u8 *)edid, find_gtf2, &r);
 	return r ? r[16] : 0;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -705,7 +705,7 @@ drm_gtf2_2j(struct edid *edid)
 	drm_for_each_detailed_block((u8 *)edid, find_gtf2, &r);
 	return r ? r[17] : 0;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -725,7 +725,7 @@ static int standard_timing_level(struct edid *edid)
 	}
 	return LEVEL_DMT;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -848,7 +848,7 @@ drm_mode_std(struct drm_connector *connector, struct edid *edid,
 	}
 	return mode;
 #else
-        return NULL;
+	return NULL;
 #endif
 }
 
@@ -996,7 +996,7 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
 
 	return mode;
 #else
-        return NULL;
+	return NULL;
 #endif
 }
 
@@ -1026,7 +1026,7 @@ mode_in_hsync_range(const struct drm_display_mode *mode,
 
 	return (hsync <= hmax && hsync >= hmin);
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -1047,7 +1047,7 @@ mode_in_vsync_range(const struct drm_display_mode *mode,
 
 	return (vsync <= vmax && vsync >= vmin);
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -1094,7 +1094,7 @@ mode_in_range(const struct drm_display_mode *mode, struct edid *edid,
 
 	return B_TRUE;
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -1123,7 +1123,7 @@ drm_gtf_modes_for_range(struct drm_connector *connector, struct edid *edid,
 
 	return modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1156,7 +1156,7 @@ add_inferred_modes(struct drm_connector *connector, struct edid *edid)
 
 	return closure.modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1189,7 +1189,7 @@ drm_est3_modes(struct drm_connector *connector, struct detailed_timing *timing)
 
 	return modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1242,7 +1242,7 @@ add_established_modes(struct drm_connector *connector, struct edid *edid)
 
 	return modes + closure.modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1309,7 +1309,7 @@ add_standard_modes(struct drm_connector *connector, struct edid *edid)
 
 	return modes + closure.modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1362,7 +1362,7 @@ static int drm_cvt_modes(struct drm_connector *connector,
 
 	return modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1393,7 +1393,7 @@ add_cvt_modes(struct drm_connector *connector, struct edid *edid)
 
 	return closure.modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1448,7 +1448,7 @@ add_detailed_modes(struct drm_connector *connector, struct edid *edid,
 
 	return closure.modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1482,7 +1482,7 @@ u8 *drm_find_cea_extension(struct edid *edid)
 
 	return edid_ext;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1530,7 +1530,7 @@ boolean_t drm_detect_hdmi_monitor(struct edid *edid)
 end:
 	return is_hdmi;
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -1580,7 +1580,7 @@ boolean_t drm_detect_monitor_audio(struct edid *edid)
 end:
 	return has_audio;
 #else
-        return B_FALSE;
+	return B_FALSE;
 #endif
 }
 
@@ -1697,7 +1697,7 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
 
 	return num_modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
 
@@ -1748,6 +1748,6 @@ int drm_add_modes_noedid(struct drm_connector *connector,
 	}
 	return num_modes;
 #else
-        return 0;
+	return 0;
 #endif
 }
