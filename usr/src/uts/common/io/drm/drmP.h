@@ -313,6 +313,7 @@ enum {
 #define	DRM_SUSER(p)		(crgetsgid(p) == 0 || crgetsuid(p) == 0)
 
 #define	DRM_GEM_OBJIDR_HASHNODE	1024
+
 #define	idr_list_for_each(entry, head) \
 	for (int key = 0; key < DRM_GEM_OBJIDR_HASHNODE; key++) \
 		list_for_each(entry, &(head)->next[key])

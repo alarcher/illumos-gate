@@ -75,7 +75,7 @@
  */
 
 void
-idr_list_init(struct idr_list  *head)
+gem_idr_list_init(struct idr_list  *head)
 {
 	struct idr_list  *entry;
 	/* HASH for accelerate */
@@ -88,7 +88,7 @@ idr_list_init(struct idr_list  *head)
 }
 
 int
-idr_list_get_new_above(struct idr_list	*head,
+gem_idr_list_get_new_above(struct idr_list	*head,
 			struct drm_gem_object *obj,
 			int *handlep)
 {
@@ -104,7 +104,7 @@ idr_list_get_new_above(struct idr_list	*head,
 }
 
 struct drm_gem_object *
-idr_list_find(struct idr_list  *head,
+gem_idr_list_find(struct idr_list  *head,
 		uint32_t	name)
 {
 	struct idr_list  *entry;
@@ -119,7 +119,7 @@ idr_list_find(struct idr_list  *head,
 }
 
 int
-idr_list_remove(struct idr_list  *head,
+gem_idr_list_remove(struct idr_list  *head,
 		uint32_t	name)
 {
 	struct idr_list  *entry, *temp;
@@ -137,7 +137,7 @@ idr_list_remove(struct idr_list  *head,
 }
 
 void
-idr_list_free(struct idr_list  *head)
+gem_idr_list_free(struct idr_list  *head)
 {
 	struct idr_list  *entry, *temp;
 	for (int key = 0; key < DRM_GEM_OBJIDR_HASHNODE; key++) {
@@ -152,7 +152,7 @@ idr_list_free(struct idr_list  *head)
 }
 
 int
-idr_list_empty(struct idr_list  *head)
+gem_idr_list_empty(struct idr_list  *head)
 {
 	int empty;
 	for (int key = 0; key < DRM_GEM_OBJIDR_HASHNODE; key++) {
@@ -221,7 +221,7 @@ int
 drm_gem_init(struct drm_device *dev)
 {
 	mutex_init(&dev->object_name_lock, NULL, MUTEX_DRIVER, NULL);
-	idr_list_init(&dev->object_name_idr);
+	gem_idr_list_init(&dev->object_name_idr);
 
 	atomic_set(&dev->object_count, 0);
 	atomic_set(&dev->object_memory, 0);
@@ -397,7 +397,7 @@ drm_gem_handle_delete(struct drm_file *filp, int handle)
 	spin_lock(&filp->table_lock);
 
 	/* Check if we currently have a reference on the object */
-	obj = idr_list_find(&filp->object_idr, handle);
+	obj = gem_idr_list_find(&filp->object_idr, handle);
 	if (obj == NULL) {
 		spin_unlock(&filp->table_lock);
 		DRM_ERROR("obj %d is not in tne list, failed to close", handle);
@@ -406,7 +406,7 @@ drm_gem_handle_delete(struct drm_file *filp, int handle)
 	dev = obj->dev;
 
 	/* Release reference and decrement refcount. */
-	err = idr_list_remove(&filp->object_idr, handle);
+	err = gem_idr_list_remove(&filp->object_idr, handle);
 	if (err == -1)
 		DRM_ERROR("%s", __func__);
 
@@ -438,7 +438,7 @@ again:
 
 	/* do the allocation under our spinlock */
 	spin_lock(&file_priv->table_lock);
-	ret = idr_list_get_new_above(&file_priv->object_idr, obj, handlep);
+	ret = gem_idr_list_get_new_above(&file_priv->object_idr, obj, handlep);
 	spin_unlock(&file_priv->table_lock);
 	if (ret == -EAGAIN)
 		goto again;
@@ -462,7 +462,7 @@ drm_gem_object_lookup(struct drm_file *filp,
 	spin_lock(&filp->table_lock);
 
 	/* Check if we currently have a reference on the object */
-	obj = idr_list_find(&filp->object_idr, handle);
+	obj = gem_idr_list_find(&filp->object_idr, handle);
 		if (obj == NULL) {
 			spin_unlock(&filp->table_lock);
 			DRM_ERROR("object_lookup failed, handle %d", handle);
@@ -525,7 +525,7 @@ drm_gem_flink_ioctl(DRM_IOCTL_ARGS)
 	spin_lock(&dev->object_name_lock);
 	if (!obj->flink) {
 		/* only creat a node in object_name_idr, no update anything */
-		ret = idr_list_get_new_above(&dev->object_name_idr,
+		ret = gem_idr_list_get_new_above(&dev->object_name_idr,
 		    obj, &handle);
 		obj->flink = obj->name;
 		/* Allocate a reference for the name table.  */
@@ -574,7 +574,7 @@ drm_gem_open_ioctl(DRM_IOCTL_ARGS)
 
 	spin_lock(&dev->object_name_lock);
 
-	obj = idr_list_find(&dev->object_name_idr, args.name);
+	obj = gem_idr_list_find(&dev->object_name_idr, args.name);
 
 	if (obj)
 		drm_gem_object_reference(obj);
@@ -605,7 +605,7 @@ drm_gem_open_ioctl(DRM_IOCTL_ARGS)
 void
 drm_gem_open(struct drm_file *file_private)
 {
-	idr_list_init(&file_private->object_idr);
+	gem_idr_list_init(&file_private->object_idr);
 	mutex_init(&file_private->table_lock, NULL, MUTEX_DRIVER, NULL);
 }
 
@@ -633,7 +633,7 @@ drm_gem_release(struct drm_device *dev, struct drm_file *file_private)
 	idr_list_for_each(entry, &file_private->object_idr)
 	    drm_gem_object_release_handle(entry->obj);
 
-	idr_list_free(&file_private->object_idr);
+	gem_idr_list_free(&file_private->object_idr);
 	spin_unlock(&dev->struct_mutex);
 
 }
@@ -681,7 +681,7 @@ drm_gem_object_handle_free(struct drm_gem_object *obj)
 	/* Remove any name for this object */
 	spin_lock(&dev->object_name_lock);
 	if (obj->flink) {
-		err = idr_list_remove(&dev->object_name_idr, obj->name);
+		err = gem_idr_list_remove(&dev->object_name_idr, obj->name);
 		if (err == -1)
 			DRM_ERROR("%s", __func__);
 		obj->flink = 0;

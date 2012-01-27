@@ -294,7 +294,7 @@ again:
 static void drm_mode_object_put(struct drm_device *dev,
 		                struct drm_mode_object *object)
 {
-        mutex_enter(&dev->mode_config.idr_mutex);
+	mutex_enter(&dev->mode_config.idr_mutex);
 	//TODO
 	//idr_remove(&dev->mode_config.crtc_idr, object->id);
 	mutex_exit(&dev->mode_config.idr_mutex);
@@ -397,10 +397,10 @@ void drm_framebuffer_cleanup(struct drm_framebuffer *fb)
 void drm_crtc_init(struct drm_device *dev, struct drm_crtc *crtc,
 		   const struct drm_crtc_funcs *funcs)
 {
-        crtc->dev = dev;
-        crtc->funcs = funcs;
+	crtc->dev = dev;
+	crtc->funcs = funcs;
 
-        mutex_enter(&dev->mode_config.mutex);
+	mutex_enter(&dev->mode_config.mutex);
 	drm_mode_object_get(dev, &crtc->base, DRM_MODE_OBJECT_CRTC);
 
 	list_add_tail(&crtc->head, &dev->mode_config.crtc_list, (caddr_t)&crtc);
@@ -1291,7 +1291,7 @@ int drm_mode_getcrtc(struct drm_device *dev,
 		ret = -EINVAL;
 		goto out;
 	}
-        crtc = obj_to_crtc(obj);
+	crtc = obj_to_crtc(obj);
 
 	crtc_resp->x = crtc->x;
 	crtc_resp->y = crtc->y;
@@ -2457,7 +2457,6 @@ done:
 int drm_mode_connector_update_edid_property(struct drm_connector *connector,
 					    struct edid *edid)
 {
-
 	struct drm_device *dev = connector->dev;
 	int ret = 0, size;
 
