@@ -409,7 +409,6 @@ struct edid *drm_get_edid(struct drm_connector *connector,
  */
 static boolean_t edid_vendor(struct edid *edid, char *vendor)
 {
-#if 0
 	char edid_vendor[3];
 
 	edid_vendor[0] = ((edid->mfg_id[0] & 0x7c) >> 2) + '@';
@@ -418,9 +417,6 @@ static boolean_t edid_vendor(struct edid *edid, char *vendor)
 	edid_vendor[2] = (edid->mfg_id[1] & 0x1f) + '@';
 
 	return !strncmp(edid_vendor, vendor, 3);
-#else
-	return B_FALSE;
-#endif
 }
 
 /**
