@@ -1460,7 +1460,6 @@ end:
  */
 boolean_t drm_detect_monitor_audio(struct edid *edid)
 {
-#if 0
 	u8 *edid_ext;
 	int i, j;
 	boolean_t has_audio = B_FALSE;
@@ -1473,7 +1472,7 @@ boolean_t drm_detect_monitor_audio(struct edid *edid)
 	has_audio = ((edid_ext[3] & EDID_BASIC_AUDIO) != 0);
 
 	if (has_audio) {
-		DRM_DEBUG_KMS("Monitor has basic audio support\n");
+		//DRM_DEBUG_KMS("Monitor has basic audio support\n");
 		goto end;
 	}
 
@@ -1485,17 +1484,15 @@ boolean_t drm_detect_monitor_audio(struct edid *edid)
 			i += ((edid_ext[i] & 0x1f) + 1)) {
 		if ((edid_ext[i] >> 5) == AUDIO_BLOCK) {
 			has_audio = B_TRUE;
-			for (j = 1; j < (edid_ext[i] & 0x1f); j += 3)
-				DRM_DEBUG_KMS("CEA audio format %d\n",
-					      (edid_ext[i + j] >> 3) & 0xf);
+			for (j = 1; j < (edid_ext[i] & 0x1f); j += 3) {
+				//DRM_DEBUG_KMS("CEA audio format %d\n",
+				//	      (edid_ext[i + j] >> 3) & 0xf);
+			}
 			goto end;
 		}
 	}
 end:
 	return has_audio;
-#else
-	return B_FALSE;
-#endif
 }
 
 /**
