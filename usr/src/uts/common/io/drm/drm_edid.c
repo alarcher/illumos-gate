@@ -134,7 +134,6 @@ static const u8 edid_header[] = {
 static boolean_t
 drm_edid_block_valid(u8 *raw_edid)
 {
-#if 0
 	int i;
 	u8 csum = 0;
 	struct edid *edid = (struct edid *)raw_edid;
@@ -185,14 +184,11 @@ drm_edid_block_valid(u8 *raw_edid)
 
 bad:
 	if (raw_edid) {
-		printk(KERN_ERR "Raw EDID:\n");
-		print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE, raw_edid, EDID_LENGTH);
-		printk(KERN_ERR "\n");
+//		printk(KERN_ERR "Raw EDID:\n");
+//		print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE, raw_edid, EDID_LENGTH);
+//		printk(KERN_ERR "\n");
 	}
 	return 0;
-#else
-	return 0;
-#endif
 }
 
 /**
