@@ -549,7 +549,6 @@ cea_for_each_detailed_block(u8 *ext, detailed_cb *cb, void *closure)
 static void
 vtb_for_each_detailed_block(u8 *ext, detailed_cb *cb, void *closure)
 {
-#if 0
 	unsigned int i, n = min((int)ext[0x02], 6);
 	u8 *det_base = ext + 5;
 
@@ -558,7 +557,6 @@ vtb_for_each_detailed_block(u8 *ext, detailed_cb *cb, void *closure)
 
 	for (i = 0; i < n; i++)
 		cb((struct detailed_timing *)(det_base + 18 * i), closure);
-#endif
 }
 
 static void
