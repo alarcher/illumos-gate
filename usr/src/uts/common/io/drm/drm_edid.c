@@ -562,7 +562,6 @@ vtb_for_each_detailed_block(u8 *ext, detailed_cb *cb, void *closure)
 static void
 drm_for_each_detailed_block(u8 *raw_edid, detailed_cb *cb, void *closure)
 {
-#if 0
 	int i;
 	struct edid *edid = (struct edid *)raw_edid;
 
@@ -585,7 +584,6 @@ drm_for_each_detailed_block(u8 *raw_edid, detailed_cb *cb, void *closure)
 			break;
 		}
 	}
-#endif
 }
 
 static void
