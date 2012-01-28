@@ -1012,7 +1012,6 @@ static boolean_t
 mode_in_range(const struct drm_display_mode *mode, struct edid *edid,
 	      struct detailed_timing *timing)
 {
-#if 0
 	u32 max_clock;
 	u8 *t = (u8 *)timing;
 
@@ -1035,9 +1034,6 @@ mode_in_range(const struct drm_display_mode *mode, struct edid *edid,
 		return B_FALSE;
 
 	return B_TRUE;
-#else
-	return B_FALSE;
-#endif
 }
 
 /*
