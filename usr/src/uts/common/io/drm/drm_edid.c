@@ -429,7 +429,6 @@ static boolean_t edid_vendor(struct edid *edid, char *vendor)
  */
 static u32 edid_get_quirks(struct edid *edid)
 {
-#if 0
 	struct edid_quirk *quirk;
 	int i;
 
@@ -442,9 +441,6 @@ static u32 edid_get_quirks(struct edid *edid)
 	}
 
 	return 0;
-#else
-	return 0;
-#endif
 }
 
 #define MODE_SIZE(m) ((m)->hdisplay * (m)->vdisplay)
