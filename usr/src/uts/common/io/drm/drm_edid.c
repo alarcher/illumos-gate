@@ -663,7 +663,6 @@ drm_gtf2_2j(struct edid *edid)
  */
 static int standard_timing_level(struct edid *edid)
 {
-#if 0
 	if (edid->revision >= 2) {
 		if (edid->revision >= 4 && (edid->features & DRM_EDID_FEATURE_DEFAULT_GTF))
 			return LEVEL_CVT;
@@ -672,9 +671,6 @@ static int standard_timing_level(struct edid *edid)
 		return LEVEL_GTF;
 	}
 	return LEVEL_DMT;
-#else
-	return 0;
-#endif
 }
 
 /*
