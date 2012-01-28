@@ -1083,7 +1083,6 @@ do_inferred_modes(struct detailed_timing *timing, void *c)
 static int
 add_inferred_modes(struct drm_connector *connector, struct edid *edid)
 {
-#if 0
 	struct detailed_mode_closure closure = {
 		connector, edid, 0, 0, 0
 	};
@@ -1093,9 +1092,6 @@ add_inferred_modes(struct drm_connector *connector, struct edid *edid)
 					    &closure);
 
 	return closure.modes;
-#else
-	return 0;
-#endif
 }
 
 static int
