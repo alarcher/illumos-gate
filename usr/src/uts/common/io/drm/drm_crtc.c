@@ -94,6 +94,7 @@ struct drm_prop_enum_list {
 				      base);
 
 #define put_user(buf, ptr) ddi_copyout(ptr, &buf, sizeof(buf), 0)
+#define get_user(buf, ptr) ddi_copyin(&buf, ptr, sizeof(buf), 0)
 /*
  * Global properties
  */
@@ -1609,10 +1610,10 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
 
 		for (i = 0; i < crtc_req->count_connectors; i++) {
 			set_connectors_ptr = (uint32_t *)(unsigned long)crtc_req->set_connectors_ptr;
-			/*if (get_user(out_id, &set_connectors_ptr[i])) {
+			if (get_user(out_id, &set_connectors_ptr[i])) {
 				ret = -EFAULT;
 				goto out;
-			}*/
+			}
 
 			obj = drm_mode_object_find(dev, out_id,
 						   DRM_MODE_OBJECT_CONNECTOR);
