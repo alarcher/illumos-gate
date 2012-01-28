@@ -969,7 +969,6 @@ static boolean_t
 mode_in_vsync_range(const struct drm_display_mode *mode,
 		    struct edid *edid, u8 *t)
 {
-#if 0
 	int vsync, vmin, vmax;
 
 	vmin = t[5];
@@ -981,9 +980,6 @@ mode_in_vsync_range(const struct drm_display_mode *mode,
 	vsync = drm_mode_vrefresh(mode);
 
 	return (vsync <= vmax && vsync >= vmin);
-#else
-	return B_FALSE;
-#endif
 }
 
 static u32
