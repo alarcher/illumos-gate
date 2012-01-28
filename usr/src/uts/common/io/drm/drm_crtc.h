@@ -652,4 +652,6 @@ extern int drm_mode_addfb(drm_device_t *dev, intptr_t data,
 
 extern void drm_property_destroy(struct drm_device *dev, struct drm_property *property);
 extern boolean_t drm_mode_equal(struct drm_display_mode *mode1, struct drm_display_mode *mode2);
+
+extern char *drm_get_connector_name(struct drm_connector *connector);
 #endif /* __DRM_CRTC_H__ */
