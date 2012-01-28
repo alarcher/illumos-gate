@@ -1130,13 +1130,11 @@ drm_est3_modes(struct drm_connector *connector, struct detailed_timing *timing)
 static void
 do_established_modes(struct detailed_timing *timing, void *c)
 {
-#if 0
 	struct detailed_mode_closure *closure = c;
 	struct detailed_non_pixel *data = &timing->data.other_data;
 
 	if (data->type == EDID_DETAIL_EST_TIMINGS)
 		closure->modes += drm_est3_modes(closure->connector, timing);
-#endif
 }
 
 /**
