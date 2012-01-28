@@ -1311,7 +1311,6 @@ do_cvt_mode(struct detailed_timing *timing, void *c)
 static int
 add_cvt_modes(struct drm_connector *connector, struct edid *edid)
 {
-#if 0
 	struct detailed_mode_closure closure = {
 		connector, edid, 0, 0, 0
 	};
@@ -1322,9 +1321,6 @@ add_cvt_modes(struct drm_connector *connector, struct edid *edid)
 	/* XXX should also look for CVT codes in VTB blocks */
 
 	return closure.modes;
-#else
-	return 0;
-#endif
 }
 
 static void
