@@ -33,6 +33,7 @@
 #include "drmP.h"
 #include "drm_edid.h"
 #include "drm_edid_modes.h"
+#include "drm_modes.h"
 
 #define	ARRAY_SIZE(x) (sizeof (x) / sizeof (x[0]))
 
@@ -497,7 +498,6 @@ static void edid_fixup_preferred(struct drm_connector *connector,
 struct drm_display_mode *drm_mode_find_dmt(struct drm_device *dev,
 					   int hsize, int vsize, int fresh)
 {
-#if 0
 	struct drm_display_mode *mode = NULL;
 	int i;
 
@@ -512,9 +512,6 @@ struct drm_display_mode *drm_mode_find_dmt(struct drm_device *dev,
 		}
 	}
 	return mode;
-#else
-	return NULL;
-#endif
 }
 
 typedef void detailed_cb(struct detailed_timing *timing, void *closure);
