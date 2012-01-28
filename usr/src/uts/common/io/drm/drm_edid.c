@@ -1057,7 +1057,6 @@ drm_gtf_modes_for_range(struct drm_connector *connector, struct edid *edid,
 static void
 do_inferred_modes(struct detailed_timing *timing, void *c)
 {
-#if 0
 	struct detailed_mode_closure *closure = c;
 	struct detailed_non_pixel *data = &timing->data.other_data;
 	int gtf = (closure->edid->features & DRM_EDID_FEATURE_DEFAULT_GTF);
@@ -1066,7 +1065,6 @@ do_inferred_modes(struct detailed_timing *timing, void *c)
 		closure->modes += drm_gtf_modes_for_range(closure->connector,
 							  closure->edid,
 							  timing);
-#endif
 }
 
 static int
