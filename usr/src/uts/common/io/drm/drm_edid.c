@@ -1301,13 +1301,11 @@ static int drm_cvt_modes(struct drm_connector *connector,
 static void
 do_cvt_mode(struct detailed_timing *timing, void *c)
 {
-#if 0
 	struct detailed_mode_closure *closure = c;
 	struct detailed_non_pixel *data = &timing->data.other_data;
 
 	if (data->type == EDID_DETAIL_CVT_3BYTE)
 		closure->modes += drm_cvt_modes(closure->connector, timing);
-#endif
 }
 
 static int
