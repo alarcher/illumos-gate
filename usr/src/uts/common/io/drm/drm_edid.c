@@ -1384,7 +1384,6 @@ add_detailed_modes(struct drm_connector *connector, struct edid *edid,
  */
 u8 *drm_find_cea_extension(struct edid *edid)
 {
-#if 0
 	u8 *edid_ext = NULL;
 	int i;
 
@@ -1403,9 +1402,6 @@ u8 *drm_find_cea_extension(struct edid *edid)
 		return NULL;
 
 	return edid_ext;
-#else
-	return 0;
-#endif
 }
 
 /**
