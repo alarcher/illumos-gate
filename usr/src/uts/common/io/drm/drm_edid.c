@@ -808,7 +808,6 @@ static void
 drm_mode_do_interlace_quirk(struct drm_display_mode *mode,
 			    struct detailed_pixel_timing *pt)
 {
-#if 0
 	int i;
 	static const struct {
 		int w, h;
@@ -837,7 +836,6 @@ drm_mode_do_interlace_quirk(struct drm_display_mode *mode,
 	}
 
 	mode->flags |= DRM_MODE_FLAG_INTERLACE;
-#endif
 }
 
 /**
