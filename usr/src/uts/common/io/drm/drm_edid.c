@@ -1357,7 +1357,6 @@ static int
 add_detailed_modes(struct drm_connector *connector, struct edid *edid,
 		   u32 quirks)
 {
-#if 0
 	struct detailed_mode_closure closure = {
 		connector,
 		edid,
@@ -1373,9 +1372,6 @@ add_detailed_modes(struct drm_connector *connector, struct edid *edid,
 	drm_for_each_detailed_block((u8 *)edid, do_detailed_mode, &closure);
 
 	return closure.modes;
-#else
-	return 0;
-#endif
 }
 
 #define HDMI_IDENTIFIER 0x000C03
