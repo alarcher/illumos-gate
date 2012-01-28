@@ -589,12 +589,10 @@ drm_for_each_detailed_block(u8 *raw_edid, detailed_cb *cb, void *closure)
 static void
 is_rb(struct detailed_timing *t, void *data)
 {
-#if 0
 	u8 *r = (u8 *)t;
 	if (r[3] == EDID_DETAIL_MONITOR_RANGE)
 		if (r[15] & 0x10)
 			*(boolean_t *)data = B_TRUE;
-#endif
 }
 
 /* EDID 1.4 defines this explicitly.  For EDID 1.3, we guess, badly. */
