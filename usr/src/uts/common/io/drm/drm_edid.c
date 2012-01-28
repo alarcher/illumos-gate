@@ -199,7 +199,6 @@ bad:
  */
 boolean_t drm_edid_is_valid(struct edid *edid)
 {
-#if 0
 	int i;
 	u8 *raw = (u8 *)edid;
 
@@ -211,9 +210,6 @@ boolean_t drm_edid_is_valid(struct edid *edid)
 			return B_FALSE;
 
 	return B_TRUE;
-#else
-	return B_FALSE;
-#endif
 }
 
 #define DDC_ADDR 0x50
