@@ -263,15 +263,13 @@ static int drm_mode_object_get(struct drm_device *dev,
 	int ret;
 
 again:
-	//TODO
-	//if (idr_pre_get(&dev->mode_config.crtc_idr, GFP_KERNEL) == 0) {
-	if (1) {
+	if (idr_pre_get(&dev->mode_config.crtc_idr, KM_SLEEP) == 0) {
 		DRM_ERROR("Ran out memory getting a mode number\n");
 		return -EINVAL;
 	}
 
 	mutex_enter(&dev->mode_config.idr_mutex);
-	ret = 0;//idr_get_new_above(&dev->mode_config.crtc_idr, obj, 1, &new_id);
+	ret = idr_get_new_above(&dev->mode_config.crtc_idr, obj, 1, &new_id);
 	mutex_exit(&dev->mode_config.idr_mutex);
 	if (ret == -EAGAIN)
 		goto again;
@@ -295,8 +293,7 @@ static void drm_mode_object_put(struct drm_device *dev,
 		                struct drm_mode_object *object)
 {
 	mutex_enter(&dev->mode_config.idr_mutex);
-	//TODO
-	//idr_remove(&dev->mode_config.crtc_idr, object->id);
+	idr_list_remove(&dev->mode_config.crtc_idr, object->id);
 	mutex_exit(&dev->mode_config.idr_mutex);
 }
 
@@ -305,8 +302,7 @@ struct drm_mode_object *drm_mode_object_find(struct drm_device *dev,
 {
 	struct drm_mode_object *obj = NULL;
 	mutex_enter(&dev->mode_config.idr_mutex);
-	//TODO
-	obj = NULL; //idr_list_find(&dev->mode_config.crtc_idr, id);
+	obj = idr_list_find(&dev->mode_config.crtc_idr, id);
 	if (!obj || (obj->type != type) || (obj->id != id))
 		obj = NULL;
 	mutex_exit(&dev->mode_config.idr_mutex);

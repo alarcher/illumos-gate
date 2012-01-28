@@ -150,7 +150,7 @@ drm_ioctl_desc_t drm_ioctls[DRIVER_IOCTL_COUNT] = {
 	    {drm_update_draw, DRM_AUTH|DRM_MASTER|DRM_ROOT_ONLY},
 };
 
-extern void idr_list_free(struct idr_list *head);
+extern void gem_idr_list_free(struct idr_list *head);
 
 const char *
 drm_find_description(int vendor, int device, drm_pci_id_list_t *idlist)
@@ -396,7 +396,7 @@ drm_unload(drm_device_t *dev)
 	drm_ctxbitmap_cleanup(dev);
 
 	if (dev->driver->use_gem == 1) {
-		idr_list_free(&dev->object_name_idr);
+		gem_idr_list_free(&dev->object_name_idr);
 		mutex_destroy(&dev->object_name_lock);
 	}
 

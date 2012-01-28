@@ -30,4 +30,7 @@ extern int idr_list_get_new_above(struct idr *head,
 			void *obj,
 			int *handlep);
 
+extern int idr_get_new_above(struct idr *head, void *obj, int start, int *id);
+
+extern int idr_pre_get(struct idr *head, int flags);
 #endif

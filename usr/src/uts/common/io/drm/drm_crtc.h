@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include "drmP.h"
 #include "drm_mode.h"
+#include "drm_idr.h"
 
 struct drm_device;
 struct drm_mode_set;
@@ -569,7 +570,7 @@ struct drm_mode_group {
 struct drm_mode_config {
 	struct mutex mutex; /* protects configuration (mode lists etc.) */
 	struct mutex idr_mutex; /* for IDR management */
-	//struct idr_list crtc_idr; /* use this idr for all IDs, fb, crtc, connector, modes - just makes life easier */
+	struct idr crtc_idr; /* use this idr for all IDs, fb, crtc, connector, modes - just makes life easier */
 	/* this is limited to one for now */
 	int num_fb;
 	struct list_head fb_list;
