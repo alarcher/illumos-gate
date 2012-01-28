@@ -644,13 +644,9 @@ drm_gtf2_m(struct edid *edid)
 static int
 drm_gtf2_k(struct edid *edid)
 {
-#if 0
 	u8 *r = NULL;
 	drm_for_each_detailed_block((u8 *)edid, find_gtf2, &r);
 	return r ? r[16] : 0;
-#else
-	return 0;
-#endif
 }
 
 static int
