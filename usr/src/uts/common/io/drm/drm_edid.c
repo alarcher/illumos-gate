@@ -1507,7 +1507,6 @@ end:
 static void drm_add_display_info(struct edid *edid,
 				 struct drm_display_info *info)
 {
-#if 0
 	info->width_mm = edid->width_cm * 10;
 	info->height_mm = edid->height_cm * 10;
 
@@ -1552,7 +1551,6 @@ static void drm_add_display_info(struct edid *edid,
 		info->color_formats = DRM_COLOR_FORMAT_YCRCB444;
 	if (info->color_formats & DRM_EDID_FEATURE_RGB_YCRCB422)
 		info->color_formats = DRM_COLOR_FORMAT_YCRCB422;
-#endif
 }
 
 /**
