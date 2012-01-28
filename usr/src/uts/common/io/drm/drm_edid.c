@@ -599,7 +599,6 @@ is_rb(struct detailed_timing *t, void *data)
 static boolean_t
 drm_monitor_supports_rb(struct edid *edid)
 {
-#if 0
 	if (edid->revision >= 4) {
 		boolean_t ret;
 		drm_for_each_detailed_block((u8 *)edid, is_rb, &ret);
@@ -607,9 +606,6 @@ drm_monitor_supports_rb(struct edid *edid)
 	}
 
 	return ((edid->input & DRM_EDID_INPUT_DIGITAL) != 0);
-#else
-	return B_FALSE;
-#endif
 }
 
 static void
