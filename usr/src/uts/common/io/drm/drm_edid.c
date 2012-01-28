@@ -1413,7 +1413,6 @@ u8 *drm_find_cea_extension(struct edid *edid)
  */
 boolean_t drm_detect_hdmi_monitor(struct edid *edid)
 {
-#if 0
 	u8 *edid_ext;
 	int i, hdmi_id;
 	int start_offset, end_offset;
@@ -1447,9 +1446,6 @@ boolean_t drm_detect_hdmi_monitor(struct edid *edid)
 
 end:
 	return is_hdmi;
-#else
-	return B_FALSE;
-#endif
 }
 
 /**
