@@ -34,6 +34,8 @@
 #include "drm_edid.h"
 #include "drm_edid_modes.h"
 
+#define	ARRAY_SIZE(x) (sizeof (x) / sizeof (x[0]))
+
 #define version_greater(edid, maj, min) \
 	(((edid)->version > (maj)) || \
 	 ((edid)->version == (maj) && (edid)->revision > (min)))
