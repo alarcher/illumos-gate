@@ -611,11 +611,9 @@ drm_monitor_supports_rb(struct edid *edid)
 static void
 find_gtf2(struct detailed_timing *t, void *data)
 {
-#if 0
 	u8 *r = (u8 *)t;
 	if (r[3] == EDID_DETAIL_MONITOR_RANGE && r[10] == 0x02)
 		*(u8 **)data = r;
-#endif
 }
 
 /* Secondary GTF curve kicks in above some break frequency */
