@@ -952,7 +952,6 @@ static boolean_t
 mode_in_hsync_range(const struct drm_display_mode *mode,
 		    struct edid *edid, u8 *t)
 {
-#if 0
 	int hsync, hmin, hmax;
 
 	hmin = t[7];
@@ -964,9 +963,6 @@ mode_in_hsync_range(const struct drm_display_mode *mode,
 	hsync = drm_mode_hsync(mode);
 
 	return (hsync <= hmax && hsync >= hmin);
-#else
-	return B_FALSE;
-#endif
 }
 
 static boolean_t
