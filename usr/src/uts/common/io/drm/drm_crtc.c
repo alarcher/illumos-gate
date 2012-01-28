@@ -92,6 +92,8 @@ struct drm_prop_enum_list {
 				      struct drm_property_blob,	\
 				      struct drm_mode_object,	\
 				      base);
+
+#define put_user(buf, ptr) ddi_copyout(ptr, &buf, sizeof(buf), 0)
 /*
  * Global properties
  */
@@ -1162,10 +1164,10 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 		fb_id = (uint32_t __user *)(unsigned long)card_res->fb_id_ptr;
 		list_for_each(lh, &file_priv->fbs) {
 			fb = list_entry(lh, struct drm_framebuffer, &file_priv.fbs);
-			/*if (put_user(fb->base.id, fb_id + copied)) {
+			if (put_user(fb->base.id, fb_id + copied)) {
 				ret = -EFAULT;
 				goto out;
-			}*/
+			}
 			copied++;
 		}
 	}
@@ -1179,19 +1181,19 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 			list_for_each(lh, &dev->mode_config.crtc_list) {
 				crtc = list_entry(lh, struct drm_crtc, &dev->mode_config.crtc_list);
 				//DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
-				/*if (put_user(crtc->base.id, crtc_id + copied)) {
+				if (put_user(crtc->base.id, crtc_id + copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 				copied++;
 			}
 		} else {
 			for (i = 0; i < mode_group->num_crtcs; i++) {
-				/*if (put_user(mode_group->id_list[i],
+				if (put_user(mode_group->id_list[i],
 					     crtc_id + copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 				copied++;
 			}
 		}
@@ -1207,20 +1209,20 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 				encoder = list_entry(lh, struct drm_encoder, &dev->mode_config.encoder_list);
 				//DRM_DEBUG_KMS("[ENCODER:%d:%s]\n", encoder->base.id,
 	//					drm_get_encoder_name(encoder));
-				/*if (put_user(encoder->base.id, encoder_id +
+				if (put_user(encoder->base.id, encoder_id +
 					     copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 				copied++;
 			}
 		} else {
 			for (i = mode_group->num_crtcs; i < mode_group->num_crtcs + mode_group->num_encoders; i++) {
-				/*if (put_user(mode_group->id_list[i],
+				if (put_user(mode_group->id_list[i],
 					     encoder_id + copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 				copied++;
 			}
 
@@ -1238,22 +1240,22 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 				//DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
 				//	connector->base.id,
 				//	drm_get_connector_name(connector));
-				/*if (put_user(connector->base.id,
+				if (put_user(connector->base.id,
 					     connector_id + copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 				copied++;
 			}
 		} else {
 			int start = mode_group->num_crtcs +
 				mode_group->num_encoders;
 			for (i = start; i < start + mode_group->num_connectors; i++) {
-				/*if (put_user(mode_group->id_list[i],
+				if (put_user(mode_group->id_list[i],
 					     connector_id + copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 				copied++;
 			}
 		}
@@ -1426,17 +1428,17 @@ int drm_mode_getconnector(struct drm_device *dev, void *data,
 		prop_values = (uint64_t *)(unsigned long)(out_resp->prop_values_ptr);
 		for (i = 0; i < DRM_CONNECTOR_MAX_PROPERTY; i++) {
 			if (connector->property_ids[i] != 0) {
-				/*if (put_user(connector->property_ids[i],
+				if (put_user(connector->property_ids[i],
 					     prop_ptr + copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 
-				/*if (put_user(connector->property_values[i],
+				if (put_user(connector->property_values[i],
 					     prop_values + copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 				copied++;
 			}
 		}
@@ -1448,11 +1450,11 @@ int drm_mode_getconnector(struct drm_device *dev, void *data,
 		encoder_ptr = (uint32_t *)(unsigned long)(out_resp->encoders_ptr);
 		for (i = 0; i < DRM_CONNECTOR_MAX_ENCODER; i++) {
 			if (connector->encoder_ids[i] != 0) {
-				/*if (put_user(connector->encoder_ids[i],
+				if (put_user(connector->encoder_ids[i],
 					     encoder_ptr + copied)) {
 					ret = -EFAULT;
 					goto out;
-				}*/
+				}
 				copied++;
 			}
 		}
@@ -2363,7 +2365,6 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
 
 			list_for_each(list, &property->enum_blob_list) {
 				prop_blob = list_entry(list, struct drm_property_blob, &property_blob_list);
-				/*
 				if (put_user(prop_blob->base.id, blob_id_ptr + copied)) {
 					ret = -EFAULT;
 					goto done;
@@ -2373,7 +2374,6 @@ int drm_mode_getproperty_ioctl(struct drm_device *dev,
 					ret = -EFAULT;
 					goto done;
 				}
-				*/
 
 				copied++;
 			}
