@@ -1600,9 +1600,9 @@ int drm_mode_setcrtc(struct drm_device *dev, void *data,
 			goto out;
 		}
 
-		connector_set = NULL;//kmalloc(crtc_req->count_connectors *
-				//	sizeof(struct drm_connector *),
-				//	GFP_KERNEL);
+		connector_set = kmem_alloc(crtc_req->count_connectors *
+					sizeof(struct drm_connector *),
+					KM_SLEEP);
 		if (!connector_set) {
 			ret = -ENOMEM;
 			goto out;
