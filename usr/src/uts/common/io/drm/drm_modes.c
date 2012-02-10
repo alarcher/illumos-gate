@@ -1002,11 +1002,10 @@ boolean_t drm_mode_parse_command_line_for_connector(const char *mode_option,
 					       struct drm_connector *connector,
 					       struct drm_cmdline_mode *mode)
 {
-#if 0
 	const char *name;
 	unsigned int namelen;
 	int res_specified = 0, bpp_specified = 0, refresh_specified = 0;
-	unsigned int xres = 0, yres = 0, bpp = 32, refresh = 0;
+	long xres = 0, yres = 0, bpp = 32, refresh = 0;
 	int yres_specified = 0, cvt = 0, rb = 0, interlace = 0, margins = 0;
 	int i;
 	enum drm_connector_force force = DRM_FORCE_UNSPECIFIED;
@@ -1029,7 +1028,7 @@ boolean_t drm_mode_parse_command_line_for_connector(const char *mode_option,
 			namelen = i;
 			if (!refresh_specified && !bpp_specified &&
 			    !yres_specified) {
-				refresh = simple_strtol(&name[i+1], NULL, 10);
+				ddi_strtol(&name[i+1], NULL, 10, &refresh);
 				refresh_specified = 1;
 				if (cvt || rb)
 					cvt = 0;
@@ -1039,7 +1038,7 @@ boolean_t drm_mode_parse_command_line_for_connector(const char *mode_option,
 		case '-':
 			namelen = i;
 			if (!bpp_specified && !yres_specified) {
-				bpp = simple_strtol(&name[i+1], NULL, 10);
+				ddi_strtol(&name[i+1], NULL, 10, &bpp);
 				bpp_specified = 1;
 				if (cvt || rb)
 					cvt = 0;
@@ -1048,7 +1047,7 @@ boolean_t drm_mode_parse_command_line_for_connector(const char *mode_option,
 			break;
 		case 'x':
 			if (!yres_specified) {
-				yres = simple_strtol(&name[i+1], NULL, 10);
+				ddi_strtol(&name[i+1], NULL, 10, &yres);
 				yres_specified = 1;
 			} else
 				goto done;
@@ -1088,7 +1087,7 @@ boolean_t drm_mode_parse_command_line_for_connector(const char *mode_option,
 		}
 	}
 	if (i < 0 && yres_specified) {
-		xres = simple_strtol(name, NULL, 10);
+		ddi_strtol(name, NULL, 10, &xres);
 		res_specified = 1;
 	}
 done:
@@ -1113,9 +1112,6 @@ done:
 	mode->force = force;
 
 	return B_TRUE;
-#else
-	return B_FALSE;
-#endif
 }
 
 struct drm_display_mode *
