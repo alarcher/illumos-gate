@@ -598,7 +598,6 @@ int drm_mode_height(struct drm_display_mode *mode)
  */
 int drm_mode_hsync(const struct drm_display_mode *mode)
 {
-#if 0
 	unsigned int calc_val;
 
 	if (mode->hsync)
@@ -612,9 +611,6 @@ int drm_mode_hsync(const struct drm_display_mode *mode)
 	calc_val /= 1000;				/* truncate to kHz */
 
 	return calc_val;
-#else
-	return 0;
-#endif
 }
 
 /**
