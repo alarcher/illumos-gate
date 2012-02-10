@@ -843,11 +843,12 @@ void drm_mode_validate_clocks(struct drm_device *dev,
 			      struct list_head *mode_list,
 			      int *min, int *max, int n_ranges)
 {
-#if 0
+	struct list_head *list;
 	struct drm_display_mode *mode;
 	int i;
 
-	list_for_each_entry(mode, mode_list, head) {
+	list_for_each(list, mode_list) {
+		mode = list_entry(list, struct drm_display_mode, mode_list);
 		boolean_t good = B_FALSE;
 		for (i = 0; i < n_ranges; i++) {
 			if (mode->clock >= min[i] && mode->clock <= max[i]) {
@@ -858,7 +859,6 @@ void drm_mode_validate_clocks(struct drm_device *dev,
 		if (!good)
 			mode->status = MODE_CLOCK_RANGE;
 	}
-#endif
 }
 
 /**
