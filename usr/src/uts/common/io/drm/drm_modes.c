@@ -307,7 +307,6 @@ drm_gtf_mode_complex(struct drm_device *dev, int hdisplay, int vdisplay,
 		     int vrefresh, boolean_t interlaced, int margins,
 		     int GTF_M, int GTF_2C, int GTF_K, int GTF_2J)
 {	/* 1) top/bottom margin size (% of height) - default: 1.8, */
-#if 0
 #define	GTF_MARGIN_PERCENTAGE		18
 	/* 2) character cell horizontal granularity (pixels) - default 8 */
 #define	GTF_CELL_GRAN			8
@@ -467,9 +466,6 @@ drm_gtf_mode_complex(struct drm_device *dev, int hdisplay, int vdisplay,
 		drm_mode->flags = DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC;
 
 	return drm_mode;
-#else
-	return NULL;
-#endif
 }
 
 /**
