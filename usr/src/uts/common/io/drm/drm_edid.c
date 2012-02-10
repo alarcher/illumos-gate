@@ -867,17 +867,17 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
 		return NULL;
 
 	if (pt->misc & DRM_EDID_PT_STEREO) {
-		printk(KERN_WARNING "stereo mode not supported\n");
+		//printk(KERN_WARNING "stereo mode not supported\n");
 		return NULL;
 	}
 	if (!(pt->misc & DRM_EDID_PT_SEPARATE_SYNC)) {
-		printk(KERN_WARNING "composite sync not supported\n");
+		//printk(KERN_WARNING "composite sync not supported\n");
 	}
 
 	/* it is incorrect if hsync/vsync width is zero */
 	if (!hsync_pulse_width || !vsync_pulse_width) {
-		DRM_DEBUG_KMS("Incorrect Detailed timing. "
-				"Wrong Hsync/Vsync pulse width\n");
+		//DRM_DEBUG_KMS("Incorrect Detailed timing. "
+		//		"Wrong Hsync/Vsync pulse width\n");
 		return NULL;
 	}
 	mode = drm_mode_create(dev);
