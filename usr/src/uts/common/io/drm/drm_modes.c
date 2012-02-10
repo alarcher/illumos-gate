@@ -666,7 +666,6 @@ int drm_mode_vrefresh(const struct drm_display_mode *mode)
  */
 void drm_mode_set_crtcinfo(struct drm_display_mode *p, int adjust_flags)
 {
-#if 0
 	if ((p == NULL) || ((p->type & DRM_MODE_TYPE_CRTC_C) == DRM_MODE_TYPE_BUILTIN))
 		return;
 
@@ -712,7 +711,6 @@ void drm_mode_set_crtcinfo(struct drm_display_mode *p, int adjust_flags)
 
 	p->crtc_hadjusted = B_FALSE;
 	p->crtc_vadjusted = B_FALSE;
-#endif
 }
 
 
