@@ -877,21 +877,21 @@ void drm_mode_validate_clocks(struct drm_device *dev,
 void drm_mode_prune_invalid(struct drm_device *dev,
 			    struct list_head *mode_list, boolean_t verbose)
 {
-#if 0
-	struct drm_display_mode *mode, *t;
+	struct drm_display_mode *mode;
+	struct list_head *list, *t;
 
-	list_for_each_entry_safe(mode, t, mode_list, head) {
+	list_for_each_safe(list, t, mode_list) {
+		mode = list_entry(list, struct drm_display_mode, mode_list);
 		if (mode->status != MODE_OK) {
 			list_del(&mode->head);
 			if (verbose) {
 				drm_mode_debug_printmodeline(mode);
-				DRM_DEBUG_KMS("Not using %s mode %d\n",
-					mode->name, mode->status);
+				//DRM_DEBUG_KMS("Not using %s mode %d\n",
+				//	mode->name, mode->status);
 			}
 			drm_mode_destroy(dev, mode);
 		}
 	}
-#endif
 }
 
 /**
