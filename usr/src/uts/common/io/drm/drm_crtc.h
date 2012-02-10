@@ -656,4 +656,6 @@ extern boolean_t drm_mode_equal(struct drm_display_mode *mode1, struct drm_displ
 extern char *drm_get_connector_name(struct drm_connector *connector);
 
 extern void drm_mode_destroy(struct drm_device *dev, struct drm_display_mode *mode);
+
+extern struct drm_display_mode *drm_mode_create(struct drm_device *dev);
 #endif /* __DRM_CRTC_H__ */
