@@ -35,6 +35,7 @@
 #include "drmP.h"
 #include "drm.h"
 #include "drm_crtc.h"
+#include "drm_modes.h"
 
 /**
  * drm_mode_debug_printmodeline - debug print a mode
