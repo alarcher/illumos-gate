@@ -506,12 +506,8 @@ struct drm_display_mode *
 drm_gtf_mode(struct drm_device *dev, int hdisplay, int vdisplay, int vrefresh,
 	     boolean_t lace, int margins)
 {
-#if 0
 	return drm_gtf_mode_complex(dev, hdisplay, vdisplay, vrefresh, lace,
 				    margins, 600, 40 * 2, 128, 20 * 2);
-#else
-	return NULL;
-#endif
 }
 
 /**
