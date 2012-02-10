@@ -807,10 +807,11 @@ void drm_mode_validate_size(struct drm_device *dev,
 			    struct list_head *mode_list,
 			    int maxX, int maxY, int maxPitch)
 {
-#if 0
+	struct list_head *list;
 	struct drm_display_mode *mode;
 
-	list_for_each_entry(mode, mode_list, head) {
+	list_for_each(list, mode_list) {
+		mode = list_entry(list, struct drm_display_mode, mode_list);
 		if (maxPitch > 0 && mode->hdisplay > maxPitch)
 			mode->status = MODE_BAD_WIDTH;
 
@@ -820,7 +821,6 @@ void drm_mode_validate_size(struct drm_device *dev,
 		if (maxY > 0 && mode->vdisplay > maxY)
 			mode->status = MODE_VIRTUAL_Y;
 	}
-#endif
 }
 
 /**
