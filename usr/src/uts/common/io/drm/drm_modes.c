@@ -521,13 +521,11 @@ drm_gtf_mode(struct drm_device *dev, int hdisplay, int vdisplay, int vrefresh,
  */
 void drm_mode_set_name(struct drm_display_mode *mode)
 {
-#if 0
 	boolean_t interlaced = !!(mode->flags & DRM_MODE_FLAG_INTERLACE);
 
 	snprintf(mode->name, DRM_DISPLAY_MODE_LEN, "%dx%d%s",
 		 mode->hdisplay, mode->vdisplay,
 		 interlaced ? "i" : "");
-#endif
 }
 
 /**
