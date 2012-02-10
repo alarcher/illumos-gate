@@ -631,7 +631,6 @@ int drm_mode_hsync(const struct drm_display_mode *mode)
  */
 int drm_mode_vrefresh(const struct drm_display_mode *mode)
 {
-#if 0
 	int refresh = 0;
 	unsigned int calc_val;
 
@@ -653,9 +652,6 @@ int drm_mode_vrefresh(const struct drm_display_mode *mode)
 			refresh /= mode->vscan;
 	}
 	return refresh;
-#else
-	return 0;
-#endif
 }
 
 /**
