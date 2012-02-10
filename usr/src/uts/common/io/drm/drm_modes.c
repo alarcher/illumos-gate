@@ -1125,7 +1125,6 @@ struct drm_display_mode *
 drm_mode_create_from_cmdline_mode(struct drm_device *dev,
 				  struct drm_cmdline_mode *cmd)
 {
-#if 0
 	struct drm_display_mode *mode;
 
 	if (cmd->cvt)
@@ -1145,7 +1144,4 @@ drm_mode_create_from_cmdline_mode(struct drm_device *dev,
 
 	drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
 	return mode;
-#else
-	return NULL;
-#endif
 }
