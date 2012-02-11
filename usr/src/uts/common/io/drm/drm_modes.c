@@ -88,7 +88,6 @@ struct drm_display_mode *drm_cvt_mode(struct drm_device *dev, int hdisplay,
 				      int vdisplay, int vrefresh,
 				      boolean_t reduced, boolean_t interlaced, boolean_t margins)
 {
-#if 0
 	/* 1) top/bottom margin size (% of height) - default: 1.8, */
 #define	CVT_MARGIN_PERCENTAGE		18
 	/* 2) character cell horizontal granularity (pixels) - default 8 */
@@ -278,9 +277,6 @@ struct drm_display_mode *drm_cvt_mode(struct drm_device *dev, int hdisplay,
 					DRM_MODE_FLAG_NHSYNC);
 
 	return drm_mode;
-#else
-	return NULL;
-#endif
 }
 
 /**
