@@ -123,7 +123,7 @@ drm_open_helper(drm_device_t *dev, drm_cminor_t *mp, int flags,
 
 		/* first opener automatically becomes master */
 		//TODO FIX THIS!!!!!!
-		//priv->master = TAILQ_EMPTY(&dev->files);
+		priv->master = TAILQ_EMPTY(&dev->files);
 		TAILQ_INSERT_TAIL(&dev->files, priv, link);
 	}
 	mp->fpriv = priv;
