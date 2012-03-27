@@ -697,6 +697,10 @@ struct drm_driver_info {
 	int (*gem_init_object) (struct drm_gem_object *obj);
 	void (*gem_free_object) (struct drm_gem_object *obj);
 
+	/* dumb alloc support */
+	int (*dumb_create)(struct drm_file *file_priv,
+			struct drm_device *dev,
+			struct drm_mode_create_dumb *args);
 
 	drm_ioctl_desc_t *driver_ioctls;
 	int	max_driver_ioctl;
@@ -1068,6 +1072,7 @@ int	drm_getmap(DRM_IOCTL_ARGS);
 int	drm_getclient(DRM_IOCTL_ARGS);
 int	drm_getstats(DRM_IOCTL_ARGS);
 int	drm_noop(DRM_IOCTL_ARGS);
+int	drm_getcap(DRM_IOCTL_ARGS);
 
 /* Context IOCTL support (drm_context.c) */
 int	drm_resctx(DRM_IOCTL_ARGS);

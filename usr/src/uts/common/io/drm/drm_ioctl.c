@@ -305,6 +305,31 @@ drm_getstats(DRM_IOCTL_ARGS)
 	return (0);
 }
 
+/**
+ *  * Get device/driver capabilities
+ *   */
+int drm_getcap(DRM_IOCTL_ARGS)
+{
+	DRM_DEVICE;
+	struct drm_get_cap req;
+
+	bzero(&req, sizeof (req));
+
+	req.value = 0;
+	switch (req.capability) {
+		case DRM_CAP_DUMB_BUFFER:
+			if (dev->driver->dumb_create)
+				req.value = 1;
+			break;
+		case DRM_CAP_VBLANK_HIGH_CRTC:
+			req.value = 1;
+			break;
+		default:
+			return -EINVAL;
+	}
+	return 0;
+}
+
 #define	DRM_IF_MAJOR	1
 #define	DRM_IF_MINOR	2
 

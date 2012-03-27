@@ -56,7 +56,9 @@ drm_ioctl_desc_t drm_ioctls[DRIVER_IOCTL_COUNT] = {
 	DRM_IOCTL_DEF(DRM_IOCTL_GET_MAP, drm_getmap, 0),
 	DRM_IOCTL_DEF(DRM_IOCTL_GET_CLIENT, drm_getclient, 0),
 	DRM_IOCTL_DEF(DRM_IOCTL_GET_STATS, drm_getstats, 0),
+	DRM_IOCTL_DEF(DRM_IOCTL_GET_CAP, drm_getcap, 0),
 	DRM_IOCTL_DEF(DRM_IOCTL_SET_VERSION ,drm_setversion, DRM_MASTER|DRM_ROOT_ONLY),
+
 	DRM_IOCTL_DEF(DRM_IOCTL_MODESET_CTL ,drm_modeset_ctl, 0),
 	DRM_IOCTL_DEF(DRM_IOCTL_GEM_CLOSE ,drm_gem_close_ioctl, 0),
 	DRM_IOCTL_DEF(DRM_IOCTL_GEM_FLINK ,drm_gem_flink_ioctl, DRM_AUTH),

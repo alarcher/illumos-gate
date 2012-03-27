@@ -785,6 +785,12 @@ typedef struct drm_gem_open {
  */
 /*@{*/
 
+/** DRM_IOCTL_GET_CAP ioctl argument type */
+struct drm_get_cap {
+	uint64_t capability;
+	uint64_t value;
+};
+
 #define DRM_IOCTL_BASE			'd'
 #define DRM_IO(nr)			_IO(DRM_IOCTL_BASE,nr)
 #define DRM_IOR(nr,type)		_IOR(DRM_IOCTL_BASE,nr,type)
@@ -803,6 +809,7 @@ typedef struct drm_gem_open {
 #define DRM_IOCTL_GEM_CLOSE		DRM_IOW (0x09, drm_gem_close_t)
 #define DRM_IOCTL_GEM_FLINK		DRM_IOWR(0x0a, drm_gem_flink_t)
 #define DRM_IOCTL_GEM_OPEN		DRM_IOWR(0x0b, drm_gem_open_t)
+#define DRM_IOCTL_GET_CAP               DRM_IOWR(0x0c, struct drm_get_cap)
 
 #define DRM_IOCTL_SET_UNIQUE		DRM_IOW( 0x10, drm_unique_t)
 #define DRM_IOCTL_AUTH_MAGIC		DRM_IOW( 0x11, drm_auth_t)
@@ -886,5 +893,8 @@ typedef struct drm_gem_open {
  */
 #define DRM_COMMAND_BASE                0x40
 #define DRM_COMMAND_END                 0xA0
+
+#define DRM_CAP_DUMB_BUFFER 0x1
+#define DRM_CAP_VBLANK_HIGH_CRTC 0x2
 
 #endif /* _DRM_H_ */
