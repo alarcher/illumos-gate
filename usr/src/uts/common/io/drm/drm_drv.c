@@ -116,6 +116,8 @@ drm_ioctl_desc_t drm_ioctls[DRIVER_IOCTL_COUNT] = {
 	DRM_IOCTL_DEF(DRM_IOCTL_GEM_CLOSE ,drm_gem_close_ioctl, 0),
 	DRM_IOCTL_DEF(DRM_IOCTL_GEM_FLINK ,drm_gem_flink_ioctl, DRM_AUTH),
 	DRM_IOCTL_DEF(DRM_IOCTL_GEM_OPEN ,drm_gem_open_ioctl, DRM_AUTH),
+
+	DRM_IOCTL_DEF(DRM_IOCTL_MODE_GETRESOURCES, drm_mode_getresources, DRM_MASTER|DRM_CONTROL_ALLOW|DRM_UNLOCKED),
 };
 
 extern void gem_idr_list_free(struct idr_list *head);

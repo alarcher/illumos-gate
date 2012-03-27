@@ -658,4 +658,7 @@ extern char *drm_get_connector_name(struct drm_connector *connector);
 extern void drm_mode_destroy(struct drm_device *dev, struct drm_display_mode *mode);
 
 extern struct drm_display_mode *drm_mode_create(struct drm_device *dev);
+
+extern int drm_mode_getresources(DRM_IOCTL_ARGS);
+
 #endif /* __DRM_CRTC_H__ */

@@ -1098,10 +1098,12 @@ void drm_crtc_convert_umode(struct drm_display_mode *out,
  * RETURNS:
  * Zero on success, errno on failure.
  */
-int drm_mode_getresources(struct drm_device *dev, void *data,
-			  struct drm_file *file_priv)
+int drm_mode_getresources(DRM_IOCTL_ARGS)
 {
-	struct drm_mode_card_res *card_res = data;
+	DRM_DEVICE;
+
+	//TODO
+	struct drm_mode_card_res *card_res = NULL;//data;
 	struct list_head *lh;
 	struct drm_framebuffer *fb;
 	struct drm_connector *connector;
@@ -1129,12 +1131,12 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	 * by IDs in the group list for this node
 	 */
 
-	list_for_each(lh, &file_priv->fbs)
+	list_for_each(lh, &fpriv->fbs)
 		fb_count++;
 
 /*
-	mode_group = &file_priv->master->minor->mode_group;
-	if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
+	mode_group = &fpriv->master->minor->mode_group;
+	if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 
 		list_for_each(lh, &dev->mode_config.crtc_list)
 			crtc_count++;
@@ -1164,8 +1166,8 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	if (card_res->count_fbs >= fb_count) {
 		copied = 0;
 		fb_id = (uint32_t __user *)(unsigned long)card_res->fb_id_ptr;
-		list_for_each(lh, &file_priv->fbs) {
-			fb = list_entry(lh, struct drm_framebuffer, &file_priv.fbs);
+		list_for_each(lh, &fpriv->fbs) {
+			fb = list_entry(lh, struct drm_framebuffer, &fpriv.fbs);
 			if (put_user(fb->base.id, fb_id + copied)) {
 				ret = -EFAULT;
 				goto out;
@@ -1179,7 +1181,7 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	if (card_res->count_crtcs >= crtc_count) {
 		copied = 0;
 		crtc_id = (uint32_t __user *)(unsigned long)card_res->crtc_id_ptr;
-		/*if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
+		/*if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.crtc_list) {
 				crtc = list_entry(lh, struct drm_crtc, &dev->mode_config.crtc_list);
 				//DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
@@ -1206,7 +1208,7 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	if (card_res->count_encoders >= encoder_count) {
 		copied = 0;
 		encoder_id = (uint32_t __user *)(unsigned long)card_res->encoder_id_ptr;
-		/*if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
+		/*if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.encoder_list) {
 				encoder = list_entry(lh, struct drm_encoder, &dev->mode_config.encoder_list);
 				//DRM_DEBUG_KMS("[ENCODER:%d:%s]\n", encoder->base.id,
@@ -1236,7 +1238,7 @@ int drm_mode_getresources(struct drm_device *dev, void *data,
 	if (card_res->count_connectors >= connector_count) {
 		copied = 0;
 		connector_id = (uint32_t __user *)(unsigned long)card_res->connector_id_ptr;
-		/*if (file_priv->master->minor->type == DRM_MINOR_CONTROL) {
+		/*if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.connector_list) {
 				connector = list_entry(lh, struct drm_connector, &dev->mode_config.connector_list);
 				//DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
