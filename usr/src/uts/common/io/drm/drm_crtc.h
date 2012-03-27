@@ -56,44 +56,44 @@ struct drm_mode_object {
  */
 
 enum drm_mode_status {
-    MODE_OK	= 0,	/* Mode OK */
-    MODE_HSYNC,		/* hsync out of range */
-    MODE_VSYNC,		/* vsync out of range */
-    MODE_H_ILLEGAL,	/* mode has illegal horizontal timings */
-    MODE_V_ILLEGAL,	/* mode has illegal horizontal timings */
-    MODE_BAD_WIDTH,	/* requires an unsupported linepitch */
-    MODE_NOMODE,	/* no mode with a matching name */
-    MODE_NO_INTERLACE,	/* interlaced mode not supported */
-    MODE_NO_DBLESCAN,	/* doublescan mode not supported */
-    MODE_NO_VSCAN,	/* multiscan mode not supported */
-    MODE_MEM,		/* insufficient video memory */
-    MODE_VIRTUAL_X,	/* mode width too large for specified virtual size */
-    MODE_VIRTUAL_Y,	/* mode height too large for specified virtual size */
-    MODE_MEM_VIRT,	/* insufficient video memory given virtual size */
-    MODE_NOCLOCK,	/* no fixed clock available */
-    MODE_CLOCK_HIGH,	/* clock required is too high */
-    MODE_CLOCK_LOW,	/* clock required is too low */
-    MODE_CLOCK_RANGE,	/* clock/mode isn't in a ClockRange */
-    MODE_BAD_HVALUE,	/* horizontal timing was out of range */
-    MODE_BAD_VVALUE,	/* vertical timing was out of range */
-    MODE_BAD_VSCAN,	/* VScan value out of range */
-    MODE_HSYNC_NARROW,	/* horizontal sync too narrow */
-    MODE_HSYNC_WIDE,	/* horizontal sync too wide */
-    MODE_HBLANK_NARROW,	/* horizontal blanking too narrow */
-    MODE_HBLANK_WIDE,	/* horizontal blanking too wide */
-    MODE_VSYNC_NARROW,	/* vertical sync too narrow */
-    MODE_VSYNC_WIDE,	/* vertical sync too wide */
-    MODE_VBLANK_NARROW,	/* vertical blanking too narrow */
-    MODE_VBLANK_WIDE,	/* vertical blanking too wide */
-    MODE_PANEL,         /* exceeds panel dimensions */
-    MODE_INTERLACE_WIDTH, /* width too large for interlaced mode */
-    MODE_ONE_WIDTH,     /* only one width is supported */
-    MODE_ONE_HEIGHT,    /* only one height is supported */
-    MODE_ONE_SIZE,      /* only one resolution is supported */
-    MODE_NO_REDUCED,    /* monitor doesn't accept reduced blanking */
-    MODE_UNVERIFIED = -3, /* mode needs to reverified */
-    MODE_BAD = -2,	/* unspecified reason */
-    MODE_ERROR	= -1	/* error condition */
+	MODE_OK	= 0,	/* Mode OK */
+	MODE_HSYNC,		/* hsync out of range */
+	MODE_VSYNC,		/* vsync out of range */
+	MODE_H_ILLEGAL,	/* mode has illegal horizontal timings */
+	MODE_V_ILLEGAL,	/* mode has illegal horizontal timings */
+	MODE_BAD_WIDTH,	/* requires an unsupported linepitch */
+	MODE_NOMODE,	/* no mode with a matching name */
+	MODE_NO_INTERLACE,	/* interlaced mode not supported */
+	MODE_NO_DBLESCAN,	/* doublescan mode not supported */
+	MODE_NO_VSCAN,	/* multiscan mode not supported */
+	MODE_MEM,		/* insufficient video memory */
+	MODE_VIRTUAL_X,	/* mode width too large for specified virtual size */
+	MODE_VIRTUAL_Y,	/* mode height too large for specified virtual size */
+	MODE_MEM_VIRT,	/* insufficient video memory given virtual size */
+	MODE_NOCLOCK,	/* no fixed clock available */
+	MODE_CLOCK_HIGH,	/* clock required is too high */
+	MODE_CLOCK_LOW,	/* clock required is too low */
+	MODE_CLOCK_RANGE,	/* clock/mode isn't in a ClockRange */
+	MODE_BAD_HVALUE,	/* horizontal timing was out of range */
+	MODE_BAD_VVALUE,	/* vertical timing was out of range */
+	MODE_BAD_VSCAN,	/* VScan value out of range */
+	MODE_HSYNC_NARROW,	/* horizontal sync too narrow */
+	MODE_HSYNC_WIDE,	/* horizontal sync too wide */
+	MODE_HBLANK_NARROW,	/* horizontal blanking too narrow */
+	MODE_HBLANK_WIDE,	/* horizontal blanking too wide */
+	MODE_VSYNC_NARROW,	/* vertical sync too narrow */
+	MODE_VSYNC_WIDE,	/* vertical sync too wide */
+	MODE_VBLANK_NARROW,	/* vertical blanking too narrow */
+	MODE_VBLANK_WIDE,	/* vertical blanking too wide */
+	MODE_PANEL,		 /* exceeds panel dimensions */
+	MODE_INTERLACE_WIDTH, /* width too large for interlaced mode */
+	MODE_ONE_WIDTH,	 /* only one width is supported */
+	MODE_ONE_HEIGHT,	/* only one height is supported */
+	MODE_ONE_SIZE,	  /* only one resolution is supported */
+	MODE_NO_REDUCED,	/* monitor doesn't accept reduced blanking */
+	MODE_UNVERIFIED = -3, /* mode needs to reverified */
+	MODE_BAD = -2,	/* unspecified reason */
+	MODE_ERROR	= -1	/* error condition */
 };
 
 #define DRM_MODE_TYPE_CLOCK_CRTC_C (DRM_MODE_TYPE_CLOCK_C | \
