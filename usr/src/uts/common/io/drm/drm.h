@@ -880,7 +880,7 @@ struct drm_get_cap {
 
 #define DRM_IOCTL_MODE_CREATE_DUMB	DRM_IOWR(0xb2, struct drm_mode_create_dumb)
 #define DRM_IOCTL_MODE_MAP_DUMB		DRM_IOWR(0xb3, struct drm_mode_map_dumb)
-#define DRM_IOCTL_MODE_DESTROY_DUMB	DRM_IOWR(0xb4, struct drm_mode_desotry_dumb)
+#define DRM_IOCTL_MODE_DESTROY_DUMB	DRM_IOWR(0xb4, struct drm_mode_destroy_dumb)
 /*@}*/
 
 /**
@@ -893,6 +893,34 @@ struct drm_get_cap {
  */
 #define DRM_COMMAND_BASE                0x40
 #define DRM_COMMAND_END                 0xA0
+/**
+ * Header for events written back to userspace on the drm fd.  The
+ * type defines the type of event, the length specifies the total
+ * length of the event (including the header), and user_data is
+ * typically a 64 bit value passed with the ioctl that triggered the
+ * event.  A read on the drm fd will always only return complete
+ * events, that is, if for example the read buffer is 100 bytes, and
+ * there are two 64 byte events pending, only one will be returned.
+ *
+ * Event types 0 - 0x7fffffff are generic drm events, 0x80000000 and
+ * up are chipset specific.
+ */
+struct drm_event {
+	uint32_t type;
+	uint32_t length;
+};
+
+#define DRM_EVENT_VBLANK 0x01
+#define DRM_EVENT_FLIP_COMPLETE 0x02
+
+struct drm_event_vblank {
+	struct drm_event base;
+	uint64_t user_data;
+	uint32_t tv_sec;
+	uint32_t tv_usec;
+	uint32_t sequence;
+	uint32_t reserved;
+};
 
 #define DRM_CAP_DUMB_BUFFER 0x1
 #define DRM_CAP_VBLANK_HIGH_CRTC 0x2

@@ -499,6 +499,16 @@ struct idr_list {
 	caddr_t	contain_ptr;
 };
 
+/* Event queued up for userspace to read */
+struct drm_pending_event {
+	struct drm_event *event;
+	struct list_head link;
+	struct drm_file *file_priv;
+	pid_t pid; /* pid of requester, no guarantee it's valid by the time
+		      we deliver the event, for tracing only */
+	void (*destroy)(struct drm_pending_event *event);
+};
+
 struct drm_file {
 	TAILQ_ENTRY(drm_file) link;
 	int		   authenticated;
@@ -521,6 +531,7 @@ struct drm_file {
 	cred_t *credp;
 
 	struct list_head fbs;
+	int event_space;
 };
 
 typedef struct drm_lock_data {
@@ -701,6 +712,12 @@ struct drm_driver_info {
 	int (*dumb_create)(struct drm_file *file_priv,
 			struct drm_device *dev,
 			struct drm_mode_create_dumb *args);
+	int (*dumb_map_offset)(struct drm_file *file_priv,
+			struct drm_device *dev, uint32_t handle,
+			uint64_t *offset);
+	int (*dumb_destroy)(struct drm_file *file_priv,
+			struct drm_device *dev,
+			uint32_t handle);
 
 	drm_ioctl_desc_t *driver_ioctls;
 	int	max_driver_ioctl;
@@ -782,6 +799,12 @@ struct drm_cmdline_mode {
 	bool cvt;
 	bool margins;
 	enum drm_connector_force force;
+};
+
+struct drm_pending_vblank_event {
+	struct drm_pending_event base;
+	int pipe;
+	struct drm_event_vblank event;
 };
 
 struct drm_master {

@@ -644,11 +644,9 @@ extern struct drm_display_mode *drm_mode_duplicate(struct drm_device *dev,
 
 extern void drm_mode_set_crtcinfo(struct drm_display_mode *p,                                               int adjust_flags);
 
-extern int drm_mode_getencoder(drm_device_t *dev, intptr_t data,
-			       drm_file_t *file_priv, int mode);
+extern int drm_mode_getencoder(DRM_IOCTL_ARGS);
 
-extern int drm_mode_addfb(drm_device_t *dev, intptr_t data,
-			       drm_file_t *file_priv, int mode);
+extern int drm_mode_addfb(DRM_IOCTL_ARGS);
 
 extern void drm_property_destroy(struct drm_device *dev, struct drm_property *property);
 extern boolean_t drm_mode_equal(struct drm_display_mode *mode1, struct drm_display_mode *mode2);
@@ -660,5 +658,23 @@ extern void drm_mode_destroy(struct drm_device *dev, struct drm_display_mode *mo
 extern struct drm_display_mode *drm_mode_create(struct drm_device *dev);
 
 extern int drm_mode_getresources(DRM_IOCTL_ARGS);
+extern int drm_mode_getcrtc(DRM_IOCTL_ARGS);
+extern int drm_mode_setcrtc(DRM_IOCTL_ARGS);
+extern int drm_mode_cursor_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_gamma_get_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_gamma_set_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_getconnector(DRM_IOCTL_ARGS);
+extern int drm_mode_attachmode_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_detachmode_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_getproperty_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_connector_property_set_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_getblob_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_getfb(DRM_IOCTL_ARGS);
+extern int drm_mode_rmfb(DRM_IOCTL_ARGS);
+extern int drm_mode_page_flip_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_dirtyfb_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_create_dumb_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_mmap_dumb_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_destroy_dumb_ioctl(DRM_IOCTL_ARGS);
 
 #endif /* __DRM_CRTC_H__ */
