@@ -82,6 +82,8 @@ drm_open_helper(drm_device_t *dev, drm_cminor_t *mp, int flags,
 
 	if (flags & FEXCL)
 		return (EBUSY); /* No exclusive opens */
+	if (dev->switch_power_state != DRM_SWITCH_POWER_ON)
+		return -EINVAL;
 	dev->flags = flags;
 
 	pid = ddi_get_pid();

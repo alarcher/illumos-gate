@@ -978,7 +978,13 @@ struct drm_device {
 	void		  *s3_private;
 
 	struct drm_mode_config mode_config;
+
+	int switch_power_state;
 };
+
+#define DRM_SWITCH_POWER_ON 0
+#define DRM_SWITCH_POWER_OFF 1
+#define DRM_SWITCH_POWER_CHANGING 2
 
 /* Memory management support (drm_memory.c) */
 void	drm_mem_init(void);
