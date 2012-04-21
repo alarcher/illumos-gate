@@ -731,18 +731,6 @@ struct drm_driver_info {
 	const char *driver_date;	/* Date of last major changes.	   */
 
 	uint32_t driver_features;
-
-	unsigned use_agp :1;
-	unsigned require_agp :1;
-	unsigned use_sg :1;
-	unsigned use_dma :1;
-	unsigned use_pci_dma :1;
-	unsigned use_dma_queue :1;
-	unsigned use_irq :1;
-	unsigned use_vbl_irq :1;
-	unsigned use_vbl_irq2 :1;
-	unsigned use_mtrr :1;
-	unsigned use_gem;
 };
 
 /**
@@ -1183,8 +1171,8 @@ extern void drm_info(const char *fmt, ...);
 #define DRIVER_IRQ_VBL2    0x800
 #define DRIVER_GEM         0x1000
 #define DRIVER_MODESET     0x2000
-#define DRIVER_BUS_PCI 0x1
 
+#define DRIVER_BUS_PCI 0x1
 #define DRIVER_BUS_PLATFORM 0x2
 #define DRIVER_BUS_USB 0x3
 

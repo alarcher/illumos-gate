@@ -84,7 +84,7 @@ i915_gem_init_ioctl(DRM_IOCTL_ARGS)
 	drm_i915_private_t *dev_priv = dev->dev_private;
 	struct drm_i915_gem_init args;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	DRM_COPYFROM_WITH_RETURN(&args,
@@ -121,7 +121,7 @@ i915_gem_get_aperture_ioctl(DRM_IOCTL_ARGS)
 	struct drm_i915_gem_get_aperture args;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	args.aper_size = (uint64_t)dev->gtt_total;
@@ -151,7 +151,7 @@ i915_gem_create_ioctl(DRM_IOCTL_ARGS)
 	int handlep;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	DRM_COPYFROM_WITH_RETURN(&args,
@@ -204,7 +204,7 @@ i915_gem_pread_ioctl(DRM_IOCTL_ARGS)
 	struct drm_gem_object *obj;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	DRM_COPYFROM_WITH_RETURN(&args,
@@ -316,7 +316,7 @@ i915_gem_pwrite_ioctl(DRM_IOCTL_ARGS)
 	struct drm_i915_gem_object *obj_priv;
 	int ret = 0;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	ret = DRM_COPY_FROM_USER(&args,
@@ -373,7 +373,7 @@ i915_gem_set_domain_ioctl(DRM_IOCTL_ARGS)
 	struct drm_gem_object *obj;
 	int ret = 0;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
         DRM_COPYFROM_WITH_RETURN(&args,
@@ -440,7 +440,7 @@ i915_gem_sw_finish_ioctl(DRM_IOCTL_ARGS)
 	struct drm_i915_gem_object *obj_priv;
 	int ret = 0;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
         DRM_COPYFROM_WITH_RETURN(&args,
@@ -485,7 +485,7 @@ i915_gem_mmap_ioctl(DRM_IOCTL_ARGS)
 	caddr_t vvaddr = NULL;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	DRM_COPYFROM_WITH_RETURN(
@@ -2004,7 +2004,7 @@ i915_gem_execbuffer(DRM_IOCTL_ARGS)
 	uint32_t seqno, flush_domains;
 	int pin_tries;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
         DRM_COPYFROM_WITH_RETURN(&args,
@@ -2288,7 +2288,7 @@ i915_gem_pin_ioctl(DRM_IOCTL_ARGS)
 	struct drm_i915_gem_object *obj_priv;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
         DRM_COPYFROM_WITH_RETURN(&args,
@@ -2350,7 +2350,7 @@ i915_gem_unpin_ioctl(DRM_IOCTL_ARGS)
 	struct drm_gem_object *obj;
 	struct drm_i915_gem_object *obj_priv;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
         DRM_COPYFROM_WITH_RETURN(&args,
@@ -2394,7 +2394,7 @@ i915_gem_busy_ioctl(DRM_IOCTL_ARGS)
 	struct drm_i915_gem_object *obj_priv;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
         DRM_COPYFROM_WITH_RETURN(&args,
@@ -2435,7 +2435,7 @@ i915_gem_throttle_ioctl(DRM_IOCTL_ARGS)
 {
 	DRM_DEVICE;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	return i915_gem_ring_throttle(dev, fpriv);
@@ -2842,7 +2842,7 @@ i915_gem_entervt_ioctl(DRM_IOCTL_ARGS)
 	drm_i915_private_t *dev_priv = dev->dev_private;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	if (dev_priv->mm.wedged) {
@@ -2879,7 +2879,7 @@ i915_gem_leavevt_ioctl(DRM_IOCTL_ARGS)
 	drm_i915_private_t *dev_priv = dev->dev_private;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	ret = i915_gem_idle(dev, 0);

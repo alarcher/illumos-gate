@@ -487,7 +487,7 @@ drm_gem_close_ioctl(DRM_IOCTL_ARGS)
 	struct drm_gem_close args;
 	int ret;
 
-	if (!(dev->driver->use_gem == 1))
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return (ENODEV);
 
 	DRM_COPYFROM_WITH_RETURN(&args,
@@ -513,7 +513,7 @@ drm_gem_flink_ioctl(DRM_IOCTL_ARGS)
 	struct drm_gem_object *obj;
 	int ret, handle;
 
-	if (!(dev->driver->use_gem == 1))
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return (ENODEV);
 
 	DRM_COPYFROM_WITH_RETURN(&args,
@@ -565,7 +565,7 @@ drm_gem_open_ioctl(DRM_IOCTL_ARGS)
 	int ret;
 	int handle;
 
-	if (!(dev->driver->use_gem == 1)) {
+	if (!(dev->driver->driver_features & DRIVER_GEM)) {
 		DRM_ERROR("Not support GEM");
 		return (ENODEV);
 	}

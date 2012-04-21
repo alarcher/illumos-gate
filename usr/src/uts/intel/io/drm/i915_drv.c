@@ -1026,9 +1026,9 @@ static void i915_configure(drm_driver_t *driver)
 	driver->driver_minor	=	DRIVER_MINOR;
 	driver->driver_patchlevel	=	DRIVER_PATCHLEVEL;
 
-	driver->use_agp	=	1;
-	driver->require_agp	=	1;
-	driver->use_irq	=	1;
+	driver->driver_features |= DRIVER_USE_AGP;
+	driver->driver_features |= DRIVER_REQUIRE_AGP;
+	driver->driver_features |= DRIVER_HAVE_IRQ;
 }
 
 static int i915_quiesce(dev_info_t *dip)

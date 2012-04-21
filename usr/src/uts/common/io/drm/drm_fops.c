@@ -111,7 +111,10 @@ drm_open_helper(drm_device_t *dev, drm_cminor_t *mp, int flags,
 		/* for compatibility root is always authenticated */
 		priv->authenticated	= DRM_SUSER(credp);
 
-		if (dev->driver->use_gem == 1)
+		//if (dev->driver->use_gem == 1)
+		//	drm_gem_open(priv);
+		if (dev->driver->driver_features & DRIVER_GEM)
+			//drm_gem_open(dev, priv);
 			drm_gem_open(priv);
 
 		if (dev->driver->open) {

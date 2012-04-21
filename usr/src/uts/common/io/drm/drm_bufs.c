@@ -809,8 +809,8 @@ drm_mapbufs(DRM_IOCTL_ARGS)
 	if (request.count < dma->buf_count)
 		goto done;
 
-	if ((dev->driver->use_agp && (dma->flags & _DRM_DMA_USE_AGP)) ||
-	    (dev->driver->use_sg && (dma->flags & _DRM_DMA_USE_SG))) {
+	if (((dev->driver->driver_features & DRIVER_USE_AGP) && (dma->flags & _DRM_DMA_USE_AGP)) ||
+	    ((dev->driver->driver_features & DRIVER_SG) && (dma->flags & _DRM_DMA_USE_SG))) {
 		drm_local_map_t *map = dev->agp_buffer_map;
 		if (map == NULL)
 			return (EINVAL);

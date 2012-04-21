@@ -133,7 +133,7 @@ drm_lock(DRM_IOCTL_ARGS)
 	DRM_DEBUG("%d (pid %d) requests lock (0x%08x), flags = 0x%08x\n",
 	    lock.context, DRM_CURRENTPID, dev->lock.hw_lock->lock,
 	    lock.flags);
-	if (dev->driver->use_dma_queue && lock.context < 0)
+	if ((dev->driver->driver_features & DRIVER_DMA_QUEUE) && lock.context < 0)
 		return (EINVAL);
 
 	mutex_enter(&(dev->lock.lock_mutex));

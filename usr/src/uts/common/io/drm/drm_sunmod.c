@@ -188,11 +188,11 @@ drm_supp_register(dev_info_t *dip, drm_device_t *dp)
 
 	/* AGP master attach */
 	agpm = NULL;
-	if (dp->driver->use_agp) {
+	if (dp->driver->driver_features & DRIVER_USE_AGP) {
 		DRM_DEBUG("drm_supp_regiter: driver use AGP\n");
 		error = agpmaster_attach(dip, &agpm,
 		    pci_cfg_handle, INST2NODE1(instance));
-		if ((error != DDI_SUCCESS) && (dp->driver->require_agp)) {
+		if ((error != DDI_SUCCESS) && (dp->driver->driver_features & DRIVER_REQUIRE_AGP)) {
 			DRM_ERROR("drm_supp_regiter: "
 			    "AGP master support not available");
 			goto exit3;
@@ -219,7 +219,7 @@ drm_supp_register(dev_info_t *dip, drm_device_t *dp)
 	return ((void *)mstate);
 
 exit4:
-	if ((dp->driver->use_agp) && agpm)
+	if ((dp->driver->driver_features & DRIVER_USE_AGP) && agpm)
 		agpmaster_detach(&agpm);
 exit3:
 	pci_config_teardown(&pci_cfg_handle);
@@ -570,7 +570,7 @@ drm_sun_devmap(dev_t dev, devmap_cookie_t dhp, offset_t offset,
 
 	mutex_enter(&dp->dev_lock);
 
-	if (dp->driver->use_gem == 1) {
+	if (dp->driver->driver_features & DRIVER_GEM) {
 		struct idr_list *entry;
 		drm_cminor_t *mp;
 

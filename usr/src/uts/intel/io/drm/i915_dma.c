@@ -808,7 +808,7 @@ static int i915_getparam(DRM_IOCTL_ARGS)
 		value = dev->pci_device;
 		break;
 	case I915_PARAM_HAS_GEM:
-		value = dev->driver->use_gem;
+		value = dev->driver->driver_features & DRIVER_GEM;
 		break;
 	default:
 		DRM_ERROR("Unknown get parameter %d\n", param.param);
@@ -939,12 +939,12 @@ int i915_driver_load(drm_device_t *dev, unsigned long flags)
 	DRM_DEBUG("i915_driverload mmio %p mmio_map->dev_addr %x", dev_priv->mmio_map, dev_priv->mmio_map->dev_addr);
 
 #if defined(__i386)
-	dev->driver->use_gem = 0;
+	dev->driver->driver_features &= ~DRIVER_GEM;
 #else
 	if (IS_I965G(dev)) {
-		dev->driver->use_gem = 1;
+		dev->driver->driver_features |= DRIVER_GEM;
 	} else {
-		dev->driver->use_gem = 0;
+		dev->driver->driver_features &= ~DRIVER_GEM;
 	}
 #endif	/* __i386 */
 

@@ -274,7 +274,7 @@ i915_gem_set_tiling(DRM_IOCTL_ARGS)
 	struct drm_i915_gem_object *obj_priv;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	DRM_COPYFROM_WITH_RETURN(&args,
@@ -349,7 +349,7 @@ i915_gem_get_tiling(DRM_IOCTL_ARGS)
 	struct drm_i915_gem_object *obj_priv;
 	int ret;
 
-	if (dev->driver->use_gem != 1)
+	if (!(dev->driver->driver_features & DRIVER_GEM))
 		return ENODEV;
 
 	DRM_COPYFROM_WITH_RETURN(&args,

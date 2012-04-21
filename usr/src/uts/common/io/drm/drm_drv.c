@@ -170,11 +170,11 @@ drm_firstopen(drm_device_t *dev)
 		return (retval);
 	}
 
-	if (dev->driver->use_agp) {
-		DRM_DEBUG("drm_firstopen: use_agp=%d", dev->driver->use_agp);
+	if (dev->driver->driver_features & DRIVER_USE_AGP) {
+		DRM_DEBUG("drm_firstopen: use_agp=%d", dev->driver->driver_features & DRIVER_USE_AGP);
 		if (drm_device_is_agp(dev))
 			dev->agp = drm_agp_init(dev);
-		if (dev->driver->require_agp && dev->agp == NULL) {
+		if ((dev->driver->driver_features & DRIVER_REQUIRE_AGP) && dev->agp == NULL) {
 			DRM_ERROR("couldn't initialize AGP");
 			return (EIO);
 		}
@@ -190,7 +190,7 @@ drm_firstopen(drm_device_t *dev)
 
 	dev->buf_use = 0;
 
-	if (dev->driver->use_dma) {
+	if (dev->driver->driver_features & DRIVER_PCI_DMA) {
 		i = drm_dma_setup(dev);
 		if (i != 0)
 			return (i);
@@ -338,7 +338,7 @@ drm_load(drm_device_t *dev)
 		goto error;
 	}
 
-	if (dev->driver->use_gem == 1) {
+	if (dev->driver->driver_features & DRIVER_GEM) {
 		retcode = drm_gem_init(dev);
 		if (retcode) {
 			DRM_ERROR("Cannot initialize graphics execution "
@@ -385,7 +385,7 @@ drm_unload(drm_device_t *dev)
 
 	drm_ctxbitmap_cleanup(dev);
 
-	if (dev->driver->use_gem == 1) {
+	if (dev->driver->driver_features & DRIVER_GEM) {
 		gem_idr_list_free(&dev->object_name_idr);
 		mutex_destroy(&dev->object_name_lock);
 	}
@@ -483,11 +483,11 @@ drm_close(drm_device_t *dev, int minor, int flag, int otyp,
 		    "retake lock not implemented yet");
 	}
 
-	if (dev->driver->use_dma) {
+	if (dev->driver->driver_features & DRIVER_PCI_DMA) {
 		drm_reclaim_buffers(dev, fpriv);
 	}
 
-	if (dev->driver->use_gem == 1) {
+	if (dev->driver->driver_features & DRIVER_GEM) {
 		drm_gem_release(dev, fpriv);
 	}
 
