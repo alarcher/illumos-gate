@@ -2676,14 +2676,14 @@ int drm_mode_gamma_set_ioctl(DRM_IOCTL_ARGS)
 		goto out;
 	}
 
-	//g_base = r_base + size;
+	g_base = (char *)r_base + size;
 
 	if (copyin(g_base, (void __user *)(unsigned long)crtc_lut.green, size)) {
 		ret = -EFAULT;
 		goto out;
 	}
 
-	//b_base = g_base + size;
+	b_base = (char *)g_base + size;
 
 	if (copyin(b_base, (void __user *)(unsigned long)crtc_lut.blue, size)) {
 		ret = -EFAULT;
@@ -2736,14 +2736,14 @@ int drm_mode_gamma_get_ioctl(DRM_IOCTL_ARGS)
 		goto out;
 	}
 
-	//g_base = r_base + size;
+	g_base = (char *)r_base + size;
 
 	if (copyout((void __user *)(unsigned long)crtc_lut.green, g_base, size)) {
 		ret = -EFAULT;
 		goto out;
 	}
 
-	//b_base = g_base + size;
+	b_base = (char *)g_base + size;
 
 	if (copyout((void __user *)(unsigned long)crtc_lut.blue, b_base, size)) {
 		ret = -EFAULT;
