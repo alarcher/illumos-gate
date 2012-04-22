@@ -1135,7 +1135,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 	list_for_each(lh, &fpriv->fbs)
 		fb_count++;
 
-/*
+
 	mode_group = &fpriv->master->minor->mode_group;
 	if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 
@@ -1155,7 +1155,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 		connector_count = mode_group->num_connectors;
 		encoder_count = mode_group->num_encoders;
 	}
-	*/
+
 
 	card_res.max_height = dev->mode_config.max_height;
 	card_res.min_height = dev->mode_config.min_height;
@@ -1182,7 +1182,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 	if (card_res.count_crtcs >= crtc_count) {
 		copied = 0;
 		crtc_id = (uint32_t __user *)(unsigned long)card_res.crtc_id_ptr;
-		/*if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
+		if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.crtc_list) {
 				crtc = list_entry(lh, struct drm_crtc, &dev->mode_config.crtc_list);
 				//DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
@@ -1201,7 +1201,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 				}
 				copied++;
 			}
-		}*/
+		}
 	}
 	card_res.count_crtcs = crtc_count;
 
@@ -1209,7 +1209,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 	if (card_res.count_encoders >= encoder_count) {
 		copied = 0;
 		encoder_id = (uint32_t __user *)(unsigned long)card_res.encoder_id_ptr;
-		/*if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
+		if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.encoder_list) {
 				encoder = list_entry(lh, struct drm_encoder, &dev->mode_config.encoder_list);
 				//DRM_DEBUG_KMS("[ENCODER:%d:%s]\n", encoder->base.id,
@@ -1231,7 +1231,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 				copied++;
 			}
 
-		}*/
+		}
 	}
 	card_res.count_encoders = encoder_count;
 
@@ -1239,7 +1239,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 	if (card_res.count_connectors >= connector_count) {
 		copied = 0;
 		connector_id = (uint32_t __user *)(unsigned long)card_res.connector_id_ptr;
-		/*if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
+		if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.connector_list) {
 				connector = list_entry(lh, struct drm_connector, &dev->mode_config.connector_list);
 				//DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
@@ -1263,7 +1263,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 				}
 				copied++;
 			}
-		}*/
+		}
 	}
 	card_res.count_connectors = connector_count;
 

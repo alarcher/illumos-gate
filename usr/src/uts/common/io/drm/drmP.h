@@ -512,10 +512,8 @@ struct drm_pending_event {
 struct drm_file {
 	TAILQ_ENTRY(drm_file) link;
 	int		   authenticated;
-	//struct drm_master *master;
-	int 	   	   master;
+	struct drm_master *master;
 	struct drm_minor  *minor;
-	//int 		   minor;
 	pid_t		   pid;
 	uid_t		   uid;
 	int		   refs;
