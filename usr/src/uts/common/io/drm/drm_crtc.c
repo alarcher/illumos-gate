@@ -1272,6 +1272,9 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 
 out:
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &card_res, sizeof (card_res));
+
 	return ret;
 }
 
@@ -1318,6 +1321,9 @@ int drm_mode_getcrtc(DRM_IOCTL_ARGS)
 
 out:
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &crtc_resp, sizeof (crtc_resp));
+
 	return ret;
 }
 
@@ -1474,6 +1480,9 @@ int drm_mode_getconnector(DRM_IOCTL_ARGS)
 
 out:
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &out_resp, sizeof (out_resp));
+
 	return ret;
 }
 
@@ -1511,6 +1520,9 @@ int drm_mode_getencoder(DRM_IOCTL_ARGS)
 
 out:
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &enc_resp, sizeof (enc_resp));
+
 	return ret;
 }
 
@@ -1661,6 +1673,9 @@ int drm_mode_setcrtc(DRM_IOCTL_ARGS)
 out:
 	kmem_free(connector_set, sizeof (*connector_set));
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &crtc_req, sizeof (crtc_req));
+
 	return ret;
 }
 
@@ -1776,6 +1791,9 @@ int drm_mode_addfb(DRM_IOCTL_ARGS)
 
 out:
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &r, sizeof (r));
+
 	return ret;
 }
 
@@ -1896,6 +1914,9 @@ int drm_mode_getfb(DRM_IOCTL_ARGS)
 
 out:
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &r, sizeof (r));
+
 	return ret;
 }
 
@@ -2422,6 +2443,9 @@ int drm_mode_getproperty_ioctl(DRM_IOCTL_ARGS)
 	}
 done:
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &out_resp, sizeof (out_resp));
+
 	return ret;
 }
 
@@ -2490,6 +2514,9 @@ int drm_mode_getblob_ioctl(DRM_IOCTL_ARGS)
 
 done:
 	mutex_exit(&dev->mode_config.mutex);
+
+	DRM_COPYTO_WITH_RETURN((void *)data, &out_resp, sizeof (out_resp));
+
 	return ret;
 }
 
@@ -2868,6 +2895,8 @@ int drm_mode_create_dumb_ioctl(DRM_IOCTL_ARGS)
 {
 	DRM_DEVICE;
 	struct drm_mode_create_dumb args;
+
+	DRM_COPYFROM_WITH_RETURN(&args, (void *)data, sizeof (args));
 
 	if (!dev->driver->dumb_create)
 		return -ENOSYS;
