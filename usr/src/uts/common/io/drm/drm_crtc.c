@@ -1975,8 +1975,8 @@ int drm_mode_dirtyfb_ioctl(DRM_IOCTL_ARGS)
 		}
 
 
-		ret = copyin(clips, clips_ptr,
-				     num_clips * sizeof(*clips));
+		ret = ddi_copyin(clips, clips_ptr,
+				     num_clips * sizeof(*clips), 0);
 
 		if (ret) {
 			ret = -EFAULT;
@@ -2702,21 +2702,21 @@ int drm_mode_gamma_set_ioctl(DRM_IOCTL_ARGS)
 	size = crtc_lut.gamma_size * (sizeof(uint16_t));
 	r_base = crtc->gamma_store;
 
-	if (copyin(r_base, (void __user *)(unsigned long)crtc_lut.red, size)) {
+	if (ddi_copyin(r_base, (void *)(unsigned long)crtc_lut.red, size, 0)) {
 		ret = -EFAULT;
 		goto out;
 	}
 
 	g_base = (char *)r_base + size;
 
-	if (copyin(g_base, (void __user *)(unsigned long)crtc_lut.green, size)) {
+	if (ddi_copyin(g_base, (void *)(unsigned long)crtc_lut.green, size, 0)) {
 		ret = -EFAULT;
 		goto out;
 	}
 
 	b_base = (char *)g_base + size;
 
-	if (copyin(b_base, (void __user *)(unsigned long)crtc_lut.blue, size)) {
+	if (ddi_copyin(b_base, (void *)(unsigned long)crtc_lut.blue, size, 0)) {
 		ret = -EFAULT;
 		goto out;
 	}
