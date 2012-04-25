@@ -39,6 +39,8 @@
 
 #include <sys/mutex.h>
 
+#define DRM_DEBUG_KMS drm_debug
+
 #define	ARRAY_SIZE(x) (sizeof (x) / sizeof (x[0]))
 
 struct drm_prop_enum_list {
@@ -1185,7 +1187,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 		if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.crtc_list) {
 				crtc = list_entry(lh, struct drm_crtc, &dev->mode_config.crtc_list);
-				//DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
+				DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
 				if (put_user(crtc->base.id, crtc_id + copied)) {
 					ret = -EFAULT;
 					goto out;
@@ -1212,8 +1214,8 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 		if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.encoder_list) {
 				encoder = list_entry(lh, struct drm_encoder, &dev->mode_config.encoder_list);
-				//DRM_DEBUG_KMS("[ENCODER:%d:%s]\n", encoder->base.id,
-	//					drm_get_encoder_name(encoder));
+				DRM_DEBUG_KMS("[ENCODER:%d:%s]\n", encoder->base.id,
+						drm_get_encoder_name(encoder));
 				if (put_user(encoder->base.id, encoder_id +
 					     copied)) {
 					ret = -EFAULT;
@@ -1242,9 +1244,9 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 		if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
 			list_for_each(lh, &dev->mode_config.connector_list) {
 				connector = list_entry(lh, struct drm_connector, &dev->mode_config.connector_list);
-				//DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
-				//	connector->base.id,
-				//	drm_get_connector_name(connector));
+				DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
+					connector->base.id,
+					drm_get_connector_name(connector));
 				if (put_user(connector->base.id,
 					     connector_id + copied)) {
 					ret = -EFAULT;
@@ -1267,8 +1269,10 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 	}
 	card_res.count_connectors = connector_count;
 
-	//DRM_DEBUG_KMS("CRTC[%d] CONNECTORS[%d] ENCODERS[%d]\n", card_res->count_crtcs,
-		  //card_res->count_connectors, card_res->count_encoders);
+	DRM_DEBUG_KMS("CRTC[%d] CONNECTORS[%d] ENCODERS[%d]\n",
+			card_res.count_crtcs,
+			card_res.count_connectors,
+			card_res.count_encoders);
 
 out:
 	mutex_exit(&dev->mode_config.mutex);
@@ -1372,7 +1376,7 @@ int drm_mode_getconnector(DRM_IOCTL_ARGS)
 
 	memset(&u_mode, 0, sizeof(struct drm_mode_modeinfo));
 
-	//DRM_DEBUG_KMS("[CONNECTOR:%d:?]\n", out_resp.connector_id);
+	DRM_DEBUG_KMS("[CONNECTOR:%d:?]\n", out_resp.connector_id);
 
 	mutex_enter(&dev->mode_config.mutex);
 
@@ -1571,12 +1575,12 @@ int drm_mode_setcrtc(DRM_IOCTL_ARGS)
 	obj = drm_mode_object_find(dev, crtc_req.crtc_id,
 				   DRM_MODE_OBJECT_CRTC);
 	if (!obj) {
-		//DRM_DEBUG_KMS("Unknown CRTC ID %d\n", crtc_req.crtc_id);
+		DRM_DEBUG_KMS("Unknown CRTC ID %d\n", crtc_req.crtc_id);
 		ret = -EINVAL;
 		goto out;
 	}
 	crtc = obj_to_crtc(obj);
-	//DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
+	DRM_DEBUG_KMS("[CRTC:%d]\n", crtc->base.id);
 
 	if (crtc_req.mode_valid) {
 		/* If we have a mode we need a framebuffer. */
@@ -1585,8 +1589,8 @@ int drm_mode_setcrtc(DRM_IOCTL_ARGS)
 			list_for_each(list, crtcs) {
 				crtcfb = list_entry(list, struct drm_crtc, crcts);
 				if (crtcfb == crtc) {
-					//DRM_DEBUG_KMS("Using current fb for "
-					//		"setmode\n");
+					DRM_DEBUG_KMS("Using current fb for "
+							"setmode\n");
 					fb = crtc->fb;
 				}
 			}
@@ -1594,8 +1598,8 @@ int drm_mode_setcrtc(DRM_IOCTL_ARGS)
 			obj = drm_mode_object_find(dev, crtc_req.fb_id,
 						   DRM_MODE_OBJECT_FB);
 			if (!obj) {
-				//DRM_DEBUG_KMS("Unknown FB ID%d\n",
-				//		crtc_req.fb_id);
+				DRM_DEBUG_KMS("Unknown FB ID%d\n",
+						crtc_req.fb_id);
 				ret = -EINVAL;
 				goto out;
 			}
@@ -1608,14 +1612,14 @@ int drm_mode_setcrtc(DRM_IOCTL_ARGS)
 	}
 
 	if (crtc_req.count_connectors == 0 && display_mode) {
-		//DRM_DEBUG_KMS("Count connectors is 0 but mode set\n");
+		DRM_DEBUG_KMS("Count connectors is 0 but mode set\n");
 		ret = -EINVAL;
 		goto out;
 	}
 
 	if (crtc_req.count_connectors > 0 && (!display_mode || !fb)) {
-		//DRM_DEBUG_KMS("Count connectors is %d but no mode or fb set\n",
-		//	  crtc_req.count_connectors);
+		DRM_DEBUG_KMS("Count connectors is %d but no mode or fb set\n",
+				crtc_req.count_connectors);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1647,15 +1651,15 @@ int drm_mode_setcrtc(DRM_IOCTL_ARGS)
 			obj = drm_mode_object_find(dev, out_id,
 						   DRM_MODE_OBJECT_CONNECTOR);
 			if (!obj) {
-				//DRM_DEBUG_KMS("Connector id %d unknown\n",
-				//		out_id);
+				DRM_DEBUG_KMS("Connector id %d unknown\n",
+						out_id);
 				ret = -EINVAL;
 				goto out;
 			}
 			connector = obj_to_connector(obj);
-			//DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
-			//		connector->base.id,
-			//		drm_get_connector_name(connector));
+			DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
+					connector->base.id,
+					drm_get_connector_name(connector));
 
 			connector_set[i] = connector;
 		}
@@ -1701,7 +1705,7 @@ int drm_mode_cursor_ioctl(DRM_IOCTL_ARGS)
 	mutex_enter(&dev->mode_config.mutex);
 	obj = drm_mode_object_find(dev, req.crtc_id, DRM_MODE_OBJECT_CRTC);
 	if (!obj) {
-		//DRM_DEBUG_KMS("Unknown CRTC ID %d\n", req.crtc_id);
+		DRM_DEBUG_KMS("Unknown CRTC ID %d\n", req.crtc_id);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1709,7 +1713,7 @@ int drm_mode_cursor_ioctl(DRM_IOCTL_ARGS)
 
 	if (req.flags & DRM_MODE_CURSOR_BO) {
 		if (!crtc->funcs->cursor_set) {
-			//DRM_ERROR("crtc does not support cursor\n");
+			DRM_ERROR("crtc does not support cursor\n");
 			ret = -ENXIO;
 			goto out;
 		}
@@ -1722,7 +1726,7 @@ int drm_mode_cursor_ioctl(DRM_IOCTL_ARGS)
 		if (crtc->funcs->cursor_move) {
 			ret = crtc->funcs->cursor_move(crtc, req.x, req.y);
 		} else {
-			//DRM_ERROR("crtc does not support cursor\n"); ret = -EFAULT;
+			DRM_ERROR("crtc does not support cursor\n"); ret = -EFAULT;
 			goto out;
 		}
 	}
@@ -1763,11 +1767,11 @@ int drm_mode_addfb(DRM_IOCTL_ARGS)
 		return -EINVAL;
 
 	if ((config->min_width > r.width) || (r.width > config->max_width)) {
-		//DRM_ERROR("mode new framebuffer width not within limits\n");
+		DRM_ERROR("mode new framebuffer width not within limits\n");
 		return -EINVAL;
 	}
 	if ((config->min_height > r.height) || (r.height > config->max_height)) {
-		//DRM_ERROR("mode new framebuffer height not within limits\n");
+		DRM_ERROR("mode new framebuffer height not within limits\n");
 		return -EINVAL;
 	}
 
@@ -1787,7 +1791,7 @@ int drm_mode_addfb(DRM_IOCTL_ARGS)
 
 	r.fb_id = fb->base.id;
 	list_add(&fb->filp_head, &fpriv->fbs, (caddr_t)&fb);
-	//DRM_DEBUG_KMS("[FB:%d]\n", fb->base.id);
+	DRM_DEBUG_KMS("[FB:%d]\n", fb->base.id);
 
 out:
 	mutex_exit(&dev->mode_config.mutex);
@@ -1836,7 +1840,7 @@ int drm_mode_rmfb(DRM_IOCTL_ARGS)
 	obj = drm_mode_object_find(dev, id, DRM_MODE_OBJECT_FB);
 	/* TODO check that we really get a framebuffer back. */
 	if (!obj) {
-		//DRM_ERROR("mode invalid framebuffer id\n");
+		DRM_ERROR("mode invalid framebuffer id\n");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1849,7 +1853,7 @@ int drm_mode_rmfb(DRM_IOCTL_ARGS)
 	}
 
 	if (!found) {
-		//DRM_ERROR("tried to remove a fb that we didn't own\n");
+		DRM_ERROR("tried to remove a fb that we didn't own\n");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1899,7 +1903,7 @@ int drm_mode_getfb(DRM_IOCTL_ARGS)
 	mutex_enter(&dev->mode_config.mutex);
 	obj = drm_mode_object_find(dev, r.fb_id, DRM_MODE_OBJECT_FB);
 	if (!obj) {
-		//DRM_ERROR("invalid framebuffer id\n");
+		DRM_ERROR("invalid framebuffer id\n");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1941,7 +1945,7 @@ int drm_mode_dirtyfb_ioctl(DRM_IOCTL_ARGS)
 	mutex_enter(&dev->mode_config.mutex);
 	obj = drm_mode_object_find(dev, r.fb_id, DRM_MODE_OBJECT_FB);
 	if (!obj) {
-		//DRM_ERROR("invalid framebuffer id\n");
+		DRM_ERROR("invalid framebuffer id\n");
 		ret = -EINVAL;
 		goto out_err1;
 	}
