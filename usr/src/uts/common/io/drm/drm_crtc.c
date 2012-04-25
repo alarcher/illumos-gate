@@ -1433,8 +1433,8 @@ int drm_mode_getconnector(DRM_IOCTL_ARGS)
 			display_mode = list_entry(list, struct drm_display_mode, &connector->modes);
 			drm_crtc_convert_to_umode(&u_mode, display_mode);
 
-			if (copyout(mode_ptr + copied,
-					 &u_mode, sizeof(u_mode))) {
+			if (ddi_copyout(mode_ptr + copied,
+						&u_mode, sizeof(u_mode), 0)) {
 				ret = -EFAULT;
 				goto out;
 			}
@@ -2391,7 +2391,7 @@ int drm_mode_getproperty_ioctl(DRM_IOCTL_ARGS)
 	if ((out_resp.count_values >= value_count) && value_count) {
 		values_ptr = (uint64_t *)(unsigned long)out_resp.values_ptr;
 		for (i = 0; i < value_count; i++) {
-			if (copyout(values_ptr + i, &property->values[i], sizeof(uint64_t))) {
+			if (ddi_copyout(values_ptr + i, &property->values[i], sizeof(uint64_t), 0)) {
 				ret = -EFAULT;
 				goto done;
 			}
@@ -2406,13 +2406,13 @@ int drm_mode_getproperty_ioctl(DRM_IOCTL_ARGS)
 			list_for_each(list, &property->enum_blob_list) {
 				prop_enum = list_entry(list, struct drm_property_enum, &property->enum_blob_list);
 
-				if (copyout(&enum_ptr[copied].value, &prop_enum->value, sizeof(uint64_t))) {
+				if (ddi_copyout(&enum_ptr[copied].value, &prop_enum->value, sizeof(uint64_t), 0)) {
 					ret = -EFAULT;
 					goto done;
 				}
 
-				if (copyout(&enum_ptr[copied].name,
-						 &prop_enum->name, DRM_PROP_NAME_LEN)) {
+				if (ddi_copyout(&enum_ptr[copied].name,
+						 &prop_enum->name, DRM_PROP_NAME_LEN, 0)) {
 					ret = -EFAULT;
 					goto done;
 				}
@@ -2509,7 +2509,7 @@ int drm_mode_getblob_ioctl(DRM_IOCTL_ARGS)
 
 	if (out_resp.length == blob->length) {
 		blob_ptr = (void *)(unsigned long)out_resp.data;
-		if (copyout(blob_ptr, blob->data, blob->length)){
+		if (ddi_copyout(blob_ptr, blob->data, blob->length, 0)){
 			ret = -EFAULT;
 			goto done;
 		}
@@ -2762,21 +2762,21 @@ int drm_mode_gamma_get_ioctl(DRM_IOCTL_ARGS)
 	size = crtc_lut.gamma_size * (sizeof(uint16_t));
 	r_base = crtc->gamma_store;
 
-	if (copyout((void __user *)(unsigned long)crtc_lut.red, r_base, size)) {
+	if (ddi_copyout((void *)(unsigned long)crtc_lut.red, r_base, size, 0)) {
 		ret = -EFAULT;
 		goto out;
 	}
 
 	g_base = (char *)r_base + size;
 
-	if (copyout((void __user *)(unsigned long)crtc_lut.green, g_base, size)) {
+	if (ddi_copyout((void  *)(unsigned long)crtc_lut.green, g_base, size, 0)) {
 		ret = -EFAULT;
 		goto out;
 	}
 
 	b_base = (char *)g_base + size;
 
-	if (copyout((void __user *)(unsigned long)crtc_lut.blue, b_base, size)) {
+	if (ddi_copyout((void  *)(unsigned long)crtc_lut.blue, b_base, size, 0)) {
 		ret = -EFAULT;
 		goto out;
 	}
