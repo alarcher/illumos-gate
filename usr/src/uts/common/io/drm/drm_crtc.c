@@ -340,7 +340,7 @@ int drm_framebuffer_init(struct drm_device *dev, struct drm_framebuffer *fb,
 	fb->dev = dev;
 	fb->funcs = funcs;
 	dev->mode_config.num_fb++;
-	list_add(&fb->head, &dev->mode_config.fb_list, (caddr_t)&fb);
+	list_add(&fb->head, &dev->mode_config.fb_list);
 
 	return 0;
 }
@@ -374,8 +374,8 @@ void drm_framebuffer_cleanup(struct drm_framebuffer *fb)
 			set.crtc = crtc;
 			set.fb = NULL;
 			ret = crtc->funcs->set_config(&set);
-			if (ret)
-				DRM_ERROR("failed to reset crtc %p when fb was deleted\n", crtc);
+//			if (ret)
+//				DRM_ERROR("failed to reset crtc %p when fb was deleted\n", crtc);
 		}
 	}
 
@@ -404,7 +404,7 @@ void drm_crtc_init(struct drm_device *dev, struct drm_crtc *crtc,
 	mutex_enter(&dev->mode_config.mutex);
 	drm_mode_object_get(dev, &crtc->base, DRM_MODE_OBJECT_CRTC);
 
-	list_add_tail(&crtc->head, &dev->mode_config.crtc_list, (caddr_t)&crtc);
+	list_add_tail(&crtc->head, &dev->mode_config.crtc_list);
 	dev->mode_config.num_crtc++;
 	mutex_exit(&dev->mode_config.mutex);
 }
@@ -445,7 +445,7 @@ void drm_crtc_cleanup(struct drm_crtc *crtc)
 void drm_mode_probed_add(struct drm_connector *connector,
 			 struct drm_display_mode *mode)
 {
-	list_add(&mode->head, &connector->probed_modes, (caddr_t)&mode);
+	list_add(&mode->head, &connector->probed_modes);
 }
 
 /**
@@ -496,7 +496,7 @@ void drm_connector_init(struct drm_device *dev,
 	INIT_LIST_HEAD(&connector->modes);
 	connector->edid_blob_ptr = NULL;
 
-	list_add_tail(&connector->head, &dev->mode_config.connector_list, (caddr_t)&connector);
+	list_add_tail(&connector->head, &dev->mode_config.connector_list);
 	dev->mode_config.num_connector++;
 
 	drm_connector_attach_property(connector,
@@ -557,7 +557,7 @@ void drm_encoder_init(struct drm_device *dev,
 	encoder->encoder_type = encoder_type;
 	encoder->funcs = funcs;
 
-	list_add_tail(&encoder->head, &dev->mode_config.encoder_list, (caddr_t)&encoder);
+	list_add_tail(&encoder->head, &dev->mode_config.encoder_list);
 	dev->mode_config.num_encoder++;
 
 	mutex_exit(&dev->mode_config.mutex);
@@ -949,8 +949,6 @@ int drm_mode_group_init_legacy_group(struct drm_device *dev,
 	if ((ret = drm_mode_group_init(dev, group)))
 		return ret;
 
-
-
 	list_for_each(list, crtcs) {
 		crtc = list_entry(list, struct drm_crtc, crtcs);
 		group->id_list[group->num_crtcs++] = crtc->base.id;
@@ -1133,10 +1131,8 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 	 * For the non-control nodes we need to limit the list of resources
 	 * by IDs in the group list for this node
 	 */
-
 	list_for_each(lh, &fpriv->fbs)
 		fb_count++;
-
 
 	mode_group = &fpriv->master->minor->mode_group;
 	if (fpriv->master->minor->type == DRM_MINOR_CONTROL) {
@@ -1149,7 +1145,6 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 
 		list_for_each(lh, &dev->mode_config.encoder_list)
 			encoder_count++;
-
 	} else {
 
 
@@ -1169,6 +1164,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 	if (card_res.count_fbs >= fb_count) {
 		copied = 0;
 		fb_id = (uint32_t __user *)(unsigned long)card_res.fb_id_ptr;
+
 		list_for_each(lh, &fpriv->fbs) {
 			fb = list_entry(lh, struct drm_framebuffer, &fpriv.fbs);
 			if (put_user(fb->base.id, fb_id + copied)) {
@@ -1177,6 +1173,7 @@ int drm_mode_getresources(DRM_IOCTL_ARGS)
 			}
 			copied++;
 		}
+
 	}
 	card_res.count_fbs = fb_count;
 
@@ -1790,7 +1787,7 @@ int drm_mode_addfb(DRM_IOCTL_ARGS)
 	}*/
 
 	r.fb_id = fb->base.id;
-	list_add(&fb->filp_head, &fpriv->fbs, (caddr_t)&fb);
+	list_add(&fb->filp_head, &fpriv->fbs);
 	DRM_DEBUG_KMS("[FB:%d]\n", fb->base.id);
 
 out:
@@ -2044,7 +2041,7 @@ static int drm_mode_attachmode(struct drm_device *dev,
 {
 	int ret = 0;
 
-	list_add_tail(&mode->head, &connector->user_modes, (caddr_t)&mode);
+	list_add_tail(&mode->head, &connector->user_modes);
 	return ret;
 }
 
@@ -2231,7 +2228,7 @@ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
 	if (name)
 		strncpy(property->name, name, DRM_PROP_NAME_LEN);
 
-	list_add_tail(&property->head, &dev->mode_config.property_list, (caddr_t)&property);
+	list_add_tail(&property->head, &dev->mode_config.property_list);
 	return property;
 fail:
 	kmem_free(property, sizeof (*property));
@@ -2267,7 +2264,7 @@ int drm_property_add_enum(struct drm_property *property, int index,
 	prop_enum->value = value;
 
 	property->values[index] = value;
-	list_add_tail(&prop_enum->head, &property->enum_blob_list, (caddr_t)&prop_enum);
+	list_add_tail(&prop_enum->head, &property->enum_blob_list);
 	return 0;
 }
 
@@ -2472,7 +2469,7 @@ static struct drm_property_blob *drm_property_create_blob(struct drm_device *dev
 
 	drm_mode_object_get(dev, &blob->base, DRM_MODE_OBJECT_BLOB);
 
-	list_add_tail(&blob->head, &dev->mode_config.property_blob_list, (caddr_t)&blob);
+	list_add_tail(&blob->head, &dev->mode_config.property_blob_list);
 	return blob;
 }
 

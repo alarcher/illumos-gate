@@ -48,52 +48,75 @@ struct list_head {
 /* Cheat, assume the list_head is at the start of the struct */
 #define	list_entry(entry, type, member)	(type *)(uintptr_t)(entry->contain_ptr)
 
-#define	INIT_LIST_HEAD(head) { \
-	(head)->next = head;   \
-	(head)->prev = head;   \
-	(head)->contain_ptr = (caddr_t)head;	\
+#define INIT_LIST_HEAD(head) {               \
+	(head)->next = head;                 \
+	(head)->prev = head;                 \
+	(head)->contain_ptr = (caddr_t)head; \
 }
 
-#define	list_add(entry, head, con_ptr) {	\
-	(head)->next->prev = entry;	\
-	(entry)->next = (head)->next;	\
-	(entry)->prev = head;	\
-	(head)->next = entry;	\
-	(entry)->contain_ptr = con_ptr;	\
+#define list_add(new, head) {       \
+	(head)->next->prev = new;   \
+	(new)->next = (head)->next; \
+	(new)->prev = head;         \
+	(head)->next = new;         \
 }
 
-#define	list_add_tail(entry, head, con_ptr) {  \
+#define list_add_tail(entry, head) {  \
 	(entry)->prev = (head)->prev; \
 	(entry)->next = head;         \
 	(head)->prev->next = entry;   \
 	(head)->prev = entry;         \
-	(entry)->contain_ptr = con_ptr;	\
 }
 
-#define	list_del(entry) {                         \
-	(entry)->next->prev = (entry)->prev;      \
-	(entry)->prev->next = (entry)->next;      \
-	(entry)->contain_ptr = NULL;	\
+#define list_del(entry) {                    \
+	(entry)->next->prev = (entry)->prev; \
+	(entry)->prev->next = (entry)->next; \
+	(entry)->contain_ptr = NULL;	     \
 }
 
-#define	list_for_each(entry, head)				\
-    for (entry = (head)->next; entry != head; entry = (entry)->next)
+#define list_for_each(entry, head) \
+	for (entry = (head)->next; \
+		entry != head;     \
+		entry = (entry)->next)
 
-#define	list_for_each_safe(entry, temp, head)			\
-    for (entry = (head)->next, temp = (entry)->next;		\
-	entry != head; 						\
-	entry = temp, temp = temp->next)
+#define list_for_each_entry(pos, head, member, type)       \
+	for (pos = list_entry((head)->next, type, member); \
+		&pos->member != (head);                    \
+		pos = list_entry(pos->member.next, type, member))
 
-#define	list_del_init(entry) {				\
-	list_del(entry);				\
-	INIT_LIST_HEAD(entry);		\
+#define list_for_each_safe(entry, temp, head)            \
+	for (entry = (head)->next, temp = (entry)->next; \
+		entry != head;                           \
+		entry = temp, temp = temp->next)
+
+#define list_for_each_entry_safe(pos, n, head, member, type)    \
+	for (pos = list_entry((head)->next, type, member),      \
+		n = list_entry(pos->member.next, type, member); \
+		&pos->member != (head);                         \
+		pos = n, n = list_entry(n->member.next, type, member))
+
+#define	list_del_init(entry) { \
+	list_del(entry);       \
+	INIT_LIST_HEAD(entry); \
 }
 
-#define	list_move_tail(entry, head, con_ptr) {				\
-	list_del(entry);					\
-	list_add_tail(entry, head, con_ptr);		\
+#define list_move(list, head) { \
+	list_del(list);         \
+	list_add(list, head);   \
 }
 
-#define	list_empty(head)	((head)->next == head)
+#define list_replace(old, new) {   \
+	(new)->next = (old)->next; \
+	(new)->next->prev = new;   \
+	(new)->prev = (old)->prev; \
+	(new)->prev->next = new;   \
+}
+
+#define list_move_tail(list, head) { \
+	list_del(list);              \
+	list_add_tail(list, head);   \
+}
+
+#define	list_empty(head) ((head)->next == head)
 
 #endif /* _DRM_LINUX_LIST_H_ */

@@ -582,12 +582,14 @@ drm_sun_devmap(dev_t dev, devmap_cookie_t dhp, offset_t offset,
 		}
 
 		spin_lock(&dp->struct_mutex);
+#if 0
 		idr_list_for_each(entry, &(mp->fpriv->object_idr)) {
 			if ((uintptr_t)entry->obj == (u_offset_t)offset) {
 				map = entry->obj->map;
 				goto goon;
 			}
 		}
+#endif
 goon:
 		spin_unlock(&dp->struct_mutex);
 	}

@@ -62,6 +62,10 @@
 #include "drm.h"
 #include "queue.h"
 #include "drm_linux_list.h"
+#include "drm_mm.h"
+
+#define unlikely(a) a
+#define likely(a) a
 
 #ifndef __inline__
 #define	__inline__	inline
@@ -607,25 +611,6 @@ typedef struct drm_sg_mem {
 	drm_dma_handle_t	*dmah_sg;
 	drm_dma_handle_t	*dmah_gart; /* Handle to PCI memory */
 } drm_sg_mem_t;
-
-/*
- * Generic memory manager structs
- */
-
-struct drm_mm_node {
-	struct list_head fl_entry;
-	struct list_head ml_entry;
-	int free;
-	unsigned long start;
-	unsigned long size;
-	struct drm_mm *mm;
-	void *private;
-};
-
-struct drm_mm {
-	struct list_head fl_entry;
-	struct list_head ml_entry;
-};
 
 typedef TAILQ_HEAD(drm_map_list, drm_local_map) drm_map_list_t;
 

@@ -96,7 +96,7 @@ gem_idr_list_get_new_above(struct idr_list	*head,
 	int key;
 	entry = kmem_zalloc(sizeof (*entry), KM_SLEEP);
 	key = obj->name % DRM_GEM_OBJIDR_HASHNODE;
-	list_add(entry, &head->next[key], NULL);
+	list_add(entry, &head->next[key]);
 	entry->obj = obj;
 	entry->handle = obj->name;
 	*handlep = obj->name;
@@ -115,6 +115,7 @@ gem_idr_list_find(struct idr_list  *head,
 		if (entry->handle == name)
 			return (entry->obj);
 	}
+
 	return (NULL);
 }
 
@@ -630,8 +631,10 @@ drm_gem_release(struct drm_device *dev, struct drm_file *file_private)
 	struct idr_list  *entry;
 	spin_lock(&dev->struct_mutex);
 
+#if 0
 	idr_list_for_each(entry, &file_private->object_idr)
 	    drm_gem_object_release_handle(entry->obj);
+#endif
 
 	gem_idr_list_free(&file_private->object_idr);
 	spin_unlock(&dev->struct_mutex);

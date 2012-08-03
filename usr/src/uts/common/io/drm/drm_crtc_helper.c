@@ -181,6 +181,7 @@ boolean_t drm_helper_encoder_in_use(struct drm_encoder *encoder)
 	struct drm_connector *connector;
 	struct drm_device *dev = encoder->dev;
 	struct list_head *list;
+
 	list_for_each(list, &dev->mode_config.connector_list) {
 		connector = list_entry(list, struct drm_connector, &dev->mode_config.connector_list);
 		if (connector->encoder == encoder)
@@ -563,6 +564,7 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
 	 * restored, not the drivers personal bookkeeping.
 	 */
 	count = 0;
+
 	list_for_each(list, &dev->mode_config.crtc_list) {
 		crtc = list_entry(list, struct drm_crtc, &dev->mode_config.crtc_list);
 		save_crtcs[count++] = *crtc;
@@ -605,6 +607,7 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
 
 	/* a) traverse passed in connector list and get encoders for them */
 	count = 0;
+
 	list_for_each(list, &dev->mode_config.connector_list) {
 		connector = list_entry(list, struct drm_connector, &dev->mode_config.connector_list);
 		struct drm_connector_helper_funcs *connector_funcs =
@@ -640,6 +643,7 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
 	}
 
 	count = 0;
+
 	list_for_each(list, &dev->mode_config.connector_list) {
 		connector = list_entry(list, struct drm_connector, &dev->mode_config.connector_list);
 		if (!connector->encoder)
@@ -728,18 +732,21 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
 fail:
 	/* Restore all previous data. */
 	count = 0;
+
 	list_for_each(list, &dev->mode_config.crtc_list) {
 		crtc = list_entry(list, struct drm_crtc, &dev->mode_config.crtc_list);
 		*crtc = save_crtcs[count++];
 	}
 
 	count = 0;
+
 	list_for_each(list, &dev->mode_config.encoder_list) {
 		encoder = list_entry(list, struct drm_encoder, &dev->mode_config.encoder_list);
 		*encoder = save_encoders[count++];
 	}
 
 	count = 0;
+
 	list_for_each(list, &dev->mode_config.connector_list) {
 		connector = list_entry(list, struct drm_connector, &dev->mode_config.connector_list);
 		*connector = save_connectors[count++];
@@ -764,6 +771,7 @@ static int drm_helper_choose_encoder_dpms(struct drm_encoder *encoder)
 			if (connector->dpms < dpms)
 				dpms = connector->dpms;
 	}
+
 	return dpms;
 }
 
@@ -780,6 +788,7 @@ static int drm_helper_choose_crtc_dpms(struct drm_crtc *crtc)
 			if (connector->dpms < dpms)
 				dpms = connector->dpms;
 	}
+
 	return dpms;
 }
 
@@ -893,6 +902,7 @@ int drm_helper_resume_force_mode(struct drm_device *dev)
 						     drm_helper_choose_crtc_dpms(crtc));
 		}
 	}
+
 	/* disable the unused connectors while restoring the modesetting */
 	drm_helper_disable_unused_functions(dev);
 	return 0;

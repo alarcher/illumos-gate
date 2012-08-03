@@ -533,14 +533,12 @@ void drm_mode_set_name(struct drm_display_mode *mode)
  */
 void drm_mode_list_concat(struct list_head *head, struct list_head *new)
 {
-#if 0
 
 	struct list_head *entry, *tmp;
 
 	list_for_each_safe(entry, tmp, head) {
 		list_move_tail(entry, new);
 	}
-#endif
 }
 
 /**
