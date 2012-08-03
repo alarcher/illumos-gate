@@ -36,6 +36,7 @@
 #include "drm_modes.h"
 
 #define	ARRAY_SIZE(x) (sizeof (x) / sizeof (x[0]))
+#define abs(x) ((x) >= 0 ? (x) : -(x))
 
 #define version_greater(edid, maj, min) \
 	(((edid)->version > (maj)) || \
@@ -458,7 +459,6 @@ static u32 edid_get_quirks(struct edid *edid)
 static void edid_fixup_preferred(struct drm_connector *connector,
 				 u32 quirks)
 {
-#if 0
 	struct drm_display_mode *t, *cur_mode, *preferred_mode;
 	int target_refresh = 0;
 
@@ -473,7 +473,13 @@ static void edid_fixup_preferred(struct drm_connector *connector,
 	preferred_mode = list_first_entry(&connector->probed_modes,
 					  struct drm_display_mode, head);
 
-	list_for_each_entry_safe(cur_mode, t, &connector->probed_modes, head) {
+	list_for_each_entry_safe(
+			cur_mode,
+			t,
+			&connector->probed_modes,
+			head,
+			struct drm_display_mode)
+	{
 		cur_mode->type &= ~DRM_MODE_TYPE_PREFERRED;
 
 		if (cur_mode == preferred_mode)
@@ -492,7 +498,6 @@ static void edid_fixup_preferred(struct drm_connector *connector,
 	}
 
 	preferred_mode->type |= DRM_MODE_TYPE_PREFERRED;
-#endif
 }
 
 struct drm_display_mode *drm_mode_find_dmt(struct drm_device *dev,
@@ -694,7 +699,6 @@ static struct drm_display_mode *
 drm_mode_std(struct drm_connector *connector, struct edid *edid,
 	     struct std_timing *t, int revision)
 {
-#if 0
 	struct drm_device *dev = connector->dev;
 	struct drm_display_mode *m, *mode = NULL;
 	int hsize, vsize;
@@ -739,7 +743,11 @@ drm_mode_std(struct drm_connector *connector, struct edid *edid,
 	 * instead.  This way we don't have to guess at interlace or
 	 * reduced blanking.
 	 */
-	list_for_each_entry(m, &connector->probed_modes, head)
+	list_for_each_entry(
+			m,
+			&connector->probed_modes,
+			head,
+			struct drm_display_mode)
 		if (m->hdisplay == hsize && m->vdisplay == vsize &&
 		    drm_mode_vrefresh(m) == vrefresh_rate)
 			return NULL;
@@ -773,7 +781,7 @@ drm_mode_std(struct drm_connector *connector, struct edid *edid,
 		 */
 		mode = drm_gtf_mode(dev, hsize, vsize, vrefresh_rate, 0, 0);
 		if (drm_mode_hsync(mode) > drm_gtf2_hbreak(edid)) {
-			kfree(mode);
+			kmem_free(mode, sizeof (*mode));
 			mode = drm_gtf_mode_complex(dev, hsize, vsize,
 						    vrefresh_rate, 0, 0,
 						    drm_gtf2_m(edid),
@@ -788,9 +796,6 @@ drm_mode_std(struct drm_connector *connector, struct edid *edid,
 		break;
 	}
 	return mode;
-#else
-	return NULL;
-#endif
 }
 
 /*

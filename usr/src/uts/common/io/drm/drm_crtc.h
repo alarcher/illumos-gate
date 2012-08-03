@@ -677,4 +677,16 @@ extern int drm_mode_create_dumb_ioctl(DRM_IOCTL_ARGS);
 extern int drm_mode_mmap_dumb_ioctl(DRM_IOCTL_ARGS);
 extern int drm_mode_destroy_dumb_ioctl(DRM_IOCTL_ARGS);
 
+extern struct drm_display_mode *drm_cvt_mode(struct drm_device *dev,
+		int hdisplay, int vdisplay, int vrefresh,
+		boolean_t reduced, boolean_t interlaced, boolean_t margins);
+
+extern struct drm_display_mode *drm_gtf_mode(struct drm_device *dev,
+		int hdisplay, int vdisplay, int vrefresh,
+		boolean_t interlaced, int margins);
+
+extern struct drm_display_mode *drm_gtf_mode_complex(struct drm_device *dev,
+		int hdisplay, int vdisplay, int vrefresh,
+		boolean_t interlaced, int margins, int GTF_M,
+		int GTF_2C, int GTF_K, int GTF_2J);
 #endif /* __DRM_CRTC_H__ */

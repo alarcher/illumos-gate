@@ -100,6 +100,9 @@ struct list_head {
 	INIT_LIST_HEAD(entry); \
 }
 
+#define list_first_entry(ptr, type, member)  \
+	list_entry((ptr)->next, type, member)
+
 #define list_move(list, head) { \
 	list_del(list);         \
 	list_add(list, head);   \
