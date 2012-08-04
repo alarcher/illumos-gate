@@ -676,6 +676,14 @@ extern int drm_mode_dirtyfb_ioctl(DRM_IOCTL_ARGS);
 extern int drm_mode_create_dumb_ioctl(DRM_IOCTL_ARGS);
 extern int drm_mode_mmap_dumb_ioctl(DRM_IOCTL_ARGS);
 extern int drm_mode_destroy_dumb_ioctl(DRM_IOCTL_ARGS);
+extern int drm_mode_vrefresh(const struct drm_display_mode *mode);
+extern void drm_mode_sort(struct list_head *mode_list);
+extern void drm_mode_connector_list_update(struct drm_connector *connector);
+extern void drm_mode_prune_invalid(struct drm_device *dev,
+		struct list_head *mode_list, boolean_t verbose);
+extern void drm_mode_validate_size(struct drm_device *dev,
+		struct list_head *mode_list,
+		int maxX, int maxY, int maxPitch);
 
 extern struct drm_display_mode *drm_cvt_mode(struct drm_device *dev,
 		int hdisplay, int vdisplay, int vrefresh,
@@ -689,4 +697,11 @@ extern struct drm_display_mode *drm_gtf_mode_complex(struct drm_device *dev,
 		int hdisplay, int vdisplay, int vrefresh,
 		boolean_t interlaced, int margins, int GTF_M,
 		int GTF_2C, int GTF_K, int GTF_2J);
+
+extern void drm_mode_probed_add(struct drm_connector *connector,
+		struct drm_display_mode *mode);
+
+extern int drm_add_modes_noedid(struct drm_connector *connector,
+		int hdisplay, int vdisplay);
+
 #endif /* __DRM_CRTC_H__ */

@@ -29,6 +29,9 @@
  *      Jesse Barnes <jesse.barnes@intel.com>
  */
 
+#include <sys/types.h>
+#include <sys/kmem.h>
+
 #include "drmP.h"
 #include "drm_crtc.h"
 #include "drm_crtc_helper.h"
@@ -120,15 +123,15 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 
 	count = (*connector_funcs->get_modes)(connector);
 	if (count == 0 && connector->status == connector_status_connected)
-		count = 0;//drm_add_modes_noedid(connector, 1024, 768);
+		count = drm_add_modes_noedid(connector, 1024, 768);
 	if (count == 0)
 		goto prune;
 
-	//drm_mode_connector_list_update(connector);
+	drm_mode_connector_list_update(connector);
 
 	if (maxX && maxY)
-		//	drm_mode_validate_size(dev, &connector->modes, maxX,
-		//		       maxY, 0);
+		drm_mode_validate_size(dev, &connector->modes, maxX,
+				maxY, 0);
 
 	if (connector->interlace_allowed)
 		mode_flags |= DRM_MODE_FLAG_INTERLACE;
@@ -144,18 +147,18 @@ int drm_helper_probe_single_connector_modes(struct drm_connector *connector,
 	}
 
 prune:
-	//	drm_mode_prune_invalid(dev, &connector->modes, B_TRUE);
+	drm_mode_prune_invalid(dev, &connector->modes, B_TRUE);
 
 	if (list_empty(&connector->modes))
 		return 0;
 
-	//drm_mode_sort(&connector->modes);
+	drm_mode_sort(&connector->modes);
 
 	//	DRM_DEBUG_KMS("[CONNECTOR:%d:%s] probed modes :\n", connector->base.id,
 	//		drm_get_connector_name(connector));
 	list_for_each_safe(list, t, &connector->modes) {
 		mode = list_entry(list, struct drm_display_mode, &connector->modes);
-		//mode->vrefresh = drm_mode_vrefresh(mode);
+		mode->vrefresh = drm_mode_vrefresh(mode);
 
 		drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
 		//drm_mode_debug_printmodeline(mode);
@@ -221,14 +224,12 @@ boolean_t drm_helper_crtc_in_use(struct drm_crtc *crtc)
 static void
 drm_encoder_disable(struct drm_encoder *encoder)
 {
-#if 0
 	struct drm_encoder_helper_funcs *encoder_funcs = encoder->helper_private;
 
 	if (encoder_funcs->disable)
 		(*encoder_funcs->disable)(encoder);
 	else
 		(*encoder_funcs->dpms)(encoder, DRM_MODE_DPMS_OFF);
-#endif
 }
 
 /**
@@ -465,7 +466,7 @@ boolean_t drm_crtc_helper_set_mode(struct drm_crtc *crtc,
 
 	/* FIXME: add subpixel order */
 done:
-	//drm_mode_destroy(dev, adjusted_mode);
+	drm_mode_destroy(dev, adjusted_mode);
 	if (!ret) {
 		crtc->hwmode = saved_hwmode;
 		crtc->mode = saved_mode;
@@ -544,8 +545,9 @@ int drm_crtc_helper_set_config(struct drm_mode_set *set)
 	if (!save_crtcs)
 		return -ENOMEM;
 
-	//	save_encoders = kmem_kzalloc(dev->mode_config.num_encoder *
-	//			   sizeof(struct drm_encoder), KM_SLEEP);
+	save_encoders = kmem_zalloc(dev->mode_config.num_encoder *
+			sizeof(struct drm_encoder), KM_SLEEP);
+
 	if (!save_encoders) {
 		kmem_free(save_crtcs, sizeof(*(save_crtcs)));
 		return -ENOMEM;
@@ -802,7 +804,6 @@ static int drm_helper_choose_crtc_dpms(struct drm_crtc *crtc)
  */
 void drm_helper_connector_dpms(struct drm_connector *connector, int mode)
 {
-#if 0
 	struct drm_encoder *encoder = connector->encoder;
 	struct drm_crtc *crtc = encoder ? encoder->crtc : NULL;
 	int old_dpms;
@@ -846,19 +847,17 @@ void drm_helper_connector_dpms(struct drm_connector *connector, int mode)
 	}
 
 	return;
-#endif
 }
 
 int drm_helper_mode_fill_fb_struct(struct drm_framebuffer *fb,
 				   struct drm_mode_fb_cmd *mode_cmd)
 {
-#if 0
 	fb->width = mode_cmd->width;
 	fb->height = mode_cmd->height;
 	fb->pitch = mode_cmd->pitch;
 	fb->bits_per_pixel = mode_cmd->bpp;
 	fb->depth = mode_cmd->depth;
-#endif
+
 	return 0;
 }
 
