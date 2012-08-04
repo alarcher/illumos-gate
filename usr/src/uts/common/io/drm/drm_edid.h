@@ -142,7 +142,7 @@ struct detailed_non_pixel {
 #define EDID_DETAIL_MONITOR_SERIAL 0xff
 
 struct detailed_timing {
-	//__le16 pixel_clock; /* need to multiply by 10 KHz */
+	u16 pixel_clock; /* need to multiply by 10 KHz */
 	union {
 		struct detailed_pixel_timing pixel_data;
 		struct detailed_non_pixel other_data;

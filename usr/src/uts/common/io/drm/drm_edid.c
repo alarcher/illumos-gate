@@ -27,9 +27,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-//#include <linux/kernel.h>
-//#include <linux/slab.h>
-//#include <linux/i2c.h>
 #include "drmP.h"
 #include "drm_edid.h"
 #include "drm_edid_modes.h"
@@ -1034,7 +1031,6 @@ static int
 drm_gtf_modes_for_range(struct drm_connector *connector, struct edid *edid,
 			struct detailed_timing *timing)
 {
-#if 0
 	int i, modes = 0;
 	struct drm_display_mode *newmode;
 	struct drm_device *dev = connector->dev;
@@ -1050,9 +1046,6 @@ drm_gtf_modes_for_range(struct drm_connector *connector, struct edid *edid,
 	}
 
 	return modes;
-#else
-	return 0;
-#endif
 }
 
 static void
@@ -1131,7 +1124,6 @@ do_established_modes(struct detailed_timing *timing, void *c)
 static int
 add_established_modes(struct drm_connector *connector, struct edid *edid)
 {
-#if 0
 	struct drm_device *dev = connector->dev;
 	unsigned long est_bits = edid->established_timings.t1 |
 		(edid->established_timings.t2 << 8) |
@@ -1157,15 +1149,11 @@ add_established_modes(struct drm_connector *connector, struct edid *edid)
 						do_established_modes, &closure);
 
 	return modes + closure.modes;
-#else
-	return 0;
-#endif
 }
 
 static void
 do_standard_modes(struct detailed_timing *timing, void *c)
 {
-#if 0
 	struct detailed_mode_closure *closure = c;
 	struct detailed_non_pixel *data = &timing->data.other_data;
 	struct drm_connector *connector = closure->connector;
@@ -1186,7 +1174,6 @@ do_standard_modes(struct detailed_timing *timing, void *c)
 			}
 		}
 	}
-#endif
 }
 
 /**
@@ -1199,7 +1186,6 @@ do_standard_modes(struct detailed_timing *timing, void *c)
 static int
 add_standard_modes(struct drm_connector *connector, struct edid *edid)
 {
-#if 0
 	int i, modes = 0;
 	struct detailed_mode_closure closure = {
 		connector, edid, 0, 0, 0
@@ -1224,15 +1210,11 @@ add_standard_modes(struct drm_connector *connector, struct edid *edid)
 	/* XXX should also look for standard codes in VTB blocks */
 
 	return modes + closure.modes;
-#else
-	return 0;
-#endif
 }
 
 static int drm_cvt_modes(struct drm_connector *connector,
 			 struct detailed_timing *timing)
 {
-#if 0
 	int i, j, modes = 0;
 	struct drm_display_mode *newmode;
 	struct drm_device *dev = connector->dev;
@@ -1241,7 +1223,7 @@ static int drm_cvt_modes(struct drm_connector *connector,
 	const u8 empty[3] = { 0, 0, 0 };
 
 	for (i = 0; i < 4; i++) {
-		int uninitialized_var(width), height;
+		int width = 0, height;
 		cvt = &(timing->data.other_data.data.cvt[i]);
 
 		if (!memcmp(cvt->code, empty, 3))
@@ -1277,9 +1259,6 @@ static int drm_cvt_modes(struct drm_connector *connector,
 	}
 
 	return modes;
-#else
-	return 0;
-#endif
 }
 
 static void
@@ -1310,7 +1289,6 @@ add_cvt_modes(struct drm_connector *connector, struct edid *edid)
 static void
 do_detailed_mode(struct detailed_timing *timing, void *c)
 {
-#if 0
 	struct detailed_mode_closure *closure = c;
 	struct drm_display_mode *newmode;
 
@@ -1328,7 +1306,6 @@ do_detailed_mode(struct detailed_timing *timing, void *c)
 		closure->modes++;
 		closure->preferred = 0;
 	}
-#endif
 }
 
 /*
@@ -1548,7 +1525,6 @@ static void drm_add_display_info(struct edid *edid,
  */
 int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
 {
-#if 0
 	int num_modes = 0;
 	u32 quirks;
 
@@ -1556,8 +1532,8 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
 		return 0;
 	}
 	if (!drm_edid_is_valid(edid)) {
-		dev_warn(connector->dev->dev, "%s: EDID invalid.\n",
-			 drm_get_connector_name(connector));
+		//dev_warn(connector->dev->dev, "%s: EDID invalid.\n",
+		//	 drm_get_connector_name(connector));
 		return 0;
 	}
 
@@ -1589,9 +1565,6 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
 	drm_add_display_info(edid, &connector->display_info);
 
 	return num_modes;
-#else
-	return 0;
-#endif
 }
 
 /**
@@ -1608,7 +1581,6 @@ int drm_add_edid_modes(struct drm_connector *connector, struct edid *edid)
 int drm_add_modes_noedid(struct drm_connector *connector,
 			int hdisplay, int vdisplay)
 {
-#if 0
 	int i, count, num_modes = 0;
 	struct drm_display_mode *mode;
 	struct drm_device *dev = connector->dev;
@@ -1640,7 +1612,4 @@ int drm_add_modes_noedid(struct drm_connector *connector,
 		}
 	}
 	return num_modes;
-#else
-	return 0;
-#endif
 }
