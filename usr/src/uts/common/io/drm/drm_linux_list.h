@@ -122,4 +122,7 @@ struct list_head {
 
 #define	list_empty(head) ((head)->next == head)
 
+void drm_list_sort(void *priv, struct list_head *head, int (*cmp)(void *priv,
+			struct list_head *a, struct list_head *b));
+
 #endif /* _DRM_LINUX_LIST_H_ */

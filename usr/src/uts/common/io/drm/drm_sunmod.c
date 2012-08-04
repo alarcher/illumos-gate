@@ -53,17 +53,17 @@ static int drm_sun_open(dev_t *, int, int, cred_t *);
 static int drm_sun_close(dev_t, int, int, cred_t *);
 static int drm_sun_ioctl(dev_t, int, intptr_t, int, cred_t *, int *);
 static int drm_sun_devmap(dev_t, devmap_cookie_t, offset_t, size_t,
-    size_t *, uint_t);
+		size_t *, uint_t);
 
 /*
  * devmap callbacks for AGP and PCI GART
  */
 static int drm_devmap_map(devmap_cookie_t, dev_t,
-    uint_t, offset_t, size_t, void **);
+		uint_t, offset_t, size_t, void **);
 static int drm_devmap_dup(devmap_cookie_t, void *,
-    devmap_cookie_t, void **);
+		devmap_cookie_t, void **);
 static void drm_devmap_unmap(devmap_cookie_t, void *,
-    offset_t, size_t, devmap_cookie_t, void **, devmap_cookie_t, void **);
+		offset_t, size_t, devmap_cookie_t, void **, devmap_cookie_t, void **);
 
 static drm_inst_list_t *drm_supp_alloc_drv_entry(dev_info_t *);
 static drm_inst_state_t *drm_sup_devt_to_state(dev_t);
@@ -420,7 +420,7 @@ drm_sun_close(dev_t dev, int flag, int otyp, cred_t *credp)
 /*ARGSUSED*/
 static int
 drm_sun_ioctl(dev_t dev, int cmd, intptr_t arg, int mode,
-    cred_t *credp, int *rvalp)
+		cred_t *credp, int *rvalp)
 {
 	extern drm_ioctl_desc_t drm_ioctls[];
 
@@ -510,7 +510,7 @@ drm_sun_ioctl(dev_t dev, int cmd, intptr_t arg, int mode,
 /*ARGSUSED*/
 static int
 drm_sun_devmap(dev_t dev, devmap_cookie_t dhp, offset_t offset,
-    size_t len, size_t *maplen, uint_t model)
+		size_t len, size_t *maplen, uint_t model)
 {
 	extern int drm_get_pci_index_reg(dev_info_t *, uint_t, uint_t, off_t *);
 
@@ -795,8 +795,8 @@ drm_devmap_map(devmap_cookie_t dhc, dev_t dev, uint_t flags,
 /*ARGSUSED*/
 static void
 drm_devmap_unmap(devmap_cookie_t dhc, void *pvtp, offset_t off, size_t len,
-    devmap_cookie_t new_dhp1, void **new_pvtp1, devmap_cookie_t new_dhp2,
-    void **new_pvtp2)
+		devmap_cookie_t new_dhp1, void **new_pvtp1,
+		devmap_cookie_t new_dhp2, void **new_pvtp2)
 {
 	devmap_handle_t		*dhp;
 	devmap_handle_t		*ndhp;
@@ -837,7 +837,7 @@ drm_devmap_unmap(devmap_cookie_t dhc, void *pvtp, offset_t off, size_t len,
 /*ARGSUSED*/
 static int
 drm_devmap_dup(devmap_cookie_t dhc, void *pvtp, devmap_cookie_t new_dhc,
-    void **new_pvtp)
+		void **new_pvtp)
 {
 	devmap_handle_t			*dhp;
 	drm_inst_state_t    *statep;
