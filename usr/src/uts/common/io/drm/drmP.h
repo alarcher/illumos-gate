@@ -1125,14 +1125,6 @@ int	drm_agp_bind(DRM_IOCTL_ARGS);
 int	drm_sg_alloc(DRM_IOCTL_ARGS);
 int	drm_sg_free(DRM_IOCTL_ARGS);
 
-/*	drm_mm.c	*/
-struct drm_mm_node *drm_mm_get_block(struct drm_mm_node *parent,
-				    unsigned long size, unsigned alignment);
-struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
-				    unsigned long size,
-				    unsigned alignment, int best_match);
-
-extern void drm_mm_clean_ml(const struct drm_mm *mm);
 extern int drm_debug_flag;
 
 /* We add function to support DRM_DEBUG,DRM_ERROR,DRM_INFO */
