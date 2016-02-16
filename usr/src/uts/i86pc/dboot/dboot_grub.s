@@ -32,6 +32,7 @@ int silence_lint_warnings = 0;
 #else /* __lint */
 
 #include <sys/multiboot.h>
+#include <sys/multiboot2.h>
 #include <sys/asm_linkage.h>
 #include <sys/segments.h>
 #include <sys/controlregs.h>
@@ -76,6 +77,96 @@ mb_header:
 	.long	0		/* height 0 == don't care */
 	.long	0		/* depth 0 == don't care */
 
+	.align	MULTIBOOT_HEADER_ALIGN
+mb2_header:
+	.long	MULTIBOOT2_HEADER_MAGIC
+	.long	MULTIBOOT_ARCHITECTURE_I386
+	.long	mb2_header_end - mb2_header
+	.long	-(MULTIBOOT2_HEADER_MAGIC + MULTIBOOT_ARCHITECTURE_I386 + (mb2_header_end - mb2_header))
+
+	/*
+	 * Multiboot 2 tags follow. Note, first tag is right after
+	 * header, rest must be aligned by MULTIBOOT_TAG_ALIGN.
+	 *
+	 * MB information request tag
+	 */
+information_request_tag_start:
+	.word	MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST
+	.word	0
+	.long	information_request_tag_end - information_request_tag_start
+	.long	MULTIBOOT_TAG_TYPE_CMDLINE
+	.long	MULTIBOOT_TAG_TYPE_MODULE
+	.long	MULTIBOOT_TAG_TYPE_BOOTDEV
+	.long	MULTIBOOT_TAG_TYPE_MMAP
+	.long	MULTIBOOT_TAG_TYPE_FRAMEBUFFER
+	.long	MULTIBOOT_TAG_TYPE_BASIC_MEMINFO
+information_request_tag_end:
+
+#if defined (_BOOT_TARGET_amd64)
+	.align	MULTIBOOT_TAG_ALIGN
+address_tag_start:
+	.word	MULTIBOOT_HEADER_TAG_ADDRESS
+	.word	0
+	.long	address_tag_end - address_tag_start
+	.long	mb2_header
+	.globl	mb2_load_addr
+mb2_load_addr:
+	.long	0		/* load addr */
+	.long	0		/* load_end_addr */
+	.long	0		/* bss_end_addr */
+address_tag_end:
+	/*
+	 * entry address tag
+	 */
+	.align	MULTIBOOT_TAG_ALIGN
+entry_address_tag_start:
+	.word	MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS
+	.word	0
+	.long	entry_address_tag_end - entry_address_tag_start
+	.long	0		/* entry addr */
+entry_address_tag_end:
+#endif
+	/*
+	 * MB console flags tag
+	 */
+	.align	MULTIBOOT_TAG_ALIGN
+console_tag_start:
+	.word	MULTIBOOT_HEADER_TAG_CONSOLE_FLAGS
+	.word	0
+	.long	console_tag_end - console_tag_start
+	.long	MULTIBOOT_CONSOLE_FLAGS_EGA_TEXT_SUPPORTED
+console_tag_end:
+
+	/*
+	 * MB header framebuffer tag
+	 */
+	.align	MULTIBOOT_TAG_ALIGN
+framebuffer_tag_start:
+	.word	MULTIBOOT_HEADER_TAG_FRAMEBUFFER
+	.word	0
+	.long	framebuffer_tag_end - framebuffer_tag_start
+	.long	0		/* width - no preference */
+	.long	0		/* height - no preference */
+	.long	0		/* depth - no preference */
+framebuffer_tag_end:
+
+	/*
+	 * tell bootloader to load modules page aligned.
+	 */
+	.align	MULTIBOOT_TAG_ALIGN
+	.word	MULTIBOOT_HEADER_TAG_MODULE_ALIGN
+	.word	0
+	.long	8
+
+	/*
+	 * termination tag
+	 */
+	.align	MULTIBOOT_TAG_ALIGN
+	.word	MULTIBOOT_HEADER_TAG_END
+	.word	0
+	.long	8
+mb2_header_end:
+
 	/*
 	 * At entry we are in protected mode, 32 bit execution, paging and
 	 * interrupts are disabled.
@@ -85,7 +176,8 @@ mb_header:
 	 * segment registers all have segments with base 0, limit == 0xffffffff
 	 */
 code_start:
-	movl	%ebx, mb_info
+	movl	%eax, mb_magic
+	movl	%ebx, mb_addr
 
 	movl	$stack_space, %esp	/* load my stack pointer */
 	addl	$STACK_SIZE, %esp

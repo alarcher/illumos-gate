@@ -25,8 +25,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 /*
  * Platform-Specific SMBIOS Subroutines
  *
@@ -66,19 +64,39 @@ smbios_open(const char *file, int version, int flags, int *errp)
 	smbios_hdl_t *shp = NULL;
 	smbios_entry_t *ep;
 	caddr_t stbuf, bios, p, q;
+	uint64_t startaddr, startoff = 0;
 	size_t bioslen;
 	int err;
 
 	if (file != NULL || (flags & ~SMB_O_MASK))
 		return (smb_open_error(shp, errp, ESMB_INVAL));
 
-	bioslen = SMB_RANGE_LIMIT - SMB_RANGE_START + 1;
-	bios = psm_map_phys(SMB_RANGE_START, bioslen, PSM_PROT_READ);
+	if ((startaddr = ddi_prop_get_int64(DDI_DEV_T_ANY, ddi_root_node(),
+	    DDI_PROP_DONTPASS, "smbios-address", 0)) == 0) {
+		startaddr = SMB_RANGE_START;
+		bioslen = SMB_RANGE_LIMIT - SMB_RANGE_START + 1;
+	} else {
+		/* we got smbios address from boot loader, map one page */
+		bioslen = MMU_PAGESIZE;
+		startoff = startaddr & MMU_PAGEOFFSET;
+		startaddr &= MMU_PAGEMASK;
+#if defined(__386)
+		/* sanity check for 32bit kernel */
+		if (startaddr > UINT32_MAX) {
+			startaddr = SMB_RANGE_START;
+			bioslen = SMB_RANGE_LIMIT - SMB_RANGE_START + 1;
+			startoff = 0;
+		}
+#endif
+	}
+
+	bios = psm_map_phys(startaddr, bioslen, PSM_PROT_READ);
 
 	if (bios == NULL)
 		return (smb_open_error(shp, errp, ESMB_MAPDEV));
 
-	for (p = bios, q = bios + bioslen; p < q; p += 16) {
+	for (p = bios + startoff, q = bios + bioslen - startoff; p < q;
+	    p += 16) {
 		if (strncmp(p, SMB_ENTRY_EANCHOR, SMB_ENTRY_EANCHORLEN) == 0)
 			break;
 	}
