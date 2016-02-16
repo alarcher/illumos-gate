@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -37,7 +35,9 @@
 #include <sys/elf_notes.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/sysmacros.h>
 #include "sys/multiboot.h"
+#include "sys/multiboot2.h"
 
 static char *pname;
 static char *fname;
@@ -46,7 +46,57 @@ static char *image;	/* pointer to the ELF file in memory */
 #define	ELFSEEK(offset) ((void *)(image + offset))
 
 /*
- * patch the load address / entry address
+ * Find MB2 header tags for entry and patch it.
+ * The first tag is right after header.
+ */
+static int
+patch64_mb2(multiboot2_header_t *mbh2, int file_offset,
+    Elf64_Addr ptload_start, Elf32_Off ptload_offset)
+{
+	multiboot_header_tag_t *tagp = mbh2->tags;
+	multiboot_header_tag_address_t *mbaddr = NULL;
+	multiboot_header_tag_entry_address_t *mbentry = NULL;
+
+	/*
+	 * loop while we get end TAG or we have both tags.
+	 */
+	while (tagp->type != MULTIBOOT_HEADER_TAG_END &&
+	    (mbaddr == NULL || mbentry == NULL)) {
+		switch (tagp->type) {
+		case MULTIBOOT_HEADER_TAG_ADDRESS:
+			mbaddr = (multiboot_header_tag_address_t *)tagp;
+			break;
+		case MULTIBOOT_HEADER_TAG_ENTRY_ADDRESS:
+			mbentry = (multiboot_header_tag_entry_address_t *)tagp;
+			break;
+		}
+		tagp = (multiboot_header_tag_t *)
+		    ((uint32_t *)tagp +
+		    P2ROUNDUP(tagp->size, MULTIBOOT_TAG_ALIGN) / 4);
+	}
+
+	if (mbaddr == NULL || mbentry == NULL) {
+		(void) fprintf(stderr, "Missing multiboot2 %s tag\n",
+		    (mbaddr == NULL)? "address" : "entry");
+		return (1);
+	}
+
+	/* patch it */
+	mbaddr->load_addr = ptload_start - ptload_offset;
+	mbaddr->header_addr = mbaddr->load_addr + file_offset;
+	mbentry->entry_addr = ptload_start;
+
+#ifdef VERBOSE
+	(void) printf("  ELF64 MB2 header patched\n");
+	(void) printf("\tload_addr now:   0x%x\n", mbaddr->load_addr);
+	(void) printf("\theader_addr now: 0x%x\n", mbaddr->header_addr);
+	(void) printf("\tentry_addr now:  0x%x\n", mbentry->entry_addr);
+#endif
+	return (0);
+}
+
+/*
+ * patch the load address / entry address for MB1 and MB2 if present.
  * Find the physical load address of the 1st PT_LOAD segment.
  * Find the amount that e_entry exceeds that amount.
  * Now go back and subtract the excess from the p_paddr of the LOAD segment.
@@ -56,8 +106,9 @@ patch64(Elf64_Ehdr *eh)
 {
 	Elf64_Phdr		*phdr;
 	caddr_t			phdrs = NULL;
-	int			ndx, mem;
+	int			ndx, mem, mem2;
 	multiboot_header_t	*mbh;
+	multiboot2_header_t	*mbh2;
 
 	/*
 	 * Verify some ELF basics - this must be an executable with program
@@ -100,6 +151,30 @@ patch64(Elf64_Ehdr *eh)
 	}
 
 	/*
+	 * Look for multiboot2 header.  It must be 64-bit aligned and
+	 * completely contained in the 1st 32K of the file.
+	 * note we dont require it to be present.
+	 */
+	ndx = 0;
+	for (mem2 = 0;
+	    mem2 < MULTIBOOT_SEARCH - sizeof (multiboot2_header_t);
+	    mem2 += MULTIBOOT_HEADER_ALIGN) {
+		mbh2 = ELFSEEK(mem2);
+		ndx = mbh2->header_length;
+		if (mbh2->magic == MULTIBOOT2_HEADER_MAGIC)
+			break;
+		ndx = 0;
+	}
+
+	if (ndx == 0 || mem2 + ndx > MULTIBOOT_SEARCH) {
+#ifdef VERBOSE
+		(void) fprintf(stderr, "%s: %s: Didn't find multiboot2 "
+		    "header\n", pname, fname);
+#endif
+		mbh2 = NULL;
+	}
+
+	/*
 	 * Find the 1:1 mapped PT_LOAD section
 	 */
 	for (ndx = 0; ndx < eh->e_phnum; ndx++) {
@@ -135,6 +210,16 @@ patch64(Elf64_Ehdr *eh)
 			return (1);
 		}
 
+		if (mbh2 != NULL && ((mem2 < phdr->p_offset) ||
+		    (mem2 >= (phdr->p_offset + phdr->p_filesz)))) {
+#ifdef VERBOSE
+			(void) fprintf(stderr, "%s: %s: multiboot2 header not"
+			    "in 1st PT_LOAD\n", pname, fname);
+#endif
+			mem2 = 0;
+			mbh2 = NULL;
+		}
+
 		/*
 		 * Patch the multiboot header fields to get entire file loaded.
 		 * Grub uses the MB header for 64 bit loading.
@@ -148,6 +233,9 @@ patch64(Elf64_Ehdr *eh)
 		(void) printf("\tentry_addr now:  0x%x\n", mbh->entry_addr);
 		(void) printf("\theader_addr now: 0x%x\n", mbh->header_addr);
 #endif
+		if (mbh2 != NULL)
+			return (patch64_mb2(mbh2, mem2, phdr->p_paddr,
+			    phdr->p_offset));
 		return (0);
 	}
 
@@ -185,10 +273,11 @@ main(int argc, char **argv)
 	}
 
 	/*
-	 * mmap just the 1st 8K -- since that's where the GRUB
-	 * multiboot header must be located.
+	 * mmap the 1st 32K -- MB1 header is within first 8k and MB2 header
+	 * is within 32k.
 	 */
-	image = mmap(NULL, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	image = mmap(NULL, MULTIBOOT_SEARCH, PROT_READ | PROT_WRITE,
+	    MAP_SHARED, fd, 0);
 	if (image == MAP_FAILED) {
 		(void) fprintf(stderr, "%s: mmap() of %s failed: %s\n",
 		    pname, fname, strerror(errno));

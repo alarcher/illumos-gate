@@ -523,7 +523,7 @@ console_value_t console_devices[] = {
 };
 
 void
-bcons_init(char *bootstr)
+bcons_init(struct xboot_info *xbi)
 {
 	console_value_t *consolep;
 	size_t len, cons_len;
@@ -533,11 +533,11 @@ bcons_init(char *bootstr)
 	extern int post_fastreboot;
 #endif
 
-	boot_line = bootstr;
+	boot_line = (char *)(uintptr_t)xbi->bi_cmdline;
 	console = CONS_INVALID;
 
 #if defined(__xpv)
-	bcons_init_xen(bootstr);
+	bcons_init_xen(boot_line);
 #endif /* __xpv */
 
 	cons_str = find_boot_line_prop("console");

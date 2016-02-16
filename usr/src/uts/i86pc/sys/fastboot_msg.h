@@ -47,6 +47,7 @@ fastboot_nosup_msg(FBNS_SUSPEND, " after suspend/resume")
 fastboot_nosup_msg(FBNS_FMAHWERR, " due to FMA recovery from hardware error")
 fastboot_nosup_msg(FBNS_HOTPLUG, " after DR operations")
 fastboot_nosup_msg(FBNS_BOOTMOD, " due to presence of boot-time modules")
+fastboot_nosup_msg(FBNS_MULTIBOOT2, " due to multiboot2 boot protocol")
 
 /*
  * Should ALWAYS be the last one.

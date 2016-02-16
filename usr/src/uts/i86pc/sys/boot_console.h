@@ -36,6 +36,8 @@
 extern "C" {
 #endif
 
+#include <sys/bootinfo.h>
+
 #define	CONS_INVALID		-1
 #define	CONS_SCREEN_TEXT	0
 #define	CONS_TTY		1
@@ -55,7 +57,7 @@ extern int kb_ischar(void);
 
 extern int boot_console_type(int *);
 
-extern void bcons_init(char *);
+extern void bcons_init(struct xboot_info *);
 extern void bcons_putchar(int);
 extern int bcons_getchar(void);
 extern int bcons_ischar(void);

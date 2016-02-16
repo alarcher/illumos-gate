@@ -1085,6 +1085,7 @@ usr/src/uts/common/sys/scsi/adapters/mpt_sas/mpi/mpi2_sas.h
 usr/src/uts/common/sys/scsi/adapters/mpt_sas/mpi/mpi2_targ.h
 usr/src/uts/common/sys/scsi/adapters/mpt_sas/mpi/mpi2_tool.h
 usr/src/uts/common/sys/scsi/adapters/mpt_sas/mpi/mpi2_type.h
+usr/src/uts/i86pc/sys/fastboot_msg.h
 usr/src/uts/intel/io/acpica/debugger/dbcmds.c
 usr/src/uts/intel/io/acpica/debugger/dbdisply.c
 usr/src/uts/intel/io/acpica/debugger/dbexec.c
