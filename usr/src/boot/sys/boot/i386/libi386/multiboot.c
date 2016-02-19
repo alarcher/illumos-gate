@@ -57,7 +57,6 @@
 
 #define MULTIBOOT_SUPPORTED_FLAGS \
 	(MULTIBOOT_AOUT_KLUDGE|MULTIBOOT_PAGE_ALIGN|MULTIBOOT_MEMORY_INFO)
-#define NUM_MODULES		2
 #define METADATA_FIXED_SIZE	(PAGE_SIZE*4)
 #define METADATA_MODULE_SIZE	PAGE_SIZE
 
@@ -66,12 +65,15 @@
 
 /* MB data heap pointer */
 static vm_offset_t last_addr;
+extern char bootprog_name[];
 
 extern int elf32_loadfile_raw(char *filename, u_int64_t dest,
     struct preloaded_file **result, int multiboot);
 extern int elf64_load_modmetadata(struct preloaded_file *fp, u_int64_t dest);
 extern int elf64_obj_loadfile(char *filename, u_int64_t dest,
     struct preloaded_file **result);
+extern char *mb_kernel_cmdline(struct preloaded_file *, struct devdesc *);
+extern void multiboot_tramp();
 
 static int multiboot_loadfile(char *, u_int64_t, struct preloaded_file **);
 static int multiboot_exec(struct preloaded_file *);
@@ -82,10 +84,6 @@ static int multiboot_obj_exec(struct preloaded_file *fp);
 struct file_format multiboot = { multiboot_loadfile, multiboot_exec };
 struct file_format multiboot_obj =
     { multiboot_obj_loadfile, multiboot_obj_exec };
-
-extern void multiboot_tramp();
-
-static const char mbl_name[] = "illumos Loader";
 
 static int
 num_modules(struct preloaded_file *kfp)
@@ -123,7 +121,6 @@ multiboot_loadfile(char *filename, u_int64_t dest,
 	ssize_t			 search_size;
 	int			 fd;
 	struct multiboot_header	*header;
-	char			*cmdline;
 	struct preloaded_file	*fp;
 
 	if (filename == NULL)
@@ -252,155 +249,6 @@ mb_malloc(size_t n)
 	return (ptr);
 }
 
-/*
- * Since for now we have no way to pass the environment to the kernel other than
- * through arguments, we need to take care of console setup.
- *
- * If the console is in mirror mode, set the kernel console from $os_console.
- * If it's unset, use first item from $console.
- * If $console is "ttyX", also pass $ttyX-mode, since it may have been set by
- * the user.
- *
- * In case of memory allocation errors, just return original command line,
- * so we have chance of booting.
- *
- * On success, cl will be freed and a new, allocated command line string is
- * returned.
- */
-static char *
-update_cmdline(char *cl)
-{
-	char *os_console = getenv("os_console");
-	char *ttymode = NULL;
-	char mode[10];
-	char *tmp;
-	int len;
-
-	if (os_console == NULL) {
-		tmp = strdup(getenv("console"));
-		os_console = strsep(&tmp, ", ");
-	} else
-		os_console = strdup(os_console);
-
-	if (os_console == NULL)
-		return (cl);
-
-	if (strncmp(os_console, "tty", 3) == 0) {
-		snprintf(mode, sizeof (mode), "%s-mode", os_console);
-		ttymode = getenv(mode);	/* never NULL */
-	}
-
-	if (strstr(cl, "-B") != NULL) {
-		len = strlen(cl) + 1;
-		/*
-		 * if console is not present, add it
-		 * if console is ttyX, add ttymode
-		 */
-		tmp = strstr(cl, "console");
-		if (tmp == NULL) {
-			len += 12;	/* " -B console=" */
-			len += strlen(os_console);
-			if (ttymode != NULL) {
-				len += 13;	/* ",ttyX-mode=\"\"" */
-				len += strlen(ttymode);
-			}
-			tmp = malloc(len);
-			if (tmp == NULL) {
-				free(os_console);
-				return (cl);
-			}
-			if (ttymode != NULL)
-				sprintf(tmp,
-				    "%s -B console=%s,%s-mode=\"%s\"",
-				    cl, os_console, os_console, ttymode);
-			else
-				sprintf(tmp, "%s -B console=%s",
-				    cl, os_console);
-		} else {
-			/* console is set, do we need tty mode? */
-			tmp += 8;
-			if (strstr(tmp, "tty") == tmp) {
-				strncpy(mode, tmp, 4);
-				mode[4] = '\0';
-				strcat(mode, "-mode");
-				ttymode = getenv(mode);	/* never NULL */
-			} else { /* nope */
-				free(os_console);
-				return (cl);
-			}
-			len = strlen(cl) + 1;
-			len += 13;	/* ",ttyX-mode=\"\"" */
-			len += strlen(ttymode);
-			tmp = malloc(len);
-			if (tmp == NULL) {
-				free(os_console);
-				return (cl);
-			}
-			sprintf(tmp, "%s,%s=\"%s\"", cl, mode, ttymode);
-		}
-	} else {
-		/*
-		 * no -B, so we need to add " -B console=%s[,ttyX-mode=\"%s\"]"
-		 */
-		len = strlen(cl) + 1;
-		len += 12;		/* " -B console=" */
-		len += strlen(os_console);
-		if (ttymode != NULL) {
-			len += 13;	/* ",ttyX-mode=\"\"" */
-			len += strlen(ttymode);
-		}
-		tmp = malloc(len);
-		if (tmp == NULL) {
-			free(os_console);
-			return (cl);
-		}
-		if (ttymode != NULL)
-			sprintf(tmp, "%s -B console=%s,%s-mode=\"%s\"", cl,
-			    os_console, os_console, ttymode);
-		else
-			sprintf(tmp, "%s -B console=%s", cl, os_console);
-	}
-	free(os_console);
-	free(cl);
-	return (tmp);
-}
-
-static char *
-kernel_cmdline(struct preloaded_file *fp, struct i386_devdesc *rootdev)
-{
-	char *cmdline = NULL;
-	size_t len;
-
-	if (fp->f_args == NULL)
-		fp->f_args = getenv("boot-args");
-
-	len = strlen(fp->f_name) + 1;
-
-	if (fp->f_args != NULL)
-		len += strlen(fp->f_args) + 1;
-
-	if (rootdev->d_type == DEVT_ZFS)
-		len += 3 + strlen(zfs_bootfs(rootdev)) + 1;
-
-	cmdline = malloc(len);
-	if (cmdline == NULL)
-		return (cmdline);
-
-	if (rootdev->d_type == DEVT_ZFS) {
-		if (fp->f_args != NULL)
-			snprintf(cmdline, len, "%s %s -B %s", fp->f_name,
-			    fp->f_args, zfs_bootfs(rootdev));
-		else
-			snprintf(cmdline, len, "%s -B %s", fp->f_name,
-			    zfs_bootfs(rootdev));
-	} else if (fp->f_args != NULL)
-		snprintf(cmdline, len, "%s %s", fp->f_name, fp->f_args);
-	else
-		snprintf(cmdline, len, "%s", fp->f_name);
-
-	return (update_cmdline(cmdline));
-}
-
 static int
 multiboot_exec(struct preloaded_file *fp)
 {
@@ -408,12 +256,11 @@ multiboot_exec(struct preloaded_file *fp)
 	vm_offset_t			 module_start, metadata_size;
 	vm_offset_t			 modulep, kernend, entry;
 	struct file_metadata		*md;
-	Elf_Ehdr			*ehdr;
 	struct multiboot_info		*mb_info = NULL;
 	struct multiboot_mod_list	*mb_mod = NULL;
 	multiboot_memory_map_t		*mmap;
 	struct bios_smap		*smap;
-	struct i386_devdesc		*rootdev;
+	struct devdesc			*rootdev;
 	extern BOOTPLAYER		bootplayer; 	/* dhcp info */
 	char				*cmdline = NULL;
 	size_t				 len;
@@ -435,9 +282,10 @@ multiboot_exec(struct preloaded_file *fp)
 	mb_info->flags = MULTIBOOT_INFO_MEMORY|MULTIBOOT_INFO_BOOT_LOADER_NAME;
 	mb_info->mem_lower = bios_basemem / 1024;
 	mb_info->mem_upper = bios_extmem / 1024;
-	mb_info->boot_loader_name = mb_malloc(strlen(mbl_name) + 1);
+	mb_info->boot_loader_name = mb_malloc(strlen(bootprog_name + 1));
 
-	i386_copyin(mbl_name, mb_info->boot_loader_name, strlen(mbl_name)+1);
+	i386_copyin(bootprog_name, mb_info->boot_loader_name,
+	    strlen(bootprog_name)+1);
 
 	i386_getdev((void **)(&rootdev), NULL, NULL);
 	if (rootdev == NULL) {
@@ -489,7 +337,7 @@ multiboot_exec(struct preloaded_file *fp)
 		mb_mod[num].mod_end = mfp->f_addr + mfp->f_size;
 
 		if (strcmp(mfp->f_type, "kernel") == 0) {
-			cmdline = kernel_cmdline(mfp, rootdev);
+			cmdline = mb_kernel_cmdline(mfp, rootdev);
 			if (cmdline == NULL) {
 				error = ENOMEM;
 				goto error;
@@ -591,7 +439,7 @@ multiboot_exec(struct preloaded_file *fp)
 			cmdline = strdup(fp->f_name);
 		}
 	} else {
-		cmdline = kernel_cmdline(fp, rootdev);
+		cmdline = mb_kernel_cmdline(fp, rootdev);
 	}
 
 	if (cmdline == NULL) {
@@ -606,8 +454,8 @@ multiboot_exec(struct preloaded_file *fp)
 	cmdline = NULL;
 
 	dev_cleanup();
-	__exec((void *)VTOP(multiboot_tramp), (void *)entry,
-	    (void *)VTOP(mb_info));
+	__exec((void *)VTOP(multiboot_tramp), MULTIBOOT_BOOTLOADER_MAGIC,
+	    (void *)entry, (void *)VTOP(mb_info));
 
 	panic("exec returned");
 

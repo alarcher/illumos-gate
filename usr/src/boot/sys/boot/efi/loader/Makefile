@@ -26,9 +26,10 @@ MACHINE=	$(MACH64)
 
 # architecture-specific loader code
 SRCS=	autoload.c bootinfo.c conf.c copy.c devicename.c main.c self_reloc.c \
-	smbios.c biosacpi.c vers.c
+	smbios.c vers.c memmap.c multiboot2.c
+
 OBJS= autoload.o bootinfo.o conf.o copy.o devicename.o main.o self_reloc.o \
-	smbios.o biosacpi.o vers.o
+	smbios.o vers.o memmap.o multiboot2.o
 
 ASFLAGS=-m64 -fPIC
 CFLAGS=	-O2
@@ -48,6 +49,7 @@ CPPFLAGS +=	-I./../../..
 CPPFLAGS +=	-I./../../i386/libi386
 CPPFLAGS +=	-I./../../zfs
 CPPFLAGS +=	-I./../../../cddl/boot/zfs
+CPPFLAGS +=	-I../../../contrib/dev/acpica/include
 CPPFLAGS +=	-DEFI_ZFS_BOOT
 CPPFLAGS +=	-DNO_PCI -DEFI -DTERM_EMU
 

@@ -65,6 +65,7 @@ typedef struct boot_module_t
 
 	/* init is the optional initialiser for the module. */
 	void (*init)(void);
+	void (*fini)(void);
 
 	/*
 	 * probe checks to see if the module can handle dev.
@@ -108,6 +109,7 @@ extern void add_device(dev_info_t **devinfop, dev_info_t *devinfo);
 
 extern EFI_SYSTEM_TABLE *systab;
 extern EFI_BOOT_SERVICES *bs;
+extern EFI_HANDLE *image;
 
 extern int devpath_strlcat(char *buf, size_t size, EFI_DEVICE_PATH *devpath);
 extern char *devpath_str(EFI_DEVICE_PATH *devpath);

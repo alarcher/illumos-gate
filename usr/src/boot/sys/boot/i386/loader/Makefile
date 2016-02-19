@@ -16,8 +16,9 @@
 
 include $(SRC)/Makefile.master
 
-CFLAGS= -O2
-CPPFLAGS= -DSTAND -nostdinc -I../../../../include -I../../..
+CFLAGS=		-O2
+CPPFLAGS=	-DSTAND -nostdinc -I../../../../include -I../../..
+CPPFLAGS +=	-I../../../contrib/dev/acpica/include
 LOADER=		zfsloader
 NEWVERSWHAT=	"ZFS enabled bootstrap loader" x86
 MAN=
@@ -62,7 +63,7 @@ LIBFICL=	../../ficl/i386/libficl.a
 # Always add MI sources
 SRCS +=	boot.c commands.c console.c devopen.c interp.c
 SRCS +=	interp_backslash.c interp_parse.c ls.c misc.c
-SRCS +=	module.c panic.c linenoise.c
+SRCS +=	module.c panic.c linenoise.c multiboot2.c
 
 SRCS +=	load_elf32.c load_elf32_obj.c reloc_elf32.c
 SRCS +=	load_elf64.c load_elf64_obj.c reloc_elf64.c
@@ -134,7 +135,6 @@ DPADD=	${LIBFICL} ${LIBZFSBOOT} ${LIBI386} ${LIBSTAND}
 LDADD=	${LIBFICL} ${LIBZFSBOOT} ${LIBI386} ${LIBSTAND}
 
 CLEANFILES +=	machine x86
-CFLAGS +=	-DLOADER_PREFER_AMD64
 
 machine:
 	$(RM) machine

@@ -25,7 +25,7 @@ all:	lib$(LIB).a
 install:
 
 SRCS=	delay.c efi_console.c efinet.c efipart.c errno.c handles.c \
-	libefi.c time.c
+	libefi.c time.c acpi.c
 
 OBJS=	$(SRCS:%.c=%.o)
 
@@ -43,6 +43,7 @@ CFLAGS += -nostdinc -I. -I../../../../include -I../../..
 CFLAGS += -I../include
 CFLAGS += -I../include/${MACH64}
 CFLAGS += -I../../../../lib/libstand
+CFLAGS += -I./../../../contrib/dev/acpica/include
 
 # Pick up the bootstrap header for some interface items
 CFLAGS += -I../../common

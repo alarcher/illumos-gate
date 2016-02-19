@@ -42,6 +42,8 @@
 
 static dev_info_t *devinfo;
 static dev_info_t *devices;
+static EFI_GUID BlockIoProtocolGUID = BLOCK_IO_PROTOCOL;
+static EFI_GUID DevicePathGUID = DEVICE_PATH_PROTOCOL;
 
 static int
 dskread(void *buf, u_int64_t lba, int nblk)
@@ -78,6 +80,24 @@ init_dev(dev_info_t* dev)
 	dmadat = &__dmadat;
 
 	return fsread(0, NULL, 0);
+}
+
+/* free resources */
+static void
+fini(void)
+{
+	dev_info_t *dev;
+	EFI_STATUS status;
+
+	while (devices != NULL) {
+		dev = devices;
+		devices = devices->next;
+		status = bs->CloseProtocol(dev->dev, &BlockIoProtocolGUID,
+                    image, NULL);
+		status = bs->CloseProtocol(dev->devpath, &DevicePathGUID,
+		    image, NULL);
+		free(dev);
+	}
 }
 
 static EFI_STATUS
@@ -173,6 +193,7 @@ _devices()
 const boot_module_t ufs_module =
 {
 	.name = "UFS",
+	.fini = fini,
 	.probe = probe,
 	.load = load,
 	.status = status,

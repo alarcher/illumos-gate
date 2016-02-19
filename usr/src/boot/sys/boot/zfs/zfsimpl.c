@@ -94,6 +94,15 @@ zfs_init(void)
 	zfs_init_crc();
 }
 
+/* free buffers */
+void
+zfs_fini(void)
+{
+	free(zap_scratch);
+	free(dnode_cache_buf);
+	free(zfs_temp_buf);
+}
+
 static void *
 zfs_alloc(size_t size)
 {
@@ -596,11 +605,11 @@ vdev_init_from_nvlist(const unsigned char *nvlist, vdev_t *pvdev,
 		} else {
 			if (!strcmp(type, "raidz")) {
 				if (vdev->v_nparity == 1)
-					vdev->v_name = "raidz1";
+					vdev->v_name = strdup("raidz1");
 				else if (vdev->v_nparity == 2)
-					vdev->v_name = "raidz2";
+					vdev->v_name = strdup("raidz2");
 				else if (vdev->v_nparity == 3)
-					vdev->v_name = "raidz3";
+					vdev->v_name = strdup("raidz3");
 				else {
 					printf("ZFS: can only boot from disk, mirror, raidz1, raidz2 and raidz3 vdevs\n");
 					return (EIO);

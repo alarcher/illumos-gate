@@ -71,8 +71,8 @@ EFI_GUID fdtdtb = FDT_TABLE_GUID;
 EFI_GUID inputid = SIMPLE_TEXT_INPUT_PROTOCOL;
 EFI_GUID serial_io = SERIAL_IO_PROTOCOL;
 
-extern void acpi_detect(const caddr_t);
 void efi_serial_init(void);
+extern void efi_getsmap(void);
 #ifdef EFI_ZFS_BOOT
 static void efi_zfs_probe(void);
 #endif
@@ -191,6 +191,7 @@ main(int argc, CHAR16 *argv[])
 	int i, j, vargood, unit, howto;
 	struct devsw *dev;
 	uint64_t pool_guid;
+	void *ptr;
 	UINTN k;
 	int has_kbd;
 
@@ -199,6 +200,8 @@ main(int argc, CHAR16 *argv[])
 	archsw.arch_copyin = efi_copyin;
 	archsw.arch_copyout = efi_copyout;
 	archsw.arch_readin = efi_readin;
+	archsw.arch_loadaddr = efi_loadaddr;
+	archsw.arch_free_loadaddr = efi_free_loadaddr;
 #ifdef EFI_ZFS_BOOT
 	/* Note this needs to be set before ZFS init. */
 	archsw.arch_zfs_probe = efi_zfs_probe;
@@ -213,6 +216,7 @@ main(int argc, CHAR16 *argv[])
 	 * printf() etc. once this is done.
 	 */
 	cons_probe();
+	efi_getsmap();
 
 	/*
 	 * Initialise the block cache. Set the upper limit.
@@ -316,11 +320,6 @@ main(int argc, CHAR16 *argv[])
 		setenv("console", "ttya" , 1);
 	}
 
-	if (efi_copy_init()) {
-		printf("failed to allocate staging area\n");
-		return (EFI_BUFFER_TOO_SMALL);
-	}
-
 	/*
 	 * March through the device switch probing for things.
 	 */
@@ -404,18 +403,11 @@ main(int argc, CHAR16 *argv[])
 	setenv("LINES", "24", 1);	/* optional */
 	setenv("COLUMNS", "80", 1);	/* optional */
 	setenv("ISADIR", "amd64", 1);	/* we only build 64bit */
+	acpi_detect();
 
-	for (k = 0; k < ST->NumberOfTableEntries; k++) {
-		guid = &ST->ConfigurationTable[k].VendorGuid;
-		if (!memcmp(guid, &smbios, sizeof(EFI_GUID)) ||
-		    !memcmp(guid, &smbios3, sizeof(EFI_GUID))) {
-			smbios_detect(ST->ConfigurationTable[k].VendorTable);
-			continue;
-		}
-		if (!memcmp(guid, &acpi20, sizeof(EFI_GUID))) {
-			acpi_detect(ST->ConfigurationTable[k].VendorTable);
-		}
-	}
+	if ((ptr = efi_get_table(&smbios3)) == NULL)
+		ptr = efi_get_table(&smbios);
+	smbios_detect(ptr);
 
 	efi_serial_init();		/* detect and set up serial ports */
 	interact(NULL);			/* doesn't return */
@@ -1028,6 +1020,100 @@ command_fdt(int argc, char *argv[])
 
 COMMAND_SET(fdt, "fdt", "flattened device tree handling", command_fdt);
 #endif
+
+/*
+ * Chain load another efi loader
+ */
+static int
+command_chain(int argc, char *argv[])
+{
+	EFI_GUID LoadedImageGUID = LOADED_IMAGE_PROTOCOL;
+	EFI_HANDLE loaderhandle;
+	EFI_LOADED_IMAGE *loaded_image;
+	EFI_STATUS status;
+	struct stat st;
+	struct devdesc *dev;
+	char *name, *path;
+	void *buf;
+	int fd;
+
+	if (argc < 2) {
+		command_errmsg = "wrong number of arguments";
+		return (CMD_ERROR);
+	}
+
+	name = argv[1];
+
+	if ((fd = open(name, O_RDONLY)) < 0) {
+		command_errmsg = "no such file";
+		return (CMD_ERROR);
+	}
+
+	if (fstat(fd, &st) < -1) {
+		command_errmsg = "stat failed";
+		close(fd);
+		return (CMD_ERROR);
+	}
+
+	status = BS->AllocatePool(EfiLoaderCode, (UINTN)st.st_size, &buf);
+	if (status != EFI_SUCCESS) {
+		command_errmsg = "failed to allocate buffer";
+		close(fd);
+		return (CMD_ERROR);
+	}
+	if (read(fd, buf, st.st_size) != st.st_size) {
+		command_errmsg = "error while reading the file";
+		(void)BS->FreePool(buf);
+		close(fd);
+		return (CMD_ERROR);
+	}
+	close(fd);
+	status = BS->LoadImage(FALSE, IH, NULL, buf, st.st_size, &loaderhandle);
+	(void)BS->FreePool(buf);
+	if (status != EFI_SUCCESS) {
+		command_errmsg = "LoadImage failed";
+		return (CMD_ERROR);
+	}
+	status = BS->HandleProtocol(loaderhandle, &LoadedImageGUID,
+	    (void **)&loaded_image);
+
+	if (argc > 2) {
+		int i, len = 0;
+		CHAR16 *argp;
+
+		for (i = 2; i < argc; i++)
+			len += strlen(argv[i]) + 1;
+
+		len *= sizeof (*argp);
+		loaded_image->LoadOptions = argp = malloc (len);
+		loaded_image->LoadOptionsSize = len;
+		for (i = 2; i < argc; i++) {
+			char *ptr = argv[i];
+			while (*ptr)
+				*(argp++) = *(ptr++);
+			*(argp++) = ' ';
+		}
+		*(--argv) = 0;
+	}
+
+	if (efi_getdev((void **)&dev, name, (const char **)&path) == 0)
+		loaded_image->DeviceHandle =
+		    efi_find_handle(dev->d_dev, dev->d_unit);
+
+	dev_cleanup();
+	status = BS->StartImage(loaderhandle, NULL, NULL);
+	if (status != EFI_SUCCESS) {
+		command_errmsg = "StartImage failed";
+		free(loaded_image->LoadOptions);
+		loaded_image->LoadOptions = NULL;
+		status = BS->UnloadImage(loaded_image);
+		return (CMD_ERROR);
+	}
+
+	return (CMD_ERROR);	/* not reached */
+}
+
+COMMAND_SET(chain, "chain", "chain load file", command_chain);
 
 #ifdef EFI_ZFS_BOOT
 static void
