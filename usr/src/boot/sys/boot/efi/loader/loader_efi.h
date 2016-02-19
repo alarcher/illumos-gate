@@ -32,6 +32,26 @@
 #define	_LOADER_EFI_COPY_H_
 
 #include <stand.h>
+#include <efi.h>
+#include <efilib.h>
+#include <sys/multiboot2.h>
+#include <sys/queue.h>
+
+struct chunk {
+	EFI_VIRTUAL_ADDRESS vaddr;
+	EFI_PHYSICAL_ADDRESS paddr;
+	UINT64 size;
+	STAILQ_ENTRY(chunk) next;
+};
+
+struct relocator {
+	UINT64 stack;
+	UINT64 copy;
+	UINT64 memmove;
+	struct chunk *stqh_first;
+	struct chunk **stqh_last;
+	struct chunk chunklist[1];
+};
 
 int	efi_autoload(void);
 
@@ -39,13 +59,13 @@ int	efi_getdev(void **vdev, const char *devspec, const char **path);
 char	*efi_fmtdev(void *vdev);
 int	efi_setcurrdev(struct env_var *ev, int flags, const void *value);
 
-int	efi_copy_init(void);
-
 ssize_t	efi_copyin(const void *src, vm_offset_t dest, const size_t len);
 ssize_t	efi_copyout(const vm_offset_t src, void *dest, const size_t len);
 ssize_t	efi_readin(const int fd, vm_offset_t dest, const size_t len);
+uint64_t efi_loadaddr(u_int type, void *data, uint64_t addr);
+void efi_free_loadaddr(uint64_t addr, uint64_t pages);
 void * efi_translate(vm_offset_t ptr);
 
-void	efi_copy_finish(void);
+multiboot2_info_header_t *efi_copy_finish(struct relocator *);
 
 #endif	/* _LOADER_EFI_COPY_H_ */

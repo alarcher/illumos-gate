@@ -57,7 +57,8 @@ EFI_STATUS efi_main(EFI_HANDLE Ximage, EFI_SYSTEM_TABLE* Xsystab);
 
 EFI_SYSTEM_TABLE *systab;
 EFI_BOOT_SERVICES *bs;
-static EFI_HANDLE *image;
+EFI_HANDLE *image;
+static EFI_HANDLE *handles;
 
 static EFI_GUID BlockIoProtocolGUID = BLOCK_IO_PROTOCOL;
 static EFI_GUID DevicePathGUID = DEVICE_PATH_PROTOCOL;
@@ -363,6 +364,7 @@ static EFI_STATUS
 try_boot(void)
 {
 	size_t bufsize, loadersize, cmdsize;
+	int i;
 	void *buf, *loaderbuf;
 	char *cmd;
 	dev_info_t *dev;
@@ -413,6 +415,8 @@ try_boot(void)
 		     mod->name, bufsize, EFI_ERROR_CODE(status));
 		goto errout;
 	}
+	free(loaderbuf);	/* not needed any more */
+	loaderbuf = NULL;
 
 	if ((status = bs->HandleProtocol(loaderhandle, &LoadedImageGUID,
 	    (VOID**)&loaded_image)) != EFI_SUCCESS) {
@@ -440,6 +444,14 @@ try_boot(void)
 	DSTALL(1000000);
 	DPRINTF(".\n");
 
+	for (i = 0; i < NUM_BOOT_MODULES; i++) {
+		if (boot_modules[i] == NULL)
+			continue;
+		if (boot_modules[i]->fini != NULL)
+			boot_modules[i]->fini();
+	}
+
+	free(handles);	/* release disk handles */
 	if ((status = bs->StartImage(loaderhandle, NULL, NULL)) !=
 	    EFI_SUCCESS) {
 		printf("Failed to start image provided by %s (%lu)\n",
@@ -468,7 +480,7 @@ static EFI_STATUS
 probe_handle(EFI_HANDLE h, EFI_DEVICE_PATH *imgpath, BOOLEAN *preferred)
 {
 	dev_info_t *devinfo;
-	EFI_BLOCK_IO *blkio;
+	EFI_BLOCK_IO *blkio = NULL;
 	EFI_DEVICE_PATH *devpath;
 	EFI_STATUS status;
 	UINTN i;
@@ -488,16 +500,18 @@ probe_handle(EFI_HANDLE h, EFI_DEVICE_PATH *imgpath, BOOLEAN *preferred)
 
 	status = bs->HandleProtocol(h, &BlockIoProtocolGUID, (void **)&blkio);
 	if (status == EFI_UNSUPPORTED)
-		return (status);
+		goto error;
 
 	if (status != EFI_SUCCESS) {
 		DPRINTF("\nFailed to query BlockIoProtocol (%lu)\n",
 		    EFI_ERROR_CODE(status));
-		return (status);
+		goto error;
 	}
 
-	if (!blkio->Media->LogicalPartition)
-		return (EFI_UNSUPPORTED);
+	if (!blkio->Media->LogicalPartition) {
+		status = EFI_UNSUPPORTED;
+		goto error;
+	}
 
 	*preferred = device_paths_match(imgpath, devpath);
 
@@ -524,9 +538,16 @@ probe_handle(EFI_HANDLE h, EFI_DEVICE_PATH *imgpath, BOOLEAN *preferred)
 		if (status == EFI_SUCCESS)
 			return (EFI_SUCCESS);
 		(void)bs->FreePool(devinfo);
+		status =  EFI_UNSUPPORTED;
 	}
 
-	return (EFI_UNSUPPORTED);
+error:
+	(void) bs->CloseProtocol(devpath, &DevicePathGUID, image, NULL);
+	if (blkio != NULL)
+		(void) bs->CloseProtocol(blkio, &BlockIoProtocolGUID,
+		    image, NULL);
+
+	return (status);
 }
 
 /*
@@ -567,13 +588,12 @@ probe_handle_status(EFI_HANDLE h, EFI_DEVICE_PATH *imgpath)
 EFI_STATUS
 efi_main(EFI_HANDLE Ximage, EFI_SYSTEM_TABLE *Xsystab)
 {
-	EFI_HANDLE *handles;
 	EFI_LOADED_IMAGE *img;
 	EFI_DEVICE_PATH *imgpath;
 	EFI_STATUS status;
 	EFI_CONSOLE_CONTROL_PROTOCOL *ConsoleControl = NULL;
 	SIMPLE_TEXT_OUTPUT_INTERFACE *conout = NULL;
-	UINTN i, max_dim, best_mode, cols, rows, hsize, nhandles;
+	UINTN i, max_dim, best_mode, cols, rows, nhandles;
 
 	/* Basic initialization*/
 	systab = Xsystab;
@@ -620,37 +640,14 @@ efi_main(EFI_HANDLE Ximage, EFI_SYSTEM_TABLE *Xsystab)
 	putchar('\n');
 
 	/* Get all the device handles */
-	hsize = (UINTN)NUM_HANDLES_INIT * sizeof(EFI_HANDLE);
-	if ((status = bs->AllocatePool(EfiLoaderData, hsize, (void **)&handles))
-	    != EFI_SUCCESS)
-		panic("Failed to allocate %d handles (%lu)", NUM_HANDLES_INIT,
-		    EFI_ERROR_CODE(status));
+	status = bs->LocateHandleBuffer(ByProtocol, &BlockIoProtocolGUID, NULL,
+	    &nhandles, &handles);
 
-	status = bs->LocateHandle(ByProtocol, &BlockIoProtocolGUID, NULL,
-	    &hsize, handles);
-	switch (status) {
-	case EFI_SUCCESS:
-		break;
-	case EFI_BUFFER_TOO_SMALL:
-		(void)bs->FreePool(handles);
-		if ((status = bs->AllocatePool(EfiLoaderData, hsize,
-		    (void **)&handles) != EFI_SUCCESS)) {
-			panic("Failed to allocate %zu handles (%lu)", hsize /
-			    sizeof(*handles), EFI_ERROR_CODE(status));
-		}
-		status = bs->LocateHandle(ByProtocol, &BlockIoProtocolGUID,
-		    NULL, &hsize, handles);
-		if (status != EFI_SUCCESS)
-			panic("Failed to get device handles (%lu)\n",
-			    EFI_ERROR_CODE(status));
-		break;
-	default:
+	if (EFI_ERROR(status))
 		panic("Failed to get device handles (%lu)",
 		    EFI_ERROR_CODE(status));
-	}
 
 	/* Scan all partitions, probing with all modules. */
-	nhandles = hsize / sizeof(*handles);
 	printf("   Probing %zu block devices...", nhandles);
 	DPRINTF("\n");
 
@@ -668,6 +665,9 @@ efi_main(EFI_HANDLE Ximage, EFI_SYSTEM_TABLE *Xsystab)
 
 	for (i = 0; i < nhandles; i++)
 		probe_handle_status(handles[i], imgpath);
+
+	status = bs->CloseProtocol(imgpath, &DevicePathGUID, image, NULL);
+	status = bs->CloseProtocol(img, &LoadedImageGUID, image, NULL);
 	printf(" done\n");
 
 	/* Status summary. */

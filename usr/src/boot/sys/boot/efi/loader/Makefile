@@ -25,9 +25,10 @@ MACHINE=	$(MACH64)
 
 # architecture-specific loader code
 SRCS=	autoload.c bootinfo.c conf.c copy.c devicename.c main.c self_reloc.c \
-	smbios.c biosacpi.c vers.c
+	smbios.c vers.c memmap.c multiboot2.c
+
 OBJS= autoload.o bootinfo.o conf.o copy.o devicename.o main.o self_reloc.o \
-	smbios.o biosacpi.o vers.o
+	smbios.o vers.o memmap.o multiboot2.o
 
 ASFLAGS=-m64 -fPIC
 CFLAGS=	-O2
@@ -42,11 +43,11 @@ CPPFLAGS +=	-I.
 CPPFLAGS +=	-I./arch/${MACHINE}
 CPPFLAGS +=	-I./../include
 CPPFLAGS +=	-I./../include/${MACHINE}
-CPPFLAGS +=	-I./../../../contrib/dev/acpica/include
 CPPFLAGS +=	-I./../../..
 CPPFLAGS +=	-I./../../i386/libi386
 CPPFLAGS +=	-I./../../zfs
 CPPFLAGS +=	-I./../../../cddl/boot/zfs
+CPPFLAGS +=	-I../../../contrib/dev/acpica/include
 CPPFLAGS +=	-DEFI_ZFS_BOOT
 CPPFLAGS +=	-DNO_PCI -DEFI -DTERM_EMU
 
@@ -116,8 +117,6 @@ LDADD=		${LIBFICL} ${LIBZFSBOOT} ${LIBEFI} ${LIBFDT} ${LIBEFI_FDT} \
 
 loader.sym:	$(OBJS) $(DPADD)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LDADD)
-
-beforedepend ${OBJS}: machine
 
 CLEANFILES +=   machine x86
 

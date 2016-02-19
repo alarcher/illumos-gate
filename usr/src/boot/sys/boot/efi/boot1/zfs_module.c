@@ -39,6 +39,8 @@
 #include "zfsimpl.c"
 
 static dev_info_t *devices;
+static EFI_GUID BlockIoProtocolGUID = BLOCK_IO_PROTOCOL;
+static EFI_GUID DevicePathGUID = DEVICE_PATH_PROTOCOL;
 
 static int
 vdev_read(vdev_t *vdev, void *priv, off_t off, void *buf, size_t bytes)
@@ -178,6 +180,56 @@ init()
 	zfs_init();
 }
 
+static void
+free_vdevs(vdev_list_t *vdevs)
+{
+	vdev_t *vdev;
+
+	if (vdevs == NULL)
+		return;
+
+	while ((vdev = STAILQ_FIRST(vdevs)) != NULL) {
+		free_vdevs(&vdev->v_children);
+		STAILQ_REMOVE_HEAD(vdevs, v_childlink);
+		if (vdev->v_devid != NULL)
+			free((void *)vdev->v_devid);
+		if (vdev->v_phys_path != NULL)
+			free((void *)vdev->v_phys_path);
+		if (vdev->v_name != NULL)
+			free((void *)vdev->v_name);
+		if (vdev->v_read_priv)
+			free(vdev->v_read_priv);
+		free(vdev);
+	}
+}
+
+static void
+free_spa(spa_t *spa)
+{
+	free_vdevs(&spa->spa_vdevs);
+	free(spa->spa_name);
+	free(spa);
+}
+
+static void
+fini(void)
+{
+	dev_info_t *dev;
+	EFI_STATUS status;
+
+	while (devices != NULL) {
+		dev = devices;
+		devices = devices->next;
+		status = bs->CloseProtocol(dev->dev, &BlockIoProtocolGUID,
+		    image, NULL);
+		status = bs->CloseProtocol(dev->devpath, &DevicePathGUID,
+		    image, NULL);
+		free_spa(dev->devdata);
+		free(dev);
+	}
+	zfs_fini();
+}
+
 static dev_info_t *
 _devices()
 {
@@ -189,6 +241,7 @@ const boot_module_t zfs_module =
 {
 	.name = "ZFS",
 	.init = init,
+	.fini = fini,
 	.probe = probe,
 	.load = load,
 	.status = status,

@@ -27,9 +27,9 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
+#include <sys/multiboot2.h>
 
 #include <stand.h>
 #include <bootstrap.h>
@@ -39,79 +39,76 @@ __FBSDID("$FreeBSD$");
 
 #include "loader_efi.h"
 
-#ifndef EFI_STAGING_SIZE
-#define	EFI_STAGING_SIZE	48
-#endif
-
-#define	STAGE_PAGES	EFI_SIZE_TO_PAGES((EFI_STAGING_SIZE) * 1024 * 1024)
-
-EFI_PHYSICAL_ADDRESS	staging, staging_end;
-int			stage_offset_set = 0;
-ssize_t			stage_offset;
-
-int
-efi_copy_init(void)
+/*
+ * Allocate pages for data to be loaded. As we can not expect AllocateAddress
+ * to succeed, we allocate using AllocateMaxAddress from 4GB limit.
+ * 4GB limit is because reportedly some 64bit systems are reported to have
+ * issues with memory above 4GB. It should be quite enough anyhow.
+ * Note: AllocateMaxAddress will only make sure we are below the specified
+ * address, we can not make any assumptions about actual location or
+ * about the order of the allocated blocks.
+ */
+uint64_t
+efi_loadaddr(u_int type, void *data, uint64_t addr)
 {
-	EFI_STATUS	status;
+	EFI_PHYSICAL_ADDRESS paddr;
+	struct stat st;
+	int size;
+	uint64_t pages;
+	EFI_STATUS status;
 
-	status = BS->AllocatePages(AllocateAnyPages, EfiLoaderData,
-	    STAGE_PAGES, &staging);
-	if (EFI_ERROR(status)) {
-		printf("failed to allocate staging area: %lu\n",
-		    EFI_ERROR_CODE(status));
-		return (status);
+	if (addr == 0)
+		return (addr);	/* nothing to do */
+
+	if (type == LOAD_ELF)
+		return (0);	/* not supported */
+
+	if (type == LOAD_MEM)
+		size = *(int *)data;
+	else {
+		stat(data, &st);
+		size = st.st_size;
 	}
-	staging_end = staging + STAGE_PAGES * EFI_PAGE_SIZE;
 
-#if defined(__aarch64__) || defined(__arm__)
-	/*
-	 * Round the kernel load address to a 2MiB value. This is needed
-	 * because the kernel builds a page table based on where it has
-	 * been loaded in physical address space. As the kernel will use
-	 * either a 1MiB or 2MiB page for this we need to make sure it
-	 * is correctly aligned for both cases.
-	 */
-	staging = roundup2(staging, 2 * 1024 * 1024);
-#endif
+	pages = roundup2(size, EFI_PAGE_SIZE) >> 12;
+	/* 4GB upper limit */
+	paddr = 0x0000000100000000;
 
-	return (0);
+	status = BS->AllocatePages(AllocateMaxAddress, EfiLoaderData,
+	    pages, &paddr);
+
+	if (EFI_ERROR(status)) {
+		printf("failed to allocate %d bytes for staging area: %lu\n",
+		    size, EFI_ERROR_CODE(status));
+		return (0);
+	}
+
+	return (paddr);
+}
+
+void
+efi_free_loadaddr(uint64_t addr, uint64_t pages)
+{
+	(void) BS->FreePages(addr, pages);
 }
 
 void *
 efi_translate(vm_offset_t ptr)
 {
-
-	return ((void *)(ptr + stage_offset));
+	return ((void *)ptr);
 }
 
 ssize_t
 efi_copyin(const void *src, vm_offset_t dest, const size_t len)
 {
-
-	if (!stage_offset_set) {
-		stage_offset = (vm_offset_t)staging - dest;
-		stage_offset_set = 1;
-	}
-
-	/* XXX: Callers do not check for failure. */
-	if (dest + stage_offset + len > staging_end) {
-		errno = ENOMEM;
-		return (-1);
-	}
-	bcopy(src, (void *)(dest + stage_offset), len);
+	bcopy(src, (void *)dest, len);
 	return (len);
 }
 
 ssize_t
 efi_copyout(const vm_offset_t src, void *dest, const size_t len)
 {
-
-	/* XXX: Callers do not check for failure. */
-	if (src + stage_offset + len > staging_end) {
-		errno = ENOMEM;
-		return (-1);
-	}
-	bcopy((void *)(src + stage_offset), dest, len);
+	bcopy((void *)src, dest, len);
 	return (len);
 }
 
@@ -119,23 +116,80 @@ efi_copyout(const vm_offset_t src, void *dest, const size_t len)
 ssize_t
 efi_readin(const int fd, vm_offset_t dest, const size_t len)
 {
-
-	if (dest + stage_offset + len > staging_end) {
-		errno = ENOMEM;
-		return (-1);
-	}
-	return (read(fd, (void *)(dest + stage_offset), len));
+	return (read(fd, (void *)dest, len));
 }
 
-void
-efi_copy_finish(void)
+/*
+ * relocate chunks and return pointer to MBI
+ * this function is relocated before being called and we only have
+ * memmove() available, as most likely moving chunks into the final
+ * destination will destroy the rest of the loader code.
+ *
+ * in safe area we have relocator data, multiboot_tramp, efi_copy_finish,
+ * memmove and stack.
+ */
+multiboot2_info_header_t *
+efi_copy_finish(struct relocator *relocator)
 {
-	uint64_t	*src, *dst, *last;
+	multiboot2_info_header_t *mbi;
+	struct chunk *chunk, *c;
+	UINT64 size;
+	int done = 0;
+	void (*move)(void *s1, const void *s2, size_t n);
 
-	src = (uint64_t *)staging;
-	dst = (uint64_t *)(staging - stage_offset);
-	last = (uint64_t *)staging_end;
+	move = (void *)relocator->memmove;
 
-	while (src < last)
-		*dst++ = *src++;
+	/* MBI is the last chunk in the list */
+	chunk = STAILQ_LAST(relocator, chunk, next);
+	mbi = (multiboot2_info_header_t *)chunk->paddr;
+
+	/*
+	 * if chunk paddr == vaddr, the chunk is in place.
+	 * if all chunks are in place, we are done.
+	 */
+	chunk = NULL;
+	while (done == 0) {
+		/* first check if we have anything to do. */
+		if (chunk == NULL) {
+			done = 1;
+			STAILQ_FOREACH(chunk, relocator, next) {
+				if (chunk->paddr != chunk->vaddr) {
+					done = 0;
+					break;
+				}
+			}
+		}
+		if (done == 1)
+			break;
+
+		/*
+		 * make sure the destination is not conflicting
+		 * with rest of the modules.
+		 */
+		STAILQ_FOREACH(c, relocator, next) {
+			/* moved already? */
+			if (c->vaddr == c->paddr)
+				continue;
+			/* is it the chunk itself? */
+			if (c->vaddr == chunk->vaddr &&
+			    c->size == chunk->size)
+				continue;
+			if ((c->vaddr >= chunk->paddr &&
+			    c->vaddr <= chunk->paddr + chunk->size) ||
+			    (c->vaddr + c->size >= chunk->paddr &&
+			    c->vaddr + c->size <= chunk->paddr + chunk->size))
+				break;
+		}
+		/* if no conflicts, move to place and restart */
+		if (c == NULL) {
+			move((void *)chunk->paddr, (void *)chunk->vaddr,
+			    chunk->size);
+			chunk->vaddr = chunk->paddr;
+			chunk = NULL;
+			continue;
+		}
+		chunk = STAILQ_NEXT(chunk, next);
+	}
+
+	return (mbi);
 }

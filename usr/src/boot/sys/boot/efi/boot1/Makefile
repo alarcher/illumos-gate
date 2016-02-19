@@ -19,8 +19,6 @@ CC=	$(GCC_ROOT)/bin/gcc
 LD=	$(GNU_ROOT)/bin/gld
 OBJCOPY= $(GNU_ROOT)/bin/gobjcopy
 OBJDUMP= $(GNU_ROOT)/bin/gobjdump
-OBJCOPY= /code/binutils-gdb/binutils/objcopy
-OBJDUMP= /code/binutils-gdb/binutils/objdump
 
 PROG=		boot1.sym
 MACHINE=$(MACH64)
@@ -44,7 +42,7 @@ CPPFLAGS +=	-I./../../../../include
 CPPFLAGS +=	-I./../../../sys
 CPPFLAGS +=	-I./../../..
 CPPFLAGS +=	-I../../../../lib/libstand
-CPPFLAGS +=	-DEFI_UFS_BOOT
+CPPFLAGS +=	-DEFI_UFS_BOOT -DUFS1_ONLY
 # CPPFLAGS +=	-DEFI_DEBUG
 
 CPPFLAGS +=	-I./../../zfs/
