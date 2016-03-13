@@ -39,7 +39,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #include <efi.h>
 #include <efilib.h>
@@ -57,6 +56,16 @@ __FBSDID("$FreeBSD$");
 #define isleap(y)	(((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
 #define SECSPERHOUR ( 60*60 )
 #define SECSPERDAY	(24 * SECSPERHOUR)
+
+void
+efi_time_init(void)
+{
+}
+
+void
+efi_time_fini(void)
+{
+}
 
 static time_t
 efi_time(EFI_TIME *ETime)

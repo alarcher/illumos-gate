@@ -26,7 +26,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/reboot.h>
@@ -38,6 +37,8 @@ __FBSDID("$FreeBSD$");
 #include <efi.h>
 #include <efilib.h>
 #include <efigpt.h>
+
+#include <uuid.h>
 
 #include <bootstrap.h>
 #include <smbios.h>
@@ -69,35 +70,36 @@ EFI_GUID memtype = MEMORY_TYPE_INFORMATION_TABLE_GUID;
 EFI_GUID debugimg = DEBUG_IMAGE_INFO_TABLE_GUID;
 EFI_GUID fdtdtb = FDT_TABLE_GUID;
 EFI_GUID inputid = SIMPLE_TEXT_INPUT_PROTOCOL;
-EFI_GUID serial_io = SERIAL_IO_PROTOCOL;
 
-void efi_serial_init(void);
 extern void efi_getsmap(void);
 #ifdef EFI_ZFS_BOOT
 static void efi_zfs_probe(void);
 #endif
 
 /*
- * Need this because EFI uses UTF-16 unicode string constants, but we
- * use UTF-8. We can't use printf due to the possiblity of \0 and we
- * don't support support wide characters either.
+ * cpy8to16 copies a traditional C string into a CHAR16 string and
+ * 0 terminates it. len is the size of *dst in bytes.
  */
 static void
-print_str16(const CHAR16 *str)
+cpy8to16(const char *src, CHAR16 *dst, size_t len)
 {
-	int i;
-
-	for (i = 0; str[i]; i++)
-		printf("%c", (char)str[i]);
+	len <<= 1;		/* Assume CHAR16 is 2 bytes */
+	while (len > 0 && *src) {
+		*dst++ = *src++;
+		len--;
+	}
+	*dst++ = (CHAR16)0;
 }
 
 static void
-cp16to8(const CHAR16 *src, char *dst, size_t len)
+cpy16to8(const CHAR16 *src, char *dst, size_t len)
 {
 	size_t i;
 
 	for (i = 0; i < len && src[i]; i++)
 		dst[i] = (char)src[i];
+	if (i < len)
+		dst[i] = '\0';
 }
 
 static int
@@ -154,6 +156,8 @@ has_keyboard(void)
 				acpi = (ACPI_HID_DEVICE_PATH *)(void *)path;
 				if ((EISA_ID_TO_NUM(acpi->HID) & 0xff00) == 0x300 &&
 				    (acpi->HID & 0xffff) == PNP_EISA_ID_CONST) {
+					BS->CloseProtocol(*walker, &devid,
+					    IH, NULL);
 					retval = 1;
 					goto out;
 				}
@@ -170,16 +174,59 @@ has_keyboard(void)
 				if (usb->DeviceClass == 3 && /* HID */
 				    usb->DeviceSubClass == 1 && /* Boot devices */
 				    usb->DeviceProtocol == 1) { /* Boot keyboards */
+					BS->CloseProtocol(*walker, &devid,
+					    IH, NULL);
 					retval = 1;
 					goto out;
 				}
 			}
 			path = NextDevicePathNode(path);
 		}
+		BS->CloseProtocol(*walker, &devid, IH, NULL);
 	}
 out:
 	free(hin);
 	return retval;
+}
+
+static int
+find_currdev(EFI_LOADED_IMAGE *img, struct devsw **dev, int *unit,
+    uint64_t *extra)
+{
+	EFI_DEVICE_PATH *devpath, *copy;
+	EFI_HANDLE h;
+
+	/*
+	 * Try the device handle from our loaded image first.  If that
+	 * fails, use the device path from the loaded image and see if
+	 * any of the nodes in that path match one of the enumerated
+	 * handles.
+	 */
+	if (efi_handle_lookup(img->DeviceHandle, dev, unit, extra) == 0)
+		return (0);
+
+	copy = NULL;
+	devpath = efi_lookup_image_devpath(IH);
+	while (devpath != NULL) {
+		h = efi_devpath_handle(devpath);
+		if (h == NULL)
+			break;
+		if (efi_handle_lookup(h, dev, unit, extra) == 0) {
+			if (copy != NULL)
+				free(copy);
+			return (0);
+		}
+
+		if (copy != NULL)
+			free(copy);
+
+		devpath = efi_lookup_devpath(h);
+		if (devpath != NULL) {
+			copy = efi_devpath_trim(devpath);
+			devpath = copy;
+		}
+	}
+	return (ENOENT);
 }
 
 EFI_STATUS
@@ -206,6 +253,9 @@ main(int argc, CHAR16 *argv[])
 	/* Note this needs to be set before ZFS init. */
 	archsw.arch_zfs_probe = efi_zfs_probe;
 #endif
+
+	/* Init the time source */
+	efi_time_init();
 
 	has_kbd = has_keyboard();
 
@@ -274,14 +324,14 @@ main(int argc, CHAR16 *argv[])
 						if (i + 1 == argc) {
 							setenv("comconsole_speed", "115200", 1);
 						} else {
-							cp16to8(&argv[i + 1][0], var,
+							cpy16to8(&argv[i + 1][0], var,
 							    sizeof(var));
 							setenv("comconsole_speedspeed", var, 1);
 						}
 						i++;
 						break;
 					} else {
-						cp16to8(&argv[i][j + 1], var,
+						cpy16to8(&argv[i][j + 1], var,
 						    sizeof(var));
 						setenv("comconsole_speed", var, 1);
 						break;
@@ -331,20 +381,15 @@ main(int argc, CHAR16 *argv[])
 	BS->HandleProtocol(IH, &imgid, (VOID**)&img);
 
 	printf("Command line arguments:");
-	for (i = 0; i < argc; i++) {
-		printf(" ");
-		print_str16(argv[i]);
-	}
+	for (i = 0; i < argc; i++)
+		printf(" %S", argv[i]);
 	printf("\n");
 
 	printf("Image base: 0x%lx\n", (u_long)img->ImageBase);
 	printf("EFI version: %d.%02d\n", ST->Hdr.Revision >> 16,
 	    ST->Hdr.Revision & 0xffff);
-	printf("EFI Firmware: ");
-	/* printf doesn't understand EFI Unicode */
-	ST->ConOut->OutputString(ST->ConOut, ST->FirmwareVendor);
-	printf(" (rev %d.%02d)\n", ST->FirmwareRevision >> 16,
-	    ST->FirmwareRevision & 0xffff);
+	printf("EFI Firmware: %S (rev %d.%02d)\n", ST->FirmwareVendor,
+	    ST->FirmwareRevision >> 16, ST->FirmwareRevision & 0xffff);
 
 	printf("\n");
 	printf("%s, Revision %s\n", bootprog_name, bootprog_rev);
@@ -361,7 +406,7 @@ main(int argc, CHAR16 *argv[])
 	 */
 	BS->SetWatchdogTimer(0, 0, 0, NULL);
 
-	if (efi_handle_lookup(img->DeviceHandle, &dev, &unit, &pool_guid) != 0)
+	if (find_currdev(img, &dev, &unit, &pool_guid) != 0)
 		return (EFI_NOT_FOUND);
 
 	switch (dev->dv_type) {
@@ -400,8 +445,9 @@ main(int argc, CHAR16 *argv[])
 	}
 	}
 
-	setenv("LINES", "24", 1);	/* optional */
-	setenv("COLUMNS", "80", 1);	/* optional */
+	snprintf(var, sizeof(var), "%d.%02d", ST->Hdr.Revision >> 16,
+	    ST->Hdr.Revision & 0xffff);
+	env_setenv("efi-version", EV_VOLATILE, var, env_noset, env_nounset);
 	setenv("ISADIR", "amd64", 1);	/* we only build 64bit */
 	acpi_detect();
 
@@ -409,26 +455,37 @@ main(int argc, CHAR16 *argv[])
 		ptr = efi_get_table(&smbios);
 	smbios_detect(ptr);
 
-	efi_serial_init();		/* detect and set up serial ports */
 	interact(NULL);			/* doesn't return */
 
 	return (EFI_SUCCESS);		/* keep compiler happy */
 }
 
+/* XXX move to lib stand ? */
+static int
+wcscmp(CHAR16 *a, CHAR16 *b)
+{
+
+	while (*a && *b && *a == *b) {
+		a++;
+		b++;
+	}
+	return *a - *b;
+}
+
+
 COMMAND_SET(reboot, "reboot", "reboot the system", command_reboot);
 
 static int
-command_reboot(int argc __attribute((unused)),
-    char *argv[] __attribute((unused)))
+command_reboot(int argc __unused, char *argv[] __unused)
 {
 	int i;
-	const CHAR16 *msg = L"Reboot from the loader";
 
 	for (i = 0; devsw[i] != NULL; ++i)
 		if (devsw[i]->dv_cleanup != NULL)
 			(devsw[i]->dv_cleanup)();
 
-	RS->ResetSystem(EfiResetCold, EFI_SUCCESS, 23, (CHAR16 *)msg);
+	RS->ResetSystem(EfiResetCold, EFI_SUCCESS, 23,
+	    (CHAR16 *)"Reboot from the loader");
 
 	/* NOTREACHED */
 	return (CMD_ERROR);
@@ -437,8 +494,7 @@ command_reboot(int argc __attribute((unused)),
 COMMAND_SET(memmap, "memmap", "print memory map", command_memmap);
 
 static int
-command_memmap(int argc __attribute((unused)),
-    char *argv[] __attribute((unused)))
+command_memmap(int argc __unused, char *argv[] __unused)
 {
 	UINTN sz;
 	EFI_MEMORY_DESCRIPTOR *map, *p;
@@ -540,8 +596,7 @@ guid_to_string(EFI_GUID *guid)
 }
 
 static int
-command_configuration(int argc __attribute((unused)),
-    char *argv[] __attribute((unused)))
+command_configuration(int argc __unused, char *argv[] __unused)
 {
 	UINTN i;
 
@@ -636,71 +691,6 @@ command_mode(int argc, char *argv[])
 	return (CMD_OK);
 }
 
-
-COMMAND_SET(nvram, "nvram", "get NVRAM variables", command_nvram);
-
-static int
-command_nvram(int argc __attribute((unused)),
-    char *argv[] __attribute((unused)))
-{
-	CHAR16 var[128];
-	UINT8 *data;		/* value is in bytes */
-	EFI_STATUS status;
-	EFI_GUID varguid = { 0,0,0,{0,0,0,0,0,0,0,0} };
-	UINTN varsz, datasz, i;
-	UINT32 attr;
-	SIMPLE_TEXT_OUTPUT_INTERFACE *conout;
-
-	conout = ST->ConOut;
-
-	pager_open();
-	var[0] = 0;		/* Initiate the enumeration */
-	varsz = 128;
-
-	for (status = RS->GetNextVariableName(&varsz, var, &varguid);
-	    status != EFI_NOT_FOUND;
-	    status = RS->GetNextVariableName(&varsz, var, &varguid)) {
-
-		/*
-		 * as term emu is keeping track on cursor, use putchar().
-		 */
-		for (i = 0; var[i] != 0; i++)
-			putchar(var[i]);
-		varsz = 128;    /* GetNextVariableName() did change it. */
-
-		printf(": Attributes:");
-		datasz = 0;
-		status = RS->GetVariable(var, &varguid, &attr, &datasz, NULL);
-		if ((data = malloc(datasz)) == NULL)
-			break;
-		status = RS->GetVariable(var, &varguid, &attr, &datasz, data);
-		if (EFI_ERROR(status))
-			printf("<error retrieving variable>");
-		else {
-			if (attr & EFI_VARIABLE_NON_VOLATILE)
-				printf(" NV");
-			if (attr & EFI_VARIABLE_BOOTSERVICE_ACCESS)
-				printf(" BS");
-			if (attr & EFI_VARIABLE_RUNTIME_ACCESS)
-				printf(" RS");
-			if (attr & EFI_VARIABLE_HARDWARE_ERROR_RECORD)
-				printf(" HR");
-			if (attr & EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS)
-				printf(" AW");
-			if (attr &
-			    EFI_VARIABLE_TIME_BASED_AUTHENTICATED_WRITE_ACCESS)
-				printf(" TW");
-
-			printf(": DataLength: %lld", (long long)datasz);
-		}
-		free(data);
-		if (pager_output("\n"))
-			break;
-	}
-
-	pager_close();
-	return (CMD_OK);
-}
 
 struct protocol_name {
 	EFI_GUID guid;
@@ -831,8 +821,7 @@ struct protocol_name {
 COMMAND_SET(lsefi, "lsefi", "list EFI handles", command_lsefi);
 
 static int
-command_lsefi(int argc __attribute((unused)),
-    char *argv[] __attribute((unused)))
+command_lsefi(int argc __unused, char *argv[] __unused)
 {
 	EFI_HANDLE *buffer = NULL;
 	EFI_HANDLE handle;
@@ -956,51 +945,317 @@ command_reloadbe(int argc, char *argv[])
 #endif /* __FreeBSD__ */
 #endif
 
-void
-efi_serial_init(void)
+
+COMMAND_SET(efishow, "efi-show", "print some or all EFI variables",
+    command_efi_show);
+
+static int
+efi_print_var(CHAR16 *varnamearg, EFI_GUID *matchguid, int lflag)
 {
-	EFI_HANDLE *buffer = NULL;
-	UINTN bufsz = 0, i;
-	EFI_STATUS status;
-	int serial = 0;
+	UINTN		datasz, i;
+	EFI_STATUS	status;
+	UINT32		attr;
+	CHAR16		*data;
+	char		*str;
+	uint32_t	uuid_status;
+	int		is_ascii;
 
-	/*
-	 * get buffer size
-	 */
-	status = BS->LocateHandle(ByProtocol, &serial_io, NULL, &bufsz, buffer);
+	datasz = 0;
+	status = RS->GetVariable(varnamearg, matchguid, &attr,
+	    &datasz, NULL);
 	if (status != EFI_BUFFER_TOO_SMALL) {
-		snprintf(command_errbuf, sizeof (command_errbuf),
-		    "unexpected error: %lld", (long long)status);
-		return;
+		printf("Can't get the variable: error %#lx\n", status);
+		return (CMD_ERROR);
 	}
-	if ((buffer = malloc(bufsz)) == NULL) {
-		sprintf(command_errbuf, "out of memory");
-		return;
+	data = malloc(datasz);
+	status = RS->GetVariable(varnamearg, matchguid, &attr,
+	    &datasz, data);
+	if (status != EFI_SUCCESS) {
+		printf("Can't get the variable: error %#lx\n", status);
+		return (CMD_ERROR);
+	}
+	uuid_status = uuid_s_ok;
+	uuid_to_string((uuid_t *)matchguid, &str, &uuid_status);
+	if (uuid_status != uuid_s_ok) {
+		printf("Can't convert uuid to string: error %x\n", uuid_status);
+		free(data);
+		return (CMD_ERROR);
+	}
+
+	printf("%s 0x%x %S", str, attr, varnamearg);
+	free(str);
+
+	if (lflag == 0) {
+		printf("=");
+		is_ascii = 1;
+		str = (char *)data;
+		for (i = 0; i < datasz - 1; i++) {
+			/*
+			 * Quick hack to see if this ascii-ish string printable
+			 * range plus tab, cr and lf
+			 */
+			if ((str[i] < 32 || str[i] > 126) && str[i] != 9 &&
+			    str[i] != 10 && str[i] != 13) {
+				is_ascii = 0;
+				break;
+			}
+		}
+		if (str[datasz - 1] != '\0')
+			is_ascii = 0;
+		if (is_ascii)
+			printf("%s", str);
+		else {
+			printf("%lu bytes of data", datasz);
+#if 0
+			/*
+			 * Variables can have different type of data,
+			 * byte, 2 bytes, etc, also device path and other.
+			 * To display, the process actually depends on
+			 * uuid and variable name. Note we can not blindly
+			 * read the memory by 2 bytes, this seems to confuse
+			 * at least vmware fusion.
+			 */
+			for (i = 0; i < datasz; i++) {
+				char buf[5];
+
+				if (isalnum(str[i]) || isspace(str[i]))
+					snprintf(buf, sizeof (buf), "%c",
+					    str[i]);
+				else
+					snprintf(buf, sizeof (buf), "\\x%02x",
+					    str[i]);
+				if ((rv = pager_output(buf)) != 0)
+					break;
+			}
+#endif
+		}
+	}
+	free(data);
+	if (pager_output("\n"))
+		return (CMD_WARN);
+	return (CMD_OK);
+}
+
+static int
+command_efi_show(int argc, char *argv[])
+{
+	/*
+	 * efi-show [-a]
+	 *      print all the env
+	 * efi-show -u UUID
+	 *      print all the env vars tagged with UUID
+	 * efi-show -v var
+	 *      search all the env vars and print the ones matching var
+	 * eif-show -u UUID -v var
+	 * eif-show UUID var
+	 *      print all the env vars that match UUID and var
+	 */
+	/* NB: We assume EFI_GUID is the same as uuid_t */
+	int		aflag = 0, gflag = 0, lflag = 0, vflag = 0;
+	int		ch, rv;
+	unsigned	i;
+	EFI_STATUS	status;
+	EFI_GUID	varguid = { 0,0,0,{0,0,0,0,0,0,0,0} };
+	EFI_GUID	matchguid = { 0,0,0,{0,0,0,0,0,0,0,0} };
+	uint32_t	uuid_status;
+	CHAR16		varname[128];
+	CHAR16		varnamearg[128];
+	UINTN		varsz;
+
+	optind = 1;
+	optreset = 1;
+
+	while ((ch = getopt(argc, argv, "ag:lv:")) != -1) {
+		switch (ch) {
+		case 'a':
+			aflag = 1;
+			break;
+		case 'g':
+			gflag = 1;
+			uuid_from_string(optarg, (uuid_t *)&matchguid,
+			    &uuid_status);
+			if (uuid_status != uuid_s_ok) {
+				printf("uid %s could not be parsed\n", optarg);
+				return (CMD_ERROR);
+			}
+			break;
+		case 'l':
+			lflag = 1;
+			break;
+		case 'v':
+			vflag = 1;
+			if (strlen(optarg) >= nitems(varnamearg)) {
+				printf("Variable %s is longer than %zd "
+				    "characters\n", optarg, nitems(varnamearg));
+				return (CMD_ERROR);
+			}
+			for (i = 0; i < strlen(optarg); i++)
+				varnamearg[i] = optarg[i];
+			varnamearg[i] = 0;
+			break;
+		default:
+			printf("Invalid argument %c\n", ch);
+			return (CMD_ERROR);
+		}
+	}
+
+	if (aflag && (gflag || vflag)) {
+		printf("-a isn't compatible with -v or -u\n");
+		return (CMD_ERROR);
+	}
+
+	if (aflag && optind < argc) {
+		printf("-a doesn't take any args");
+		return (CMD_ERROR);
+	}
+
+	if (optind == argc)
+		aflag = 1;
+
+	argc -= optind;
+	argv += optind;
+
+	pager_open();
+	if (vflag && gflag) {
+		rv = efi_print_var(varnamearg, &matchguid, lflag);
+		pager_close();
+		return (rv);
+	}
+
+	if (argc == 2) {
+		optarg = argv[0];
+		if (strlen(optarg) >= nitems(varnamearg)) {
+			printf("Variable %s is longer than %zd characters\n",
+			    optarg, nitems(varnamearg));
+			pager_close();
+			return (CMD_ERROR);
+		}
+		for (i = 0; i < strlen(optarg); i++)
+			varnamearg[i] = optarg[i];
+		varnamearg[i] = 0;
+		optarg = argv[1];
+		uuid_from_string(optarg, (uuid_t *)&matchguid, &uuid_status);
+		if (uuid_status != uuid_s_ok) {
+			printf("uid %s could not be parsed\n", optarg);
+			pager_close();
+			return (CMD_ERROR);
+		}
+		rv = efi_print_var(varnamearg, &matchguid, lflag);
+		pager_close();
+		return (rv);
+	}
+
+	if (argc != 0) {
+		printf("Too many args\n");
+		pager_close();
+		return (CMD_ERROR);
 	}
 
 	/*
-	 * get handle array
+	 * Initiate the search -- note the standard takes pain
+	 * to specify the initial call must be a poiner to a NULL
+	 * character.
 	 */
-	status = BS->LocateHandle(ByProtocol, &serial_io, NULL, &bufsz, buffer);
-	if (EFI_ERROR(status)) {
-		free(buffer);
-		snprintf(command_errbuf, sizeof (command_errbuf),
-		    "LocateHandle() error: %lld", (long long)status);
-		return;
-	}
-
-	for (i = 0; i < (bufsz / sizeof (EFI_HANDLE)); i++) {
-		SERIAL_IO_INTERFACE *sio;
-		status = BS->OpenProtocol(buffer[i], &serial_io, (void**)&sio,
-		    IH, NULL, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-		if (EFI_ERROR(status)) {
-			snprintf(command_errbuf, sizeof (command_errbuf),
-			    "OpenProtocol() error: %lld", (long long)status);
+	varsz = nitems(varname);
+	varname[0] = 0;
+	while ((status = RS->GetNextVariableName(&varsz, varname, &varguid)) !=
+	    EFI_NOT_FOUND) {
+		/* GetNextVariableName will set varsz, reset it */
+		varsz = nitems(varname);
+		if (aflag) {
+			if (efi_print_var(varname, &varguid, lflag) != CMD_OK)
+				break;
+			continue;
 		}
-		printf("serial# %d\n", serial++);
+		if (vflag) {
+			if (wcscmp(varnamearg, varname) == 0) {
+				rv = efi_print_var(varname, &varguid, lflag);
+				if (rv != CMD_OK)
+					break;
+				continue;
+			}
+		}
+		if (gflag) {
+			rv = memcmp(&varguid, &matchguid, sizeof(varguid));
+			if (rv == 0) {
+				rv = efi_print_var(varname, &varguid, lflag);
+				if (rv != CMD_OK)
+					break;
+				continue;
+			}
+		}
 	}
+	pager_close();
 
-	free(buffer);
+	return (CMD_OK);
+}
+
+COMMAND_SET(efiset, "efi-set", "set EFI variables", command_efi_set);
+
+static int
+command_efi_set(int argc, char *argv[])
+{
+	char *uuid, *var, *val;
+	CHAR16 wvar[128];
+	EFI_GUID guid;
+	uint32_t status;
+	EFI_STATUS err;
+
+	if (argc != 4) {
+		printf("efi-set uuid var new-value\n");
+		return (CMD_ERROR);
+	}
+	uuid = argv[1];
+	var = argv[2];
+	val = argv[3];
+	uuid_from_string(uuid, (uuid_t *)&guid, &status);
+	if (status != uuid_s_ok) {
+		printf("Invalid uuid %s %d\n", uuid, status);
+		return (CMD_ERROR);
+	}
+	cpy8to16(var, wvar, sizeof(wvar));
+	err = RS->SetVariable(wvar, &guid, EFI_VARIABLE_NON_VOLATILE |
+	    EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_BOOTSERVICE_ACCESS,
+	    strlen(val) + 1, val);
+	if (EFI_ERROR(err)) {
+		printf("Failed to set variable: error %lu\n",
+		    EFI_ERROR_CODE(err));
+		return (CMD_ERROR);
+	}
+	return (CMD_OK);
+}
+
+COMMAND_SET(efiunset, "efi-unset", "delete / unset EFI variables",
+    command_efi_unset);
+
+static int
+command_efi_unset(int argc, char *argv[])
+{
+	char *uuid, *var;
+	CHAR16 wvar[128];
+	EFI_GUID guid;
+	uint32_t status;
+	EFI_STATUS err;
+
+	if (argc != 3) {
+		printf("efi-unset uuid var\n");
+		return (CMD_ERROR);
+	}
+	uuid = argv[1];
+	var = argv[2];
+	uuid_from_string(uuid, (uuid_t *)&guid, &status);
+	if (status != uuid_s_ok) {
+		printf("Invalid uuid %s\n", uuid);
+		return (CMD_ERROR);
+	}
+	cpy8to16(var, wvar, sizeof(wvar));
+	err = RS->SetVariable(wvar, &guid, 0, 0, NULL);
+	if (EFI_ERROR(err)) {
+		printf("Failed to unset variable: error %lu\n",
+		    EFI_ERROR_CODE(err));
+		return (CMD_ERROR);
+	}
+	return (CMD_OK);
 }
 
 #ifdef LOADER_FDT_SUPPORT
