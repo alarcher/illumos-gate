@@ -20,7 +20,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <machine/elf.h>
@@ -84,7 +83,8 @@ Malloc(size_t len, const char *file __unused, int line __unused)
 void
 Free(void *buf, const char *file __unused, int line __unused)
 {
-	(void)bs->FreePool(buf);
+	if (buf != NULL)
+		(void)bs->FreePool(buf);
 }
 
 /*
@@ -109,8 +109,8 @@ nodes_match(EFI_DEVICE_PATH *imgpath, EFI_DEVICE_PATH *devpath)
 
 /*
  * device_paths_match returns TRUE if the imgpath isn't NULL and all nodes
- * in imgpath and devpath match up to their respect occurances of a media
- * node, FALSE otherwise.
+ * in imgpath and devpath match up to their respective occurances of a
+ * media node, FALSE otherwise.
  */
 static BOOLEAN
 device_paths_match(EFI_DEVICE_PATH *imgpath, EFI_DEVICE_PATH *devpath)
@@ -412,7 +412,7 @@ try_boot(void)
 	if ((status = bs->LoadImage(TRUE, image, devpath_last(dev->devpath),
 	    loaderbuf, loadersize, &loaderhandle)) != EFI_SUCCESS) {
 		printf("Failed to load image provided by %s, size: %zu, (%lu)\n",
-		     mod->name, bufsize, EFI_ERROR_CODE(status));
+		     mod->name, loadersize, EFI_ERROR_CODE(status));
 		goto errout;
 	}
 	free(loaderbuf);	/* not needed any more */

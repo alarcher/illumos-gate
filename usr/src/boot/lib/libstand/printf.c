@@ -217,6 +217,7 @@ kvprintf(char const *fmt, kvprintf_fn_t *func, void *arg, int radix, va_list ap)
 	char nbuf[MAXNBUF];
 	char *d;
 	const char *p, *percent, *q;
+	uint16_t *S;
 	u_char *up;
 	int ch, n;
 	uintmax_t num;
@@ -410,6 +411,10 @@ reswitch:	switch (ch = (u_char)*fmt++) {
 			if (ladjust && width > 0)
 				while (width--)
 					PCHAR(padc);
+			break;
+		case 'S':	/* Assume console can cope with wide chars */
+			for (S = va_arg(ap, uint16_t *); *S != 0; S++)
+				PCHAR(*S);
 			break;
 		case 't':
 			tflag = 1;
