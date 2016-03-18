@@ -75,21 +75,30 @@ struct memlist *
 find_bus_res(int bus, int type)
 {
 	struct memlist *res = NULL;
+	int bios = 1;
+
+	/* if efi-systab property exist, there is no BIOS */
+	if (ddi_prop_exists(DDI_DEV_T_ANY, ddi_root_node(), DDI_PROP_DONTPASS,
+	    "efi-systab"))
+		bios = 0;
 
 	if (tbl_init == 0) {
 		tbl_init = 1;
 		acpi_pci_probe();
-		hrt_probe();
-		mps_probe();
+		if (bios != 0) {
+			hrt_probe();
+			mps_probe();
+		}
 	}
 
 	if (acpi_find_bus_res(bus, type, &res) > 0)
 		return (res);
 
-	if (hrt_find_bus_res(bus, type, &res) > 0)
+	if (bios != 0 && hrt_find_bus_res(bus, type, &res) > 0)
 		return (res);
 
-	(void) mps_find_bus_res(bus, type, &res);
+	if (bios != 0)
+		(void) mps_find_bus_res(bus, type, &res);
 	return (res);
 }
 
