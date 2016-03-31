@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <sys/systm.h>
 #include <sys/archsystm.h>
+#include <sys/framebuffer.h>
 #include <sys/boot_console.h>
 #include <sys/panic.h>
 #include <sys/ctype.h>
@@ -57,6 +58,11 @@ extern int bcons_getchar_xen(void);
 extern int bcons_ischar_xen(void);
 #endif /* __xpv */
 
+extern boolean_t xbi_fb_init(struct xboot_info *);
+extern void boot_fb_init(int);
+extern void boot_fb_putchar(uint8_t);
+
+fb_info_t fb_info;
 static int cons_color = CONS_COLOR;
 static int console = CONS_SCREEN_TEXT;
 static int tty_num = 0;
@@ -522,12 +528,26 @@ console_value_t console_devices[] = {
 	{ NULL, CONS_INVALID }
 };
 
+int
+boot_fb(struct xboot_info *xbi, int console)
+{
+	(void) memset(&fb_info, 0, sizeof (fb_info));
+	if (xbi_fb_init(xbi) == B_FALSE)
+		return (console);
+	fb_info.terminal.x = 80;
+	fb_info.terminal.y = 34;
+	boot_fb_init(CONS_FRAMEBUFFER);
+
+	return (CONS_FRAMEBUFFER);
+}
+
 void
 bcons_init(struct xboot_info *xbi)
 {
 	console_value_t *consolep;
 	size_t len, cons_len;
 	char *cons_str;
+	int fb_cons;
 #if !defined(_BOOT)
 	static char console_text[] = "text";
 	extern int post_fastreboot;
@@ -630,6 +650,8 @@ bcons_init(struct xboot_info *xbi)
 	}
 #endif /* __xpv */
 
+	/* make sure the FB is set up if present */
+	fb_cons = boot_fb(xbi, console);
 	switch (console) {
 	case CONS_TTY:
 		serial_init();
@@ -647,16 +669,20 @@ bcons_init(struct xboot_info *xbi)
 		break;
 #endif
 	case CONS_SCREEN_GRAPHICS:
+		console = fb_cons;
 		kb_init();
 		break;
 	case CONS_SCREEN_TEXT:
 	default:
 #if defined(_BOOT)
-		clear_screen();	/* clears the grub or xen screen */
+		if (fb_cons != CONS_FRAMEBUFFER)
+			clear_screen();	/* clears the grub or xen screen */
 #endif /* _BOOT */
+		console = fb_cons;
 		kb_init();
 		break;
 	}
+
 	boot_line = NULL;
 }
 
@@ -832,6 +858,9 @@ _doputchar(int c)
 	case CONS_SCREEN_TEXT:
 		screen_putchar(c);
 		return;
+	case CONS_FRAMEBUFFER:
+		boot_fb_putchar(c);
+		return;
 	case CONS_SCREEN_GRAPHICS:
 #if !defined(_BOOT)
 	case CONS_USBSER:
@@ -861,7 +890,8 @@ bcons_putchar(int c)
 		return;
 	} else  if (c == '\n' || c == '\r') {
 		bhcharpos = 0;
-		_doputchar('\r');
+		if (console != CONS_FRAMEBUFFER)
+			_doputchar('\r');
 		_doputchar(c);
 		return;
 	} else if (c == '\b') {
