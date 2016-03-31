@@ -250,6 +250,9 @@ $(DBOOT_OBJS_DIR)/%.o:		$(UTSBASE)/intel/ia32/%.s
 $(DBOOT_OBJS_DIR)/%.o:		$(COMMONBASE)/crypto/sha1/%.c
 	$(i386_CC) $(DBOOT_FLAGS) -O $(DBOOT_DEFS) $(DBOOT_CC_INCL) -c -o $@ $<
 
+$(DBOOT_OBJS_DIR)/%.o:		$(UTSBASE)/common/io/%.c
+	$(i386_CC) $(DBOOT_FLAGS) -O $(DBOOT_DEFS) $(DBOOT_CC_INCL) -c -o $@ $<
+
 $(DBOOT_OBJS_DIR)/%.o:		$(COMMONBASE)/util/%.c
 	$(i386_CC) $(DBOOT_FLAGS) -O $(DBOOT_DEFS) $(DBOOT_CC_INCL) -c -o $@ $<
 
