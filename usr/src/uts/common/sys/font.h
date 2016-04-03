@@ -64,6 +64,7 @@ extern struct fontlist fonts[];
  * Built in fonts.
  */
 extern bitmap_data_t font_data_12x22;
+extern bitmap_data_t font_data_8x16;
 extern bitmap_data_t font_data_7x14;
 extern bitmap_data_t font_data_6x10;
 
