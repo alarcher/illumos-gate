@@ -36,6 +36,7 @@
  */
 struct fontlist fonts[] = {
 	{  &font_data_12x22,	NULL  },
+	{  &font_data_8x16,	NULL  },
 	{  &font_data_7x14,	NULL  },
 	{  &font_data_6x10,	NULL  },
 	{  NULL, NULL  }
