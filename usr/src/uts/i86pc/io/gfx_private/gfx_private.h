@@ -76,24 +76,24 @@ extern void gfxp_fix_mem_cache_attrs(caddr_t kva_start, size_t length,
 	int cache_attr);
 extern gfx_maddr_t gfxp_convert_addr(paddr_t paddr);
 
-typedef char *gfxp_vgatext_softc_ptr_t;
+typedef char *gfxp_fb_softc_ptr_t;
 
-extern gfxp_vgatext_softc_ptr_t gfxp_vgatext_softc_alloc(void);
-extern void gfxp_vgatext_softc_free(gfxp_vgatext_softc_ptr_t ptr);
-extern int gfxp_vgatext_attach(dev_info_t *devi, ddi_attach_cmd_t cmd,
-	gfxp_vgatext_softc_ptr_t ptr);
-extern int gfxp_vgatext_detach(dev_info_t *devi, ddi_detach_cmd_t cmd,
-	gfxp_vgatext_softc_ptr_t ptr);
-extern int gfxp_vgatext_open(dev_t *devp, int flag, int otyp, cred_t *cred,
-	gfxp_vgatext_softc_ptr_t ptr);
-extern int gfxp_vgatext_close(dev_t devp, int flag, int otyp, cred_t *cred,
-	gfxp_vgatext_softc_ptr_t ptr);
-extern int gfxp_vgatext_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
-	cred_t *cred, int *rval, gfxp_vgatext_softc_ptr_t ptr);
+extern gfxp_fb_softc_ptr_t gfxp_fb_softc_alloc(void);
+extern void gfxp_fb_softc_free(gfxp_fb_softc_ptr_t ptr);
+extern int gfxp_fb_attach(dev_info_t *devi, ddi_attach_cmd_t cmd,
+	gfxp_fb_softc_ptr_t ptr);
+extern int gfxp_fb_detach(dev_info_t *devi, ddi_detach_cmd_t cmd,
+	gfxp_fb_softc_ptr_t ptr);
+extern int gfxp_fb_open(dev_t *devp, int flag, int otyp, cred_t *cred,
+	gfxp_fb_softc_ptr_t ptr);
+extern int gfxp_fb_close(dev_t devp, int flag, int otyp, cred_t *cred,
+	gfxp_fb_softc_ptr_t ptr);
+extern int gfxp_fb_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
+	cred_t *cred, int *rval, gfxp_fb_softc_ptr_t ptr);
 
 extern int gfxp_mlock_user_memory(caddr_t address, size_t length);
 extern int gfxp_munlock_user_memory(caddr_t address, size_t length);
-extern int gfxp_vgatext_devmap(dev_t dev, devmap_cookie_t dhp, offset_t off,
+extern int gfxp_fb_devmap(dev_t dev, devmap_cookie_t dhp, offset_t off,
 	size_t len, size_t *maplen, uint_t model, void *ptr);
 
 #ifdef __cplusplus

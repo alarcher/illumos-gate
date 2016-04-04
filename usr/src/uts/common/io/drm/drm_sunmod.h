@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 /*
  * Common misc module interfaces of DRM under Solaris
  */
@@ -133,7 +131,7 @@ typedef struct drm_instance_state {
 	drm_device_t	*mis_devp;
 	ddi_acc_handle_t	mis_cfg_hdl;
 	agp_master_softc_t	*mis_agpm;	/* agpmaster softstate ptr */
-	gfxp_vgatext_softc_ptr_t	mis_gfxp;	/* gfx softstate */
+	gfxp_fb_softc_ptr_t	mis_gfxp;	/* gfx softstate */
 } drm_inst_state_t;
 
 
