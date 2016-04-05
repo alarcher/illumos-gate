@@ -26,8 +26,6 @@
 #ifndef	_GFX_PRIVATE_H
 #define	_GFX_PRIVATE_H
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +34,11 @@ extern "C" {
 #define	GFXP_MEMORY_CACHED		0
 #define	GFXP_MEMORY_UNCACHED		1
 #define	GFXP_MEMORY_WRITECOMBINED	2
+
+enum gfxp_type {
+	GFXP_BITMAP,
+	GFXP_VGATEXT
+};
 
 typedef uint64_t gfx_maddr_t;
 
