@@ -1606,8 +1606,8 @@ tem_safe_pix_clear_entire_screen(struct tem_vt_state *tem, cred_t *credp,
 	nrows = (tems.ts_p_dimension.height + (height - 1))/ height;
 	ncols = (tems.ts_p_dimension.width + (width - 1))/ width;
 
-	tem_safe_pix_cls_range(tem, 0, nrows, 0, 0, ncols, 0,
-	    B_FALSE, credp, called_from);
+	tem_safe_pix_cls_range(tem, 0, nrows, tems.ts_p_offset.y, 0, ncols,
+	    tems.ts_p_offset.x, B_FALSE, credp, called_from);
 
 	/*
 	 * Since the whole screen is cleared, we don't need
