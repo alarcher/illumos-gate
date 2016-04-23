@@ -153,6 +153,8 @@ static void	bit_to_pix8(struct tem_vt_state *tem, uchar_t c,
 		    text_color_t fg_color, text_color_t bg_color);
 static void	bit_to_pix24(struct tem_vt_state *tem, uchar_t c,
 		    text_color_t fg_color, text_color_t bg_color);
+static void	bit_to_pix32(struct tem_vt_state *tem, uchar_t c,
+		    text_color_t fg_color, text_color_t bg_color);
 
 /* BEGIN CSTYLED */
 /*                                  Bk  Rd  Gr  Br  Bl  Mg  Cy  Wh */
@@ -1501,8 +1503,10 @@ tem_safe_pix_bit2pix(struct tem_vt_state *tem, unsigned char c,
 		fp = bit_to_pix8;
 		break;
 	case 24:
-	case 32:
 		fp = bit_to_pix24;
+		break;
+	case 32:
+		fp = bit_to_pix32;
 	}
 
 	fp(tem, c, fg, bg);
@@ -1976,6 +1980,25 @@ bit_to_pix24(
 	text_color_t fg_color4,
 	text_color_t bg_color4)
 {
+	uint32_t fg_color32, bg_color32;
+	uint8_t *dest;
+
+	ASSERT(fg_color4 < 16 && bg_color4 < 16);
+
+	fg_color32 = PIX4TO32(fg_color4);
+	bg_color32 = PIX4TO32(bg_color4);
+
+	dest = (uint8_t *)tem->tvs_pix_data;
+	font_bit_to_pix24(&tems.ts_font, dest, c, fg_color32, bg_color32);
+}
+
+static void
+bit_to_pix32(
+	struct tem_vt_state *tem,
+	uchar_t c,
+	text_color_t fg_color4,
+	text_color_t bg_color4)
+{
 	uint32_t fg_color32, bg_color32, *dest;
 
 	ASSERT(fg_color4 < 16 && bg_color4 < 16);
@@ -1984,7 +2007,7 @@ bit_to_pix24(
 	bg_color32 = PIX4TO32(bg_color4);
 
 	dest = (uint32_t *)tem->tvs_pix_data;
-	font_bit_to_pix24(&tems.ts_font, dest, c, fg_color32, bg_color32);
+	font_bit_to_pix32(&tems.ts_font, dest, c, fg_color32, bg_color32);
 }
 
 static text_color_t

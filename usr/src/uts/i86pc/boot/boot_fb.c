@@ -63,6 +63,10 @@ static uint32_t		last_line_size;
 static fb_info_pixel_coord_t last_line;
 static fb_info_t	*fb;
 
+#define	WHITE		(0)
+#define	BLACK		(1)
+#define	WHITE_16	(0xFFFF)
+#define	BLACK_16	(0x0000)
 #define	WHITE_32	(0xFFFFFFFF)
 #define	BLACK_32	(0x00000000)
 
@@ -95,6 +99,8 @@ xbi_fb_init(struct xboot_info *xbi)
 	fb_info.rgb.blue.size = tag->u.fb2.framebuffer_blue_mask_size;
 	fb_info.rgb.blue.pos = tag->u.fb2.framebuffer_blue_field_position;
 
+	fb_info.inverse = B_FALSE;
+	fb_info.inverse_screen = B_FALSE;
 	return (B_TRUE);
 }
 
@@ -195,10 +201,27 @@ boot_fb_blit(struct vis_consdisplay *rect)
 }
 
 static void
-bit_to_pix24(uchar_t c)
+bit_to_pix(uchar_t c)
 {
-	uint32_t *destp = (uint32_t *)glyph;
-	font_bit_to_pix24(&boot_fb_font, destp, c, WHITE_32, BLACK_32);
+	switch (fb->depth) {
+	case 8:
+		font_bit_to_pix8(&boot_fb_font, (uint8_t *)glyph, c,
+		    WHITE, BLACK);
+		break;
+	case 15:
+	case 16:
+		font_bit_to_pix16(&boot_fb_font, (uint16_t *)glyph, c,
+		    WHITE_16, BLACK_16);
+		break;
+	case 24:
+		font_bit_to_pix24(&boot_fb_font, (uint8_t *)glyph, c,
+		    WHITE_32, BLACK_32);
+		break;
+	case 32:
+		font_bit_to_pix32(&boot_fb_font, (uint32_t *)glyph, c,
+		    WHITE_32, BLACK_32);
+		break;
+	}
 }
 
 /*
@@ -361,7 +384,7 @@ boot_fb_putchar(uint8_t c)
 		break;
 	}
 
-	bit_to_pix24(c);
+	bit_to_pix(c);
 	display.col = fb->cursor.origin.x;
 	display.row = fb->cursor.origin.y;
 	display.width = boot_fb_font.width;

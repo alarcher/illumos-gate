@@ -62,6 +62,8 @@ typedef struct fb_info {
 	} cursor;
 	uint16_t font_width;
 	uint16_t font_height;
+	boolean_t inverse;
+	boolean_t inverse_screen;
 } fb_info_t;
 
 extern fb_info_t fb_info;
