@@ -124,7 +124,8 @@ static void	vgatext_cons_copy(struct gfxp_fb_softc *,
 			struct vis_conscopy *);
 static void	vgatext_cons_display(struct gfxp_fb_softc *,
 			struct vis_consdisplay *);
-static int	vgatext_cons_clear(struct gfxp_fb_softc *);
+static int	vgatext_cons_clear(struct gfxp_fb_softc *,
+			struct vis_consclear *);
 static void	vgatext_cons_cursor(struct gfxp_fb_softc *,
 			struct vis_conscursor *);
 static void	vgatext_polled_copy(struct vis_polledio_arg *,
@@ -535,6 +536,7 @@ vgatext_devinit(struct gfxp_fb_softc *softc, struct vis_devinit *data)
 	data->width = TEXT_COLS;
 	data->height = TEXT_ROWS;
 	data->linebytes = TEXT_COLS;
+	data->color_map = NULL;
 	data->depth = 4;
 	data->mode = VIS_TEXT;
 	data->polledio = &softc->polledio;
@@ -679,7 +681,7 @@ vgatext_polled_copy(
 
 /*ARGSUSED*/
 static int
-vgatext_cons_clear(struct gfxp_fb_softc *softc)
+vgatext_cons_clear(struct gfxp_fb_softc *softc, struct vis_consclear *ca)
 {
 	return (ENOTSUP);
 }

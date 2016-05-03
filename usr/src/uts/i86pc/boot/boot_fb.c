@@ -65,10 +65,10 @@ static fb_info_t	*fb;
 
 #define	WHITE		(0)
 #define	BLACK		(1)
-#define	WHITE_16	(0xFFFF)
-#define	BLACK_16	(0x0000)
 #define	WHITE_32	(0xFFFFFFFF)
 #define	BLACK_32	(0x00000000)
+static int fg = BLACK_32;
+static int bg = WHITE_32;
 
 /*
  * extract data from MB2 framebuffer tag and set up initial frame buffer.
@@ -127,6 +127,7 @@ boot_fb_init(int console)
 {
 	fb_info_pixel_coord_t window;
 	int i;
+	uint8_t c;
 
 	/* frame buffer address is mapped in dboot. */
 	fb_info.fb = (uint8_t *)(uintptr_t)fb_info.paddr;
@@ -145,11 +146,16 @@ boot_fb_init(int console)
 	fb_info.cursor.pos.y = 0;
 	fb_info.cursor.visible = B_TRUE;
 
+	if (fb_info.depth == 8)
+		c = WHITE;
+	else
+		c = bg;
+
 	/* clear the screen */
 	if (console == CONS_FRAMEBUFFER) {
 		for (i = 0; i < fb_info.screen.y; i++) {
 			uint8_t *dest = fb_info.fb + i * fb_info.pitch;
-			(void) memset(dest, 0, fb_info.pitch);
+			(void) memset(dest, c, fb_info.pitch);
 		}
 	}
 
@@ -203,23 +209,29 @@ boot_fb_blit(struct vis_consdisplay *rect)
 static void
 bit_to_pix(uchar_t c)
 {
+	uint8_t fg8, bg8;
+
 	switch (fb->depth) {
 	case 8:
-		font_bit_to_pix8(&boot_fb_font, (uint8_t *)glyph, c,
-		    WHITE, BLACK);
+		if (fg == WHITE_32) {
+			fg8 = WHITE;
+			bg8 = BLACK;
+		} else {
+			fg8 = BLACK;
+			bg8 = WHITE;
+		}
+		font_bit_to_pix8(&boot_fb_font, (uint8_t *)glyph, c, fg8, bg8);
 		break;
 	case 15:
 	case 16:
 		font_bit_to_pix16(&boot_fb_font, (uint16_t *)glyph, c,
-		    WHITE_16, BLACK_16);
+		    (uint16_t)fg, (uint16_t)bg);
 		break;
 	case 24:
-		font_bit_to_pix24(&boot_fb_font, (uint8_t *)glyph, c,
-		    WHITE_32, BLACK_32);
+		font_bit_to_pix24(&boot_fb_font, (uint8_t *)glyph, c, fg, bg);
 		break;
 	case 32:
-		font_bit_to_pix32(&boot_fb_font, (uint32_t *)glyph, c,
-		    WHITE_32, BLACK_32);
+		font_bit_to_pix32(&boot_fb_font, (uint32_t *)glyph, c, fg, bg);
 		break;
 	}
 }
