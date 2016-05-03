@@ -96,14 +96,8 @@ extern "C" {
  * Default foreground/background color
  */
 
-#ifdef _HAVE_TEM_FIRMWARE
 #define	DEFAULT_ANSI_FOREGROUND	ANSI_COLOR_BLACK
 #define	DEFAULT_ANSI_BACKGROUND	ANSI_COLOR_WHITE
-#else /* _HAVE_TEM_FIRMWARE */
-#define	DEFAULT_ANSI_FOREGROUND	ANSI_COLOR_WHITE
-#define	DEFAULT_ANSI_BACKGROUND	ANSI_COLOR_BLACK
-#endif
-
 
 #define	BUF_LEN		160 /* Two lines of data can be processed at a time */
 
@@ -224,6 +218,8 @@ typedef struct tem_state {
 	tem_modechg_cb_t	ts_modechg_cb;
 	tem_modechg_cb_arg_t	ts_modechg_arg;
 
+	color_map_fn_t	ts_color_map;
+
 	tem_color_t	ts_init_color; /* initial color and attributes */
 
 	struct tem_vt_state	*ts_active;
@@ -241,6 +237,7 @@ extern tem_safe_callbacks_t tem_safe_pix_callbacks;
  * (tem_state_t), and tem_* functions mean that they operate on the
  * per-tem structure (tem_vt_state). All "safe" interfaces are in tem_safe.c.
  */
+int	tems_cls_layered(struct vis_consclear *, cred_t *);
 void	tems_display_layered(struct vis_consdisplay *, cred_t *);
 void	tems_copy_layered(struct vis_conscopy *, cred_t *);
 void	tems_cursor_layered(struct vis_conscursor *, cred_t *);

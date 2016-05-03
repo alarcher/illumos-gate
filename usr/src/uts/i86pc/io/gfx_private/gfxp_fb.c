@@ -44,6 +44,16 @@
 #pragma weak gfxp_vgatext_ioctl = gfxp_fb_ioctl
 #pragma weak gfxp_vgatext_devmap = gfxp_fb_devmap
 
+text_cmap_t cmap_rgb16 = {
+/* BEGIN CSTYLED */
+/*             0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15
+              Wh+  Bk   Bl   Gr   Cy   Rd   Mg   Br   Wh   Bk+  Bl+  Gr+  Cy+  Rd+  Mg+  Yw */
+  .red =   {0xff,0x00,0x00,0x00,0x00,0x80,0x80,0x80,0x80,0x40,0x00,0x00,0x00,0xff,0xff,0xff},
+  .green = {0xff,0x00,0x00,0x80,0x80,0x00,0x00,0x80,0x80,0x40,0x00,0xff,0xff,0x00,0x00,0xff},
+  .blue =  {0xff,0x00,0x80,0x00,0x80,0x00,0x80,0x00,0x80,0x40,0xff,0x00,0xff,0x00,0xff,0x00}
+/* END CSTYLED */
+};
+
 /*
  * NOTE: this function is duplicated here and in consplat/vgatext while
  *       we work on a set of commitable interfaces to sunpci.c.
@@ -205,6 +215,7 @@ gfxp_fb_attach(dev_info_t *devi, ddi_attach_cmd_t cmd, gfxp_fb_softc_ptr_t ptr)
 	/* DDI_ATTACH */
 	softc->devi = devi; /* Copy and init DEVI */
 	softc->polledio.arg = (struct vis_polledio_arg *)softc;
+	softc->mode = -1;	/* the actual value will be set by tem */
 	mutex_init(&(softc->lock), NULL, MUTEX_DRIVER, NULL);
 
 	error = ddi_prop_lookup_string(DDI_DEV_T_ANY, ddi_get_parent(devi),
@@ -343,6 +354,17 @@ do_gfx_ioctl(int cmd, intptr_t data, int mode, struct gfxp_fb_softc *softc)
 			return (err);
 		}
 		break;
+
+	case VIS_CONSCLEAR:	/* clear screen */
+	{
+		struct vis_consclear pma;
+
+		if (ddi_copyin((void *)data, &pma,
+		    sizeof (struct vis_consclear), mode))
+			return (EFAULT);
+
+		return (softc->gfxp_ops->cons_clear(softc, &pma));
+	}
 
 	case VIS_CONSCOPY:	/* move */
 	{
