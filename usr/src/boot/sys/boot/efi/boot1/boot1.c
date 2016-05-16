@@ -481,8 +481,10 @@ probe_handle(EFI_HANDLE h, EFI_DEVICE_PATH *imgpath, BOOLEAN *preferred)
 {
 	dev_info_t *devinfo;
 	EFI_BLOCK_IO *blkio = NULL;
-	EFI_DEVICE_PATH *devpath;
+	EFI_DEVICE_PATH *devpath, *dp, *tmp;
+	HARDDRIVE_DEVICE_PATH *hd;
 	EFI_STATUS status;
+	extern UINT64 start_sector;	/* from multiboot.S */
 	UINTN i;
 
 	/* Figure out if we're dealing with an actual partition. */
@@ -514,6 +516,24 @@ probe_handle(EFI_HANDLE h, EFI_DEVICE_PATH *imgpath, BOOLEAN *preferred)
 	}
 
 	*preferred = device_paths_match(imgpath, devpath);
+
+	/* this is boot device, check for partition start */
+	if (*preferred == TRUE) {
+		tmp = devpath;
+		for (dp = devpath; !IsDevicePathEnd(dp); dp = tmp) {
+			tmp = NextDevicePathNode(dp);
+			if (IsDevicePathEnd(tmp))
+				break;
+		}
+
+		if (start_sector != 0 &&
+		    dp->Type == MEDIA_DEVICE_PATH &&
+		    dp->SubType == MEDIA_HARDDRIVE_DP) {
+			hd = (HARDDRIVE_DEVICE_PATH *) dp;
+			if (hd->PartitionStart != start_sector)
+				*preferred = FALSE;
+		}
+	}
 
 	/* Run through each module, see if it can load this partition */
 	for (i = 0; i < NUM_BOOT_MODULES; i++) {
