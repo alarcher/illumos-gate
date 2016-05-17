@@ -32,6 +32,7 @@
 #include <locale.h>
 #include <strings.h>
 #include <libfdisk.h>
+#include <libgen.h>
 
 #include <sys/dktp/fdisk.h>
 #include <sys/dkio.h>
@@ -93,6 +94,18 @@
  *
  * Stored location values in MBR/stage2 also mean the bootblocks must be
  * reinstalled in case the partition content is relocated.
+ *
+ * EFI boot program installation:
+ * EFI boot requires EFI System partition with following directory
+ * hierarchy:
+ * EFI/VENDOR/file
+ * EFI/BOOT/BOOTx64.EFI
+ * Where EFI/BOOT is fallback directory. While we have no mechanism to set
+ * EFI variable values to define vendor specific boot program location, we
+ * will just use EFI/BOOT/BOOTx64.EFI; also this setup is only possible
+ * solution for removable media.
+ * For now the boot1.efi is used for boot program, boot1.efi is also
+ * versioned as is gptzfsboot.
  */
 
 static boolean_t	write_mbr = B_FALSE;
@@ -103,6 +116,9 @@ static boolean_t	do_version = B_FALSE;
 static boolean_t	do_mirror_bblk = B_FALSE;
 static boolean_t	strip = B_FALSE;
 static boolean_t	verbose_dump = B_FALSE;
+
+#define	EFIBOOT64	"bootx64.efi"
+#define	EFIBOOT32	"bootia32.efi"
 
 /* Versioning string, if present. */
 static char		*update_str;
@@ -117,10 +133,9 @@ char			mboot_scan[MBOOT_SCAN_SIZE];
 static void check_options(char *);
 static int get_start_sector(ib_device_t *);
 
-static int read_stage1_from_file(char *, ib_data_t *data);
-static int read_bootblock_from_file(char *, ib_data_t *data);
-static int read_bootblock_from_disk(ib_device_t *device, ib_bootblock_t *,
-    char **);
+static int read_stage1_from_file(char *, ib_data_t *);
+static int read_bootblock_from_file(char *, ib_bootblock_t *);
+static int read_bootblock_from_disk(ib_device_t *, ib_bootblock_t *, char **);
 static void add_bootblock_einfo(ib_bootblock_t *, char *);
 static int prepare_stage1(ib_data_t *);
 static int prepare_bootblock(ib_data_t *, char *);
@@ -156,16 +171,15 @@ read_stage1_from_file(char *path, ib_data_t *dest)
 }
 
 static int
-read_bootblock_from_file(char *file, ib_data_t *data)
+read_bootblock_from_file(char *file, ib_bootblock_t *bblock)
 {
-	ib_bootblock_t	*bblock = &data->bootblock;
 	struct stat	sb;
 	uint32_t	buf_size;
 	uint32_t	mboot_off;
 	int		fd = -1;
 	int		retval = BC_ERROR;
 
-	assert(data != NULL);
+	assert(bblock != NULL);
 	assert(file != NULL);
 
 	fd = open(file, O_RDONLY);
@@ -914,6 +928,30 @@ get_boot_slice(ib_device_t *device, struct dk_gpt *vtoc)
 	char *path, *ptr;
 
 	for (i = 0; i < vtoc->efi_nparts; i++) {
+		if (vtoc->efi_parts[i].p_tag == V_SYSTEM) {
+			if ((path = strdup(device->target.path)) == NULL) {
+				perror(gettext("Memory allocation failure"));
+				return (BC_ERROR);
+			}
+			ptr = strrchr(path, 's');
+			ptr++;
+			*ptr = '\0';
+			(void) asprintf(&ptr, "%s%d", path, i);
+			free(path);
+			if (ptr == NULL) {
+				perror(gettext("Memory allocation failure"));
+				return (BC_ERROR);
+			}
+			device->system.path = ptr;
+			device->system.fd = open_device(ptr);
+			device->system.id = i;
+			device->system.devtype = IG_DEV_EFI;
+			device->system.fstype = IG_FS_PCFS;
+			device->system.start = vtoc->efi_parts[i].p_start;
+			device->system.size = vtoc->efi_parts[i].p_size;
+			device->system.offset = 0;
+		}
+
 		if (vtoc->efi_parts[i].p_tag == V_BOOT) {
 			if ((path = strdup(device->target.path)) == NULL) {
 				perror(gettext("Memory allocation failure"));
@@ -936,7 +974,6 @@ get_boot_slice(ib_device_t *device, struct dk_gpt *vtoc)
 			device->stage.start = vtoc->efi_parts[i].p_start;
 			device->stage.size = vtoc->efi_parts[i].p_size;
 			device->stage.offset = 1; /* leave sector 0 for VBR */
-			return (BC_SUCCESS);
 		}
 	}
 	return (BC_SUCCESS);
@@ -955,6 +992,7 @@ init_device(ib_device_t *device, char *path)
 	bzero(device, sizeof (*device));
 	device->fd = -1;	/* whole disk fd */
 	device->stage.fd = -1;	/* bootblock partition fd */
+	device->system.fd = -1;	/* efi system partition fd */
 	device->target.fd = -1;	/* target fs partition fd */
 
 	/* basic check, whole disk is not allowed */
@@ -1112,6 +1150,8 @@ cleanup_device(ib_device_t *device)
 		free(device->path);
 	if (device->stage.path)
 		free(device->stage.path);
+	if (device->system.path)
+		free(device->system.path);
 	if (device->target.path)
 		free(device->target.path);
 
@@ -1119,6 +1159,8 @@ cleanup_device(ib_device_t *device)
 		(void) close(device->fd);
 	if (device->stage.fd != -1)
 		(void) close(device->stage.fd);
+	if (device->system.fd != -1)
+		(void) close(device->system.fd);
 	if (device->target.fd != -1)
 		(void) close(device->target.fd);
 	bzero(device, sizeof (*device));
@@ -1221,9 +1263,13 @@ static int
 handle_install(char *progname, char **argv)
 {
 	ib_data_t	install_data;
+	ib_bootblock_t	*bblock = &install_data.bootblock;
+	ib_bootblock_t	*eblock = &install_data.efiblock;
 	char		*stage1 = NULL;
 	char		*bootblock = NULL;
+	char		*efiboot = NULL;
 	char		*device_path = NULL;
+	char		*tmp;
 	int		ret = BC_ERROR;
 
 	stage1 = strdup(argv[0]);
@@ -1233,6 +1279,18 @@ handle_install(char *progname, char **argv)
 	if (!device_path || !bootblock || !stage1) {
 		(void) fprintf(stderr, gettext("Missing parameter"));
 		usage(progname);
+		goto out;
+	}
+
+	tmp = strdup(argv[1]);
+	if (tmp == NULL) {
+		perror(gettext("Memory allocation failure"));
+		goto out;
+	}
+	(void) asprintf(&efiboot, "%s/" EFIBOOT64, dirname(tmp));
+	free(tmp);
+	if (efiboot == NULL) {
+		perror(gettext("Memory allocation failure"));
 		goto out;
 	}
 
@@ -1251,10 +1309,19 @@ handle_install(char *progname, char **argv)
 		goto out_dev;
 	}
 
-	if (read_bootblock_from_file(bootblock, &install_data) != BC_SUCCESS) {
+	if (read_bootblock_from_file(bootblock, bblock) != BC_SUCCESS) {
 		(void) fprintf(stderr, gettext("Error reading %s\n"),
 		    bootblock);
 		goto out_dev;
+	}
+
+	/* only read EFI boot program if there is system partition */
+	if (install_data.device.system.fd != -1) {
+		if (read_bootblock_from_file(efiboot, eblock) != BC_SUCCESS) {
+			(void) fprintf(stderr, gettext("Error reading %s\n"),
+			    efiboot);
+			goto out_dev;
+		}
 	}
 
 	/*
@@ -1277,6 +1344,7 @@ handle_install(char *progname, char **argv)
 out_dev:
 	cleanup_device(&install_data.device);
 out:
+	free(efiboot);
 	free(stage1);
 	free(bootblock);
 	free(device_path);
@@ -1285,8 +1353,9 @@ out:
 
 /*
  * Retrieves from a device the extended information (einfo) associated to the
- * installed stage2.
- * Expects one parameter, the device path, in the form: /dev/rdsk/c?[t?]d?s0.
+ * file or installed stage2.
+ * Expects one parameter, the device path, in the form: /dev/rdsk/c?[t?]d?s0
+ * or file name.
  * Returns:
  *        - BC_SUCCESS (and prints out einfo contents depending on 'flags')
  *	  - BC_ERROR (on error)
@@ -1295,7 +1364,7 @@ out:
 static int
 handle_getinfo(char *progname, char **argv)
 {
-
+	struct stat	sb;
 	ib_data_t	data;
 	ib_bootblock_t	*bblock = &data.bootblock;
 	ib_device_t	*device = &data.device;
@@ -1312,16 +1381,27 @@ handle_getinfo(char *progname, char **argv)
 		goto out;
 	}
 
+	if (stat(device_path, &sb) == -1) {
+		perror("stat");
+		goto out;
+	}
+
 	bzero(&data, sizeof (ib_data_t));
 	BOOT_DEBUG("device path: %s\n", device_path);
 
-	if (init_device(device, device_path) != BC_SUCCESS) {
-		(void) fprintf(stderr, gettext("Unable to gather device "
-		    "information from %s\n"), device_path);
-		goto out_dev;
+	if (S_ISREG(sb.st_mode) != 0) {
+		path = device_path;
+		ret = read_bootblock_from_file(device_path, bblock);
+	} else {
+		if (init_device(device, device_path) != BC_SUCCESS) {
+			(void) fprintf(stderr, gettext("Unable to gather "
+			    "device information from %s\n"), device_path);
+			goto out_dev;
+		}
+
+		ret = read_bootblock_from_disk(device, bblock, &path);
 	}
 
-	ret = read_bootblock_from_disk(device, bblock, &path);
 	if (ret == BC_ERROR) {
 		(void) fprintf(stderr, gettext("Error reading bootblock from "
 		    "%s\n"), path);
@@ -1356,7 +1436,8 @@ handle_getinfo(char *progname, char **argv)
 	retval = BC_SUCCESS;
 
 out_dev:
-	cleanup_device(&data.device);
+	if (S_ISREG(sb.st_mode) == 0)
+		cleanup_device(&data.device);
 out:
 	free(device_path);
 	return (retval);
@@ -1452,7 +1533,7 @@ out:
 #define	USAGE_STRING	"Usage:\t%s [-h|-m|-f|-n|-F|-u verstr] stage1 stage2 " \
 			"raw-device\n"					\
 			"\t%s -M [-n] raw-device attach-raw-device\n"	\
-			"\t%s [-e|-V] -i raw-device\n"
+			"\t%s [-e|-V] -i raw-device|file\n"
 
 #define	CANON_USAGE_STR	gettext(USAGE_STRING)
 
