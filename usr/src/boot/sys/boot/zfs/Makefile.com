@@ -29,7 +29,11 @@ CC=     $(GCC_ROOT)/bin/gcc
 CPPFLAGS=
 
 SRCS +=		../zfs.c ../gzip.c
-OBJS +=		zfs.o gzip.o
+SRCS +=		$(SRC)/common/crypto/edonr/edonr.c
+SRCS +=		$(SRC)/common/crypto/skein/skein.c
+SRCS +=		$(SRC)/common/crypto/skein/skein_iv.c
+SRCS +=		$(SRC)/common/crypto/skein/skein_block.c
+OBJS +=		zfs.o gzip.o edonr.o skein.o skein_iv.o skein_block.o
 
 CFLAGS= -O2 -nostdinc -I../../../../include -I../../..
 CFLAGS +=	-I../../common -I../../.. -I.. -I.
@@ -58,5 +62,11 @@ libzfsboot.a: $(OBJS)
 
 %.o:	../%.c
 	$(COMPILE.c) -o $@ $<
+
+%.o:	$(SRC)/common/crypto/edonr/%.c
+	$(COMPILE.c) -D_KERNEL -o $@ $<
+
+%.o:	$(SRC)/common/crypto/skein/%.c
+	$(COMPILE.c) -DSTAND -o $@ $<
 
 zfs.o: ../zfsimpl.c
