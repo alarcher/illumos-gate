@@ -120,7 +120,7 @@ Skein_256_InitExt(Skein_256_Ctxt_t *ctx, size_t hashBitLen, uint64_t treeInfo,
 		bcopy(cfg.b, ctx->X, sizeof (cfg.b));
 #if	SKEIN_NEED_SWAP
 		{
-			uint_t i;
+			int i;
 			/* convert key bytes to context words */
 			for (i = 0; i < SKEIN_256_STATE_WORDS; i++)
 				ctx->X[i] = Skein_Swap64(ctx->X[i]);
@@ -356,7 +356,7 @@ Skein_512_InitExt(Skein_512_Ctxt_t *ctx, size_t hashBitLen, uint64_t treeInfo,
 		bcopy(cfg.b, ctx->X, sizeof (cfg.b));
 #if	SKEIN_NEED_SWAP
 		{
-			uint_t i;
+			int i;
 			/* convert key bytes to context words */
 			for (i = 0; i < SKEIN_512_STATE_WORDS; i++)
 				ctx->X[i] = Skein_Swap64(ctx->X[i]);
@@ -588,7 +588,7 @@ Skein1024_InitExt(Skein1024_Ctxt_t *ctx, size_t hashBitLen, uint64_t treeInfo,
 		bcopy(cfg.b, ctx->X, sizeof (cfg.b));
 #if	SKEIN_NEED_SWAP
 		{
-			uint_t i;
+			int i;
 			/* convert key bytes to context words */
 			for (i = 0; i < SKEIN1024_STATE_WORDS; i++)
 				ctx->X[i] = Skein_Swap64(ctx->X[i]);
