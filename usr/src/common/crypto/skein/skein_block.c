@@ -227,7 +227,7 @@ Skein_256_Process_Block_CodeSize(void)
 	    ((uint8_t *)Skein_256_Process_Block);
 }
 
-uint_t
+unsigned int
 Skein_256_Unroll_Cnt(void)
 {
 	return (SKEIN_UNROLL_256);
@@ -458,7 +458,7 @@ Skein_512_Process_Block_CodeSize(void)
 	    ((uint8_t *)Skein_512_Process_Block);
 }
 
-uint_t
+unsigned int
 Skein_512_Unroll_Cnt(void)
 {
 	return (SKEIN_UNROLL_512);
@@ -758,7 +758,7 @@ Skein1024_Process_Block_CodeSize(void)
 	    ((uint8_t *)Skein1024_Process_Block);
 }
 
-uint_t
+unsigned int
 Skein1024_Unroll_Cnt(void)
 {
 	return (SKEIN_UNROLL_1024);
