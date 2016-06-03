@@ -2218,6 +2218,46 @@ zfs_spa_init(spa_t *spa)
 	return (rc);
 }
 
+static void
+free_vdevs(vdev_list_t *vdevs)
+{
+	int fd;
+	vdev_t *vdev;
+
+	if (vdevs == NULL)
+		return;
+
+	while ((vdev = STAILQ_FIRST(vdevs)) != NULL) {
+		free_vdevs(&vdev->v_children);
+		STAILQ_REMOVE_HEAD(vdevs, v_childlink);
+		STAILQ_REMOVE(&zfs_vdevs, vdev, vdev, v_alllink);
+		free((void *)vdev->v_devid);
+		free((void *)vdev->v_phys_path);
+		free((void *)vdev->v_name);
+		if (vdev->v_read_priv != NULL) {
+			/* v_read_priv can be open file descriptor */
+			fd = (int)(uintptr_t)vdev->v_read_priv;
+			if (fd < SOPEN_MAX)
+				close(fd);
+			else
+				free(vdev->v_read_priv);
+		}
+		free(vdev);
+	}
+}
+
+void zfs_spa_fini(spa_t *spa)
+{
+	if (spa == NULL)
+		return;
+
+	zio_checksum_templates_free(spa);
+	STAILQ_REMOVE(&zfs_pools, spa, spa, spa_link);
+	free_vdevs(&spa->spa_vdevs);
+	free(spa->spa_name);
+	free(spa);
+}
+
 static int
 zfs_dnode_stat(const spa_t *spa, dnode_phys_t *dn, struct stat *sb)
 {
