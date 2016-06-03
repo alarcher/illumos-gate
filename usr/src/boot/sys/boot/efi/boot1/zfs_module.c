@@ -181,40 +181,10 @@ init()
 }
 
 static void
-free_vdevs(vdev_list_t *vdevs)
-{
-	vdev_t *vdev;
-
-	if (vdevs == NULL)
-		return;
-
-	while ((vdev = STAILQ_FIRST(vdevs)) != NULL) {
-		free_vdevs(&vdev->v_children);
-		STAILQ_REMOVE_HEAD(vdevs, v_childlink);
-		if (vdev->v_devid != NULL)
-			free((void *)vdev->v_devid);
-		if (vdev->v_phys_path != NULL)
-			free((void *)vdev->v_phys_path);
-		if (vdev->v_name != NULL)
-			free((void *)vdev->v_name);
-		if (vdev->v_read_priv)
-			free(vdev->v_read_priv);
-		free(vdev);
-	}
-}
-
-static void
-free_spa(spa_t *spa)
-{
-	free_vdevs(&spa->spa_vdevs);
-	free(spa->spa_name);
-	free(spa);
-}
-
-static void
 fini(void)
 {
-	dev_info_t *dev;
+	dev_info_t *dev, *tdev;
+	spa_t *spa, *tspa;
 	EFI_STATUS status;
 
 	while (devices != NULL) {
@@ -224,7 +194,18 @@ fini(void)
 		    image, NULL);
 		status = bs->CloseProtocol(dev->devpath, &DevicePathGUID,
 		    image, NULL);
-		free_spa(dev->devdata);
+		spa = dev->devdata;
+		/* unlink this spa from other devices */
+		if (spa != NULL) {
+			for (tdev = devices; tdev != NULL; tdev = tdev->next) {
+				tspa = tdev->devdata;
+				if (tspa == NULL)
+					continue;
+				if (spa->spa_guid == tspa->spa_guid)
+					tdev->devdata = NULL;
+			}
+			zfs_spa_fini(spa);
+		}
 		free(dev);
 	}
 	zfs_fini();

@@ -387,24 +387,17 @@ zfs_dev_init(void)
 {
 	spa_t *spa;
 	spa_t *next;
-	spa_t *prev;
 
 	zfs_init();
 	if (archsw.arch_zfs_probe == NULL)
 		return (ENXIO);
 	archsw.arch_zfs_probe();
 
-	prev = NULL;
 	spa = STAILQ_FIRST(&zfs_pools);
 	while (spa != NULL) {
 		next = STAILQ_NEXT(spa, spa_link);
-		if (zfs_spa_init(spa)) {
-			if (prev == NULL)
-				STAILQ_REMOVE_HEAD(&zfs_pools, spa_link);
-			else
-				STAILQ_REMOVE_AFTER(&zfs_pools, prev, spa_link);
-		} else
-			prev = spa;
+		if (zfs_spa_init(spa))
+			zfs_spa_fini(spa);
 		spa = next;
 	}
 	return (0);
