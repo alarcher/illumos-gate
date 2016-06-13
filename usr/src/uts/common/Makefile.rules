@@ -892,6 +892,10 @@ $(OBJS_DIR)/%.o:                $(UTSBASE)/common/io/iwk/%.c
 	$(COMPILE.c) -o $@ $<
 	$(CTFCONVERT_O)
 
+$(OBJS_DIR)/%.o:                $(UTSBASE)/common/io/iwn/%.c
+	$(COMPILE.c) -o $@ $<
+	$(CTFCONVERT_O)
+
 $(OBJS_DIR)/%.o:                $(UTSBASE)/common/io/iwp/%.c
 	$(COMPILE.c) -o $@ $<
 	$(CTFCONVERT_O)
