@@ -39,11 +39,14 @@ __FBSDID("$FreeBSD$");
 #include <efipciio.h>
 #include <machine/metadata.h>
 
+#include "video.h"
 #include "framebuffer.h"
 
 static EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
 static EFI_GUID pciio_guid = EFI_PCI_IO_PROTOCOL_GUID;
 static EFI_GUID uga_guid = EFI_UGA_DRAW_PROTOCOL_GUID;
+static EFI_GUID active_edid_guid = EFI_EDID_ACTIVE_PROTOCOL_GUID;
+static EFI_GUID discovered_edid_guid = EFI_EDID_DISCOVERED_PROTOCOL_GUID;
 
 static u_int
 efifb_color_depth(struct efi_fb *efifb)
@@ -460,6 +463,96 @@ print_efifb(int mode, struct efi_fb *efifb, int verbose)
 		    efifb->fb_mask_red, efifb->fb_mask_green,
 		    efifb->fb_mask_blue);
 	}
+}
+
+COMMAND_SET(edid, "edid", "show edid mode", command_edid);
+
+static int
+grub_video_gop_get_edid (EFI_HANDLE gop, struct vesa_edid_info *edid_info)
+{
+	EFI_EDID_ACTIVE_PROTOCOL *edid;
+	EFI_GUID *guid;
+	EFI_STATUS status;
+	size_t size;
+
+	memset (edid_info, 0, sizeof (*edid_info));
+	guid = &active_edid_guid;
+	status = BS->OpenProtocol(gop, guid, (VOID **)&edid, IH, NULL,
+	    EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+	if (status != EFI_SUCCESS) {
+		guid = &discovered_edid_guid;
+		status = BS->OpenProtocol(gop, guid, (VOID **)&edid, IH, NULL,
+		    EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+	}
+	if (status != EFI_SUCCESS) {
+		sprintf(command_errbuf, "EDID Protocol is not "
+		    "present (error=%lu)", EFI_ERROR_CODE(status));
+		return (1);
+	}
+
+	size = edid->SizeOfEdid;
+	if (size > sizeof (*edid_info))
+		size = sizeof (*edid_info);
+
+	memcpy(edid_info, edid->Edid, size);
+	status = BS->CloseProtocol(gop, guid, IH, NULL);
+	return (0);
+}
+
+static int
+command_edid(int argc, char *argv[])
+{
+	struct vesa_edid_info edid_info;
+	EFI_HANDLE *handles;
+	UINTN bufsz = 0;
+	EFI_STATUS status;
+	u_int mode;
+	int rc, i;
+
+	status = BS->LocateHandle(ByProtocol, &gop_guid, NULL, &bufsz, NULL);
+	if (status != EFI_BUFFER_TOO_SMALL) {
+		sprintf(command_errbuf, "%s: Graphics Output Protocol not "
+		    "present (error=%lu)", argv[0], EFI_ERROR_CODE(status));
+		return (CMD_ERROR);
+	}
+	if ((handles = malloc(bufsz)) == NULL) {
+		sprintf(command_errbuf, "out of memory");
+		return (CMD_ERROR);
+	}
+
+	status = BS->LocateHandle(ByProtocol, &gop_guid, NULL, &bufsz, handles);
+	if (EFI_ERROR(status)) {
+		sprintf(command_errbuf, "unexpected error: %lu",
+		    EFI_ERROR_CODE(status));
+		free(handles);
+		return (CMD_ERROR);
+	}
+
+	for (i = 0; i < (bufsz / sizeof (EFI_HANDLE)); i++) {
+		rc = grub_video_gop_get_edid (handles[i], &edid_info);
+		if (rc == 0)
+			break;
+	}
+
+	free(handles);
+	if (rc != 0)
+		return (CMD_ERROR);
+
+	printf("edid version: %d.%d\n", edid_info.header.version,
+	    edid_info.header.revision);
+	if (edid_info.header.version == 1 &&
+	    (edid_info.display.supported_features
+	    & EDID_FEATURE_PREFERRED_TIMING_MODE) &&
+	    edid_info.detailed_timings[0].pixel_clock) {
+		printf("width: %d height: %d\n",
+		    edid_info.detailed_timings[0].horizontal_active_lo |
+		    (((unsigned int)
+		    (edid_info.detailed_timings[0].horizontal_hi & 0xf0)) << 4),
+		    edid_info.detailed_timings[0].vertical_active_lo |
+		    (((unsigned int)
+		    (edid_info.detailed_timings[0].vertical_hi & 0xf0)) << 4));
+	}
+	return (CMD_OK);
 }
 
 COMMAND_SET(gop, "gop", "graphics output protocol", command_gop);
