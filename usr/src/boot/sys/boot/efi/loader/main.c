@@ -815,6 +815,8 @@ struct protocol_name {
 	{ EFI_FIRMWARE_VOLUME_DISPATCH_PROTOCOL_GUID,
 	    "firmware volume dispatch" },
 	{ LZMA_COMPRESS_GUID, "lzma compress" },
+	{ EFI_EDID_ACTIVE_PROTOCOL_GUID, "Active EDID" },
+	{ EFI_EDID_DISCOVERED_PROTOCOL_GUID, "Discovered EDID" },
 	{ { 0,0,0,{0,0,0,0,0,0,0,0} }, NULL }	/* must be last entry */
 };
 

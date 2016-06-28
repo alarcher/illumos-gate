@@ -54,6 +54,7 @@ Revision History
 #include "efiapi.h"
 #include "efifs.h"
 #include "efierr.h"
+#include "efiedid.h"
 #include "efigop.h"
 #include "efiip.h"
 #include "efiudp.h"
