@@ -63,7 +63,7 @@ extern void boot_fb_init(int);
 extern void boot_fb_putchar(uint8_t);
 
 fb_info_t fb_info;
-static int cons_color = CONS_COLOR;
+static int cons_color = 0xF0;		/* black on white */
 static int console = CONS_SCREEN_TEXT;
 static int tty_num = 0;
 static int tty_addr[] = {0x3f8, 0x2f8, 0x3e8, 0x2e8};
@@ -105,9 +105,13 @@ clear_screen(void)
 	 * the cursor position is dependant upon the cursor
 	 * skew, which is initialized by vga_cursor_display()
 	 */
+	vga_init();
 	vga_cursor_display();
 	vga_clear(cons_color);
 	vga_setpos(0, 0);
+
+	fb_info.terminal.x = 80;
+	fb_info.terminal.y = 25;
 }
 
 /* Put the character C on the screen. */
