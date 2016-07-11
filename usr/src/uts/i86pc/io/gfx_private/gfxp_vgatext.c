@@ -541,6 +541,8 @@ vgatext_devinit(struct gfxp_fb_softc *softc, struct vis_devinit *data)
 	data->mode = VIS_TEXT;
 	data->polledio = &softc->polledio;
 
+	vgatext_save_text(softc);	/* save current console */
+	vgatext_hide_cursor(softc);
 	return (0);
 }
 
@@ -683,7 +685,23 @@ vgatext_polled_copy(
 static int
 vgatext_cons_clear(struct gfxp_fb_softc *softc, struct vis_consclear *ca)
 {
-	return (ENOTSUP);
+	uint16_t val, fg, *base;
+	int i;
+
+	if (ca->bg_color == 0)		/* bright white */
+		fg = 1;			/* black */
+	else
+		fg = 8;
+
+	val = (solaris_color_to_pc_color[ca->bg_color & 0xf] << 4) |
+	    solaris_color_to_pc_color[fg];
+	val = (val << 8) | ' ';
+
+	base = (uint16_t *)softc->console.vga.current_base;
+	for (i = 0; i < TEXT_ROWS * TEXT_COLS; i++)
+		base[i] = val;
+
+	return (0);
 }
 
 static void
@@ -732,27 +750,43 @@ vgatext_polled_cursor(
 	vgatext_cons_cursor((struct gfxp_fb_softc *)arg, ca);
 }
 
-
-
-/*ARGSUSED*/
 static void
 vgatext_hide_cursor(struct gfxp_fb_softc *softc)
 {
-	/* Nothing at present */
+	uint8_t msl, s;
+
+	if (softc->silent)
+		return;
+
+	msl = vga_get_crtc(&softc->console.vga.regs, VGA_CRTC_MAX_S_LN) & 0x1f;
+	s = vga_get_crtc(&softc->console.vga.regs, VGA_CRTC_CSSL) & 0xc0;
+	s |= (1<<5);
+
+	/* disable cursor */
+	vga_set_crtc(&softc->console.vga.regs, VGA_CRTC_CSSL, s);
+	vga_set_crtc(&softc->console.vga.regs, VGA_CRTC_CESL, msl);
 }
 
 static void
 vgatext_set_cursor(struct gfxp_fb_softc *softc, int row, int col)
 {
 	short	addr;
+	uint8_t msl, s;
 
 	if (softc->silent)
 		return;
+
+	msl = vga_get_crtc(&softc->console.vga.regs, VGA_CRTC_MAX_S_LN) & 0x1f;
+	s = vga_get_crtc(&softc->console.vga.regs, VGA_CRTC_CSSL) & 0xc0;
 
 	addr = row * TEXT_COLS + col;
 
 	vga_set_crtc(&softc->console.vga.regs, VGA_CRTC_CLAH, addr >> 8);
 	vga_set_crtc(&softc->console.vga.regs, VGA_CRTC_CLAL, addr & 0xff);
+
+	/* enable cursor */
+	vga_set_crtc(&softc->console.vga.regs, VGA_CRTC_CSSL, s);
+	vga_set_crtc(&softc->console.vga.regs, VGA_CRTC_CESL, msl);
 }
 
 static void

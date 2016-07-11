@@ -24,14 +24,13 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 /*
  * Miniature VGA driver for bootstrap.
  */
 
 #include <sys/archsystm.h>
 #include <sys/vgareg.h>
+#include <sys/framebuffer.h>
 
 #include "boot_vga.h"
 
@@ -39,9 +38,6 @@
 #include "../dboot/dboot_asm.h"
 #include "../dboot/dboot_xboot.h"
 #endif
-
-#define	VGA_COLOR_CRTC_INDEX	0x3d4
-#define	VGA_COLOR_CRTC_DATA	0x3d5
 
 #if defined(__xpv) && defined(_BOOT)
 
@@ -67,6 +63,20 @@ extern unsigned short *video_fb;
 
 static void vga_set_crtc(int index, unsigned char val);
 static unsigned char vga_get_crtc(int index);
+static void vga_set_atr(int index, unsigned char val);
+static unsigned char vga_get_atr(int index);
+
+void
+vga_init(void)
+{
+	unsigned char val;
+
+	/* set 16bit colors */
+	val = vga_get_atr(VGA_ATR_MODE);
+	val &= ~VGA_ATR_MODE_BLINK;
+	val &= ~VGA_ATR_MODE_9WIDE;
+	vga_set_atr(VGA_ATR_MODE, val);
+}
 
 void
 vga_cursor_display(void)
@@ -88,8 +98,8 @@ vga_cursor_display(void)
 	 *   line value.
 	 * - Bit 5 is the cursor disable bit.
 	 */
-	val = vga_get_crtc(VGA_CRTC_CSSL);
-	vga_set_crtc(VGA_CRTC_CSSL, (val & 0xc) | ((msl - 2) & 0x1f));
+	val = vga_get_crtc(VGA_CRTC_CSSL) & 0xc0;
+	vga_set_crtc(VGA_CRTC_CSSL, val);
 
 	/*
 	 * Continue setting the cursors size.
@@ -150,6 +160,9 @@ vga_setpos(int row, int col)
 	off = row * VGA_TEXT_COLS + col;
 	vga_set_crtc(VGA_CRTC_CLAH, off >> 8);
 	vga_set_crtc(VGA_CRTC_CLAL, off & 0xff);
+
+	fb_info.cursor.pos.y = row;
+	fb_info.cursor.pos.x = col;
 }
 
 void
@@ -163,15 +176,41 @@ vga_getpos(int *row, int *col)
 }
 
 static void
+vga_set_atr(int index, unsigned char val)
+{
+	(void) inb(VGA_REG_ADDR + CGA_STAT);
+	outb(VGA_REG_ADDR + VGA_ATR_AD, index);
+	outb(VGA_REG_ADDR + VGA_ATR_AD, val);
+
+	(void) inb(VGA_REG_ADDR + CGA_STAT);
+	outb(VGA_REG_ADDR + VGA_ATR_AD, VGA_ATR_ENB_PLT);
+}
+
+static unsigned char
+vga_get_atr(int index)
+{
+	unsigned char val;
+
+	(void) inb(VGA_REG_ADDR + CGA_STAT);
+	outb(VGA_REG_ADDR + VGA_ATR_AD, index);
+	val = inb(VGA_REG_ADDR + VGA_ATR_DATA);
+
+	(void) inb(VGA_REG_ADDR + CGA_STAT);
+	outb(VGA_REG_ADDR + VGA_ATR_AD, VGA_ATR_ENB_PLT);
+
+	return (val);
+}
+
+static void
 vga_set_crtc(int index, unsigned char val)
 {
-	outb(VGA_COLOR_CRTC_INDEX, index);
-	outb(VGA_COLOR_CRTC_DATA, val);
+	outb(VGA_REG_ADDR + VGA_CRTC_ADR, index);
+	outb(VGA_REG_ADDR + VGA_CRTC_DATA, val);
 }
 
 static unsigned char
 vga_get_crtc(int index)
 {
-	outb(VGA_COLOR_CRTC_INDEX, index);
-	return (inb(VGA_COLOR_CRTC_DATA));
+	outb(VGA_REG_ADDR + VGA_CRTC_ADR, index);
+	return (inb(VGA_REG_ADDR + VGA_CRTC_DATA));
 }
