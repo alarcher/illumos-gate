@@ -65,6 +65,7 @@ ssize_t	efi_readin(const int fd, vm_offset_t dest, const size_t len);
 vm_offset_t efi_loadaddr(u_int type, void *data, vm_offset_t addr);
 void efi_free_loadaddr(vm_offset_t addr, size_t pages);
 void * efi_translate(vm_offset_t ptr);
+void bi_isadir(void);
 
 multiboot2_info_header_t *efi_copy_finish(struct relocator *);
 
