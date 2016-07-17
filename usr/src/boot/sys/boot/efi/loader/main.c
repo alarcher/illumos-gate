@@ -448,7 +448,10 @@ main(int argc, CHAR16 *argv[])
 	snprintf(var, sizeof(var), "%d.%02d", ST->Hdr.Revision >> 16,
 	    ST->Hdr.Revision & 0xffff);
 	env_setenv("efi-version", EV_VOLATILE, var, env_noset, env_nounset);
-	setenv("ISADIR", "amd64", 1);	/* we only build 64bit */
+
+	/* set ISADIR */
+	bi_isadir();
+
 	acpi_detect();
 
 	if ((ptr = efi_get_table(&smbios3)) == NULL)
