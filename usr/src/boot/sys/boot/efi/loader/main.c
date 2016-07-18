@@ -33,6 +33,7 @@
 #include <stand.h>
 #include <string.h>
 #include <setjmp.h>
+#include <inttypes.h>
 
 #include <efi.h>
 #include <efilib.h>
@@ -504,7 +505,7 @@ command_memmap(int argc __unused, char *argv[] __unused)
 	UINTN key, dsz;
 	UINT32 dver;
 	EFI_STATUS status;
-	int i, ndesc;
+	int i, ndesc, shift = 0;
 	int rv = 0;
 	char line[80];
 	static const char *types[] = {
@@ -547,32 +548,42 @@ command_memmap(int argc __unused, char *argv[] __unused)
 		return (CMD_OK);
 	}
 
+	/*
+	 * UEFI32 in qemu and vbox has issue that memory
+	 * data is stored in high part of the uint64 field.
+	 * Since Attribute can not be 0, set shift value based on
+	 * following test by 32 bits.
+	 */
+	if ((map->Attribute & 0xffffffff) == 0)
+		shift = 32;
+
 	for (i = 0, p = map; i < ndesc;
 	     i++, p = NextMemoryDescriptor(p, dsz)) {
-		snprintf(line, 80, "%23s %012lx %012lx %08lx ",
+		snprintf(line, 80, "%23s %012" PRIx64 " %012" PRIx64
+		    " %08" PRIx64 " ",
 		    types[p->Type],
-		    (unsigned long)p->PhysicalStart,
-		    (unsigned long)p->VirtualStart,
-		    (unsigned long)p->NumberOfPages);
+		    p->PhysicalStart >> shift,
+		    p->VirtualStart >> shift,
+		    p->NumberOfPages >> shift);
 		rv = pager_output(line);
 		if (rv)
 			break;
 
-		if (p->Attribute & EFI_MEMORY_UC)
+		if ((p->Attribute >> shift) & EFI_MEMORY_UC)
 			printf("UC ");
-		if (p->Attribute & EFI_MEMORY_WC)
+		if ((p->Attribute >> shift) & EFI_MEMORY_WC)
 			printf("WC ");
-		if (p->Attribute & EFI_MEMORY_WT)
+		if ((p->Attribute >> shift) & EFI_MEMORY_WT)
 			printf("WT ");
-		if (p->Attribute & EFI_MEMORY_WB)
+		if ((p->Attribute >> shift) & EFI_MEMORY_WB)
 			printf("WB ");
-		if (p->Attribute & EFI_MEMORY_UCE)
+		if ((p->Attribute >> shift) & EFI_MEMORY_UCE)
 			printf("UCE ");
-		if (p->Attribute & EFI_MEMORY_WP)
+		if ((p->Attribute >> shift) & EFI_MEMORY_WP)
 			printf("WP ");
-		if (p->Attribute & EFI_MEMORY_RP)
+		if ((p->Attribute >> shift) & EFI_MEMORY_RP)
 			printf("RP ");
-		if (p->Attribute & EFI_MEMORY_XP)
+		if ((p->Attribute >> shift) & EFI_MEMORY_XP)
 			printf("XP ");
 		rv = pager_output("\n");
 		if (rv)
