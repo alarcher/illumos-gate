@@ -18,6 +18,7 @@
  */
 
 #include <stand.h>
+#include <inttypes.h>
 #include <efi.h>
 #include <efilib.h>
 #include <sys/param.h>
@@ -73,7 +74,7 @@ void efi_getsmap(void)
 	STAILQ_HEAD(smap_head, smap_buf) head =
 	    STAILQ_HEAD_INITIALIZER(head);
 	struct smap_buf *cur, *next;
-	int i, n, ndesc;
+	int i, n, ndesc, shift = 0;
 	int type = -1;
 
 	size = 0;
@@ -85,6 +86,15 @@ void efi_getsmap(void)
 		free(efi_mmap);
 		return;
 	}
+
+	/*
+	 * UEFI32 in qemu and vbox has issue that memory
+	 * data is stored in high part of the uint64 field.
+	 * Since Attribute can not be 0, set shift value based on
+	 * following test by 32 bits.
+	 */
+	if ((efi_mmap->Attribute & 0xffffffff) == 0)
+		shift = 32;
 
 	STAILQ_INIT(&head);
 	n = 0;
@@ -98,8 +108,8 @@ void efi_getsmap(void)
 			if (next == NULL)
 				break;
 
-			next->smap.base = p->PhysicalStart;
-			next->smap.length = p->NumberOfPages << 12;
+			next->smap.base = p->PhysicalStart >> shift;
+			next->smap.length = (p->NumberOfPages >> shift) << 12;
 			/*
 			 * ACPI 6.1 tells the lower memory should be
 			 * reported as normal memory, so we enforce
@@ -119,8 +129,9 @@ void efi_getsmap(void)
 			continue;
 		}
 		if ((smap_type(p->Type) == type) &&
-		    (p->PhysicalStart == next->smap.base + next->smap.length)) {
-			next->smap.length += (p->NumberOfPages << 12);
+		    ((p->PhysicalStart >> shift) ==
+		    next->smap.base + next->smap.length)) {
+			next->smap.length += ((p->NumberOfPages>>shift) << 12);
 			p = NextMemoryDescriptor(p, desc_size);
 			i++;
 		} else
@@ -166,9 +177,10 @@ command_smap(int argc, char *argv[])
 		return (CMD_ERROR);
 
 	for (i = 0; i < smaplen; i++)
-		printf("SMAP type=%02x base=%016llx len=%016llx\n",
-		    (unsigned int)smapbase[i].type,
-		    (unsigned long long)smapbase[i].base,
-		    (unsigned long long)smapbase[i].length);
+		printf("SMAP type=%02" PRIx32 " base=%016" PRIx64
+		    " len=%016" PRIx64 "\n",
+		    smapbase[i].type,
+		    smapbase[i].base,
+		    smapbase[i].length);
 	return (CMD_OK);
 }

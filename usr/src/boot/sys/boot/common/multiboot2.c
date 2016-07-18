@@ -877,13 +877,30 @@ multiboot2_exec(struct preloaded_file *fp)
 		tag->descr_size = (uint32_t) desc_size;
 
 		/*
+		 * UEFI32 in qemu and vbox has issue that memory
+		 * data is stored in high part of the uint64 field.
+		 * Since Attribute can not be 0, set shift value based on
+		 * following test by 32 bits.
+		 */
+		map = (EFI_MEMORY_DESCRIPTOR *)tag->efi_mmap;
+		if ((map->Attribute & 0xffffffff) == 0) {
+			for (i = 0; i < size / desc_size;
+			    i++, map = NextMemoryDescriptor(map, desc_size)) {
+				map->PhysicalStart >>= 32;
+				map->VirtualStart >>= 32;
+				map->NumberOfPages >>= 32;
+				map->Attribute >>= 32;
+			}
+			map = (EFI_MEMORY_DESCRIPTOR *)tag->efi_mmap;
+		}
+
+		/*
 		 * Find relocater pages. We assume we have free pages
 		 * below kernel load address.
 		 * In this version we are using 5 pages:
 		 * relocator data, trampoline, copy, memmove, stack
 		 */
-		for (i = 0, map = (EFI_MEMORY_DESCRIPTOR *)tag->efi_mmap;
-		    i < size / desc_size;
+		for (i = 0; i < size / desc_size;
 		    i++, map = NextMemoryDescriptor(map, desc_size)) {
 			if (map->PhysicalStart == 0)
 				continue;
