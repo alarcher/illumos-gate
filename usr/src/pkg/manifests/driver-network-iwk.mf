@@ -38,8 +38,7 @@ set name=variant.arch value=i386
 dir path=kernel group=sys
 dir path=kernel/drv group=sys
 dir path=kernel/drv/$(ARCH64) group=sys
-driver name=iwk alias=pciex8086,4230 clone_perms="iwk 0666 root sys" \
-    perms="* 0666 root sys"
+driver name=iwk clone_perms="iwk 0666 root sys" perms="* 0666 root sys"
 file path=kernel/drv/$(ARCH64)/iwk group=sys
 file path=kernel/drv/iwk group=sys
 legacy pkg=SUNWiwk desc="Intel(R) PRO/Wireless 4965AGN driver" \
