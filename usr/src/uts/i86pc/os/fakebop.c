@@ -50,6 +50,7 @@
 #include <sys/machsystm.h>
 #include <sys/archsystm.h>
 #include <sys/boot_console.h>
+#include <sys/framebuffer.h>
 #include <sys/cmn_err.h>
 #include <sys/systm.h>
 #include <sys/promif.h>
@@ -90,6 +91,9 @@ static uint_t kbm_debug = 0;
 	for (cp = (s); *cp; ++cp)		\
 		bcons_putchar(*cp);		\
 	}
+
+/* callback to boot_fb to set shadow frame buffer */
+extern void boot_fb_shadow_init(bootops_t *);
 
 struct xboot_info *xbootp;	/* boot info from "glue" code in low memory */
 bootops_t bootop;	/* simple bootops we'll pass on to kernel */
@@ -1874,6 +1878,8 @@ _start(struct xboot_info *xbp)
 	 */
 	bops->bsys_ealloc = do_bsys_ealloc;
 
+	/* Set up the shadow fb for framebuffer console */
+	boot_fb_shadow_init(bops);
 #ifdef __xpv
 	/*
 	 * On domain 0 we need to free up some physical memory that is

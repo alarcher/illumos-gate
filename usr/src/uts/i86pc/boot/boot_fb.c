@@ -30,6 +30,7 @@
 #include <sys/framebuffer.h>
 #include <sys/bootinfo.h>
 #include <sys/boot_console.h>
+#include <sys/bootconf.h>
 
 /*
  * Simplified visual_io data structures from visual_io.h
@@ -57,18 +58,15 @@ struct vis_conscopy {
 
 static struct font	boot_fb_font; /* set by set_font() */
 static uint8_t		glyph[MAX_GLYPH];
-static uint8_t		blank[MAX_GLYPH];
-static uint8_t		cursor[MAX_GLYPH];
 static uint32_t		last_line_size;
 static fb_info_pixel_coord_t last_line;
-static fb_info_t	*fb;
 
 #define	WHITE		(0)
 #define	BLACK		(1)
 #define	WHITE_32	(0xFFFFFFFF)
 #define	BLACK_32	(0x00000000)
-static int fg = BLACK_32;
-static int bg = WHITE_32;
+static uint32_t fg = BLACK_32;
+static uint32_t bg = WHITE_32;
 
 /*
  * extract data from MB2 framebuffer tag and set up initial frame buffer.
@@ -77,12 +75,13 @@ boolean_t
 xbi_fb_init(struct xboot_info *xbi)
 {
 	multiboot_tag_framebuffer_t *tag;
+	boot_framebuffer_t *xbi_fb;
 
-	if (xbi->bi_framebuffer == NULL)
+	xbi_fb = (boot_framebuffer_t *)(uintptr_t)xbi->bi_framebuffer;
+	if (xbi_fb == NULL)
 		return (B_FALSE);
-	tag = (multiboot_tag_framebuffer_t *)(uintptr_t)xbi->bi_framebuffer;
-
-	if (tag->common.framebuffer_type != MULTIBOOT_FRAMEBUFFER_TYPE_RGB)
+	tag = (multiboot_tag_framebuffer_t *)(uintptr_t)xbi_fb->framebuffer;
+	if (tag == NULL)
 		return (B_FALSE);
 
 	fb_info.paddr = tag->common.framebuffer_addr;
@@ -91,6 +90,27 @@ xbi_fb_init(struct xboot_info *xbi)
 	fb_info.depth = tag->common.framebuffer_bpp;
 	fb_info.screen.x = tag->common.framebuffer_width;
 	fb_info.screen.y = tag->common.framebuffer_height;
+	fb_info.fb_size = fb_info.screen.y * fb_info.pitch;
+
+	fb_info.cursor.origin.x = xbi_fb->cursor.origin.x;
+	fb_info.cursor.origin.y = xbi_fb->cursor.origin.y;
+	fb_info.cursor.pos.x = xbi_fb->cursor.pos.x;
+	fb_info.cursor.pos.y = xbi_fb->cursor.pos.y;
+	fb_info.cursor.visible = xbi_fb->cursor.visible;
+
+	fb_info.inverse = xbi_fb->inverse;
+	fb_info.inverse_screen = xbi_fb->inverse_screen;
+
+	switch (tag->common.framebuffer_type) {
+	case MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT:
+		return (B_FALSE);
+	case MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED:
+		return (B_TRUE);
+	case MULTIBOOT_FRAMEBUFFER_TYPE_RGB:
+		break;
+	default:
+		return (B_FALSE);
+	}
 
 	fb_info.rgb.red.size = tag->u.fb2.framebuffer_red_mask_size;
 	fb_info.rgb.red.pos = tag->u.fb2.framebuffer_red_field_position;
@@ -99,8 +119,6 @@ xbi_fb_init(struct xboot_info *xbi)
 	fb_info.rgb.blue.size = tag->u.fb2.framebuffer_blue_mask_size;
 	fb_info.rgb.blue.pos = tag->u.fb2.framebuffer_blue_field_position;
 
-	fb_info.inverse = B_FALSE;
-	fb_info.inverse_screen = B_FALSE;
 	return (B_TRUE);
 }
 
@@ -114,24 +132,97 @@ boot_fb_set_font(uint16_t height, uint16_t width)
 	fb_info.font_height = boot_fb_font.height;
 }
 
-/* set boot frame buffer pointer */
-void
-boot_fb_set(fb_info_t *fbp)
+/* fill framebuffer */
+static void
+boot_fb_fill(uint8_t *dst, uint32_t data, uint32_t len)
 {
-	fb = fbp;
+	uint16_t *dst16;
+	uint32_t *dst32;
+	uint32_t i;
+
+	switch (fb_info.depth) {
+	case 24:
+	case 8:
+		for (i = 0; i < len; i++)
+			dst[i] = (uint8_t)data;
+		break;
+	case 15:
+	case 16:
+		dst16 = (uint16_t *)dst;
+		for (i = 0; i < len >> 1; i++) {
+			dst16[i] = (uint16_t)data;
+		}
+		break;
+	case 32:
+		dst32 = (uint32_t *)dst;
+		for (i = 0; i < len >> 2; i++) {
+			dst32[i] = data;
+		}
+		break;
+	}
+}
+
+/* copy data to framebuffer */
+static void
+boot_fb_cpy(uint8_t *dst, uint8_t *src, uint32_t len)
+{
+	uint16_t *dst16, *src16;
+	uint32_t *dst32, *src32;
+	uint32_t i;
+
+	switch (fb_info.depth) {
+	case 24:
+	case 8:
+		for (i = 0; i < len; i++)
+			dst[i] = src[i];
+		break;
+	case 15:
+	case 16:
+		dst16 = (uint16_t *)dst;
+		src16 = (uint16_t *)src;
+		for (i = 0; i < len >> 1; i++) {
+			dst16[i] = src16[i];
+		}
+		break;
+	case 32:
+		dst32 = (uint32_t *)dst;
+		src32 = (uint32_t *)src;
+		for (i = 0; i < len >> 2; i++) {
+			dst32[i] = src32[i];
+		}
+		break;
+	}
+}
+
+/*
+ * Allocate shadow frame buffer, called from fakebop.c when early boot
+ * allocator is ready.
+ */
+void
+boot_fb_shadow_init(bootops_t *bops)
+{
+	if (fb_info.fb == NULL)
+		return;			/* nothing to do */
+
+	fb_info.shadow_fb = (uint8_t *)bops->bsys_alloc(NULL, NULL,
+	    fb_info.fb_size, MMU_PAGESIZE);
+
+	if (fb_info.shadow_fb == NULL)
+		return;
+
+	/* Copy FB to shadow */
+	boot_fb_cpy(fb_info.shadow_fb, fb_info.fb, fb_info.fb_size);
 }
 
 /* set up out simple console. */
+/*ARGSUSED*/
 void
 boot_fb_init(int console)
 {
 	fb_info_pixel_coord_t window;
-	int i;
-	uint8_t c;
 
 	/* frame buffer address is mapped in dboot. */
 	fb_info.fb = (uint8_t *)(uintptr_t)fb_info.paddr;
-	fb_info.fb_size = fb_info.screen.x * fb_info.screen.y * fb_info.bpp;
 
 	boot_fb_set_font(fb_info.screen.y, fb_info.screen.x);
 	window.x =
@@ -140,33 +231,60 @@ boot_fb_init(int console)
 	    (fb_info.screen.y - fb_info.terminal.y * boot_fb_font.height) / 2;
 	fb_info.terminal_origin.x = window.x;
 	fb_info.terminal_origin.y = window.y;
-	fb_info.cursor.origin.x = window.x;
-	fb_info.cursor.origin.y = window.y;
-	fb_info.cursor.pos.x = 0;
-	fb_info.cursor.pos.y = 0;
-	fb_info.cursor.visible = B_TRUE;
 
-	if (fb_info.depth == 8)
-		c = WHITE;
-	else
-		c = bg;
+	if (fb_info.cursor.origin.x == 0 && fb_info.cursor.origin.y == 0) {
+		fb_info.cursor.origin.x = window.x;
+		fb_info.cursor.origin.y = window.y;
+		fb_info.cursor.pos.x = 0;
+		fb_info.cursor.pos.y = 0;
+	}
 
-	/* clear the screen */
+#if defined(_BOOT)
 	if (console == CONS_FRAMEBUFFER) {
-		for (i = 0; i < fb_info.screen.y; i++) {
-			uint8_t *dest = fb_info.fb + i * fb_info.pitch;
-			(void) memset(dest, c, fb_info.pitch);
+		fb_info.inverse = B_FALSE;
+		fb_info.inverse_screen = B_FALSE;
+		fb_info.cursor.origin.x = window.x;
+		fb_info.cursor.origin.y = window.y;
+		fb_info.cursor.pos.x = 0;
+		fb_info.cursor.pos.y = 0;
+	}
+#endif
+
+	if (fb_info.depth == 8) {
+		if (fb_info.inverse_screen == B_FALSE) {
+			bg = WHITE;
+			fg = BLACK;
+		} else {
+			fg = WHITE;
+			bg = BLACK;
+		}
+	} else {
+		if (fb_info.inverse_screen == B_FALSE) {
+			fg = BLACK_32;
+			bg = WHITE_32;
+		} else {
+			bg = BLACK_32;
+			fg = WHITE_32;
 		}
 	}
 
+#if defined(_BOOT)
+	/* clear the screen when called in dboot */
+	if (console == CONS_FRAMEBUFFER) {
+		int i;
+
+		for (i = 0; i < fb_info.screen.y; i++) {
+			uint8_t *dest = fb_info.fb + i * fb_info.pitch;
+			boot_fb_fill(dest, bg, fb_info.pitch);
+		}
+	}
+#endif
 	/* set up pre-calculated last line */
 	last_line_size = fb_info.terminal.x * boot_fb_font.width *
 	    fb_info.bpp;
 	last_line.x = window.x;
 	last_line.y = window.y + (fb_info.terminal.y - 1) * boot_fb_font.height;
 
-	/* set framefuffer pointer */
-	boot_fb_set(&fb_info);
 }
 
 /* copy rectangle to framebuffer. */
@@ -178,30 +296,30 @@ boot_fb_blit(struct vis_consdisplay *rect)
 	int i;
 
 	/* make sure we will not write past FB */
-	if (rect->col >= fb->screen.x ||
-	    rect->row >= fb->screen.y ||
-	    rect->col + rect->width > fb->screen.x ||
-	    rect->row + rect->height > fb->screen.y)
+	if (rect->col >= fb_info.screen.x ||
+	    rect->row >= fb_info.screen.y ||
+	    rect->col + rect->width > fb_info.screen.x ||
+	    rect->row + rect->height > fb_info.screen.y)
 		return;
 
-	size = rect->width * fb->bpp;
-	fbp = fb->fb + rect->col * fb->bpp +
-	    rect->row * fb->pitch;
-	if (fb->shadow_fb != NULL) {
-		sfbp = fb->shadow_fb + rect->col * fb->bpp +
-		    rect->row * fb->pitch;
+	size = rect->width * fb_info.bpp;
+	fbp = fb_info.fb + rect->col * fb_info.bpp +
+	    rect->row * fb_info.pitch;
+	if (fb_info.shadow_fb != NULL) {
+		sfbp = fb_info.shadow_fb + rect->col * fb_info.bpp +
+		    rect->row * fb_info.pitch;
 	} else {
 		sfbp = NULL;
 	}
 
 	/* write all scanlines in rectangle */
 	for (i = 0; i < rect->height; i++) {
-		uint8_t *dest = fbp + i * fb->pitch;
+		uint8_t *dest = fbp + i * fb_info.pitch;
 		uint8_t *src = rect->data + i * size;
-		(void) memcpy(dest, src, size);
+		boot_fb_cpy(dest, src, size);
 		if (sfbp != NULL) {
-			dest = sfbp + i * fb->pitch;
-			(void) memcpy(dest, src, size);
+			dest = sfbp + i * fb_info.pitch;
+			boot_fb_cpy(dest, src, size);
 		}
 	}
 }
@@ -209,18 +327,9 @@ boot_fb_blit(struct vis_consdisplay *rect)
 static void
 bit_to_pix(uchar_t c)
 {
-	uint8_t fg8, bg8;
-
-	switch (fb->depth) {
+	switch (fb_info.depth) {
 	case 8:
-		if (fg == WHITE_32) {
-			fg8 = WHITE;
-			bg8 = BLACK;
-		} else {
-			fg8 = BLACK;
-			bg8 = WHITE;
-		}
-		font_bit_to_pix8(&boot_fb_font, (uint8_t *)glyph, c, fg8, bg8);
+		font_bit_to_pix8(&boot_fb_font, (uint8_t *)glyph, c, fg, bg);
 		break;
 	case 15:
 	case 16:
@@ -249,42 +358,49 @@ boot_fb_scroll(void)
 	int i;
 
 	/* support for scrolling. set up the console copy data and last line */
-	c_copy.s_row = fb->terminal_origin.y + boot_fb_font.height;
-	c_copy.s_col = fb->terminal_origin.x;
-	c_copy.e_row = fb->screen.y - fb->terminal_origin.y;
-	c_copy.e_col = fb->screen.x - fb->terminal_origin.x;
-	c_copy.t_row = fb->terminal_origin.y;
-	c_copy.t_col = fb->terminal_origin.x;
+	c_copy.s_row = fb_info.terminal_origin.y + boot_fb_font.height;
+	c_copy.s_col = fb_info.terminal_origin.x;
+	c_copy.e_row = fb_info.screen.y - fb_info.terminal_origin.y;
+	c_copy.e_col = fb_info.screen.x - fb_info.terminal_origin.x;
+	c_copy.t_row = fb_info.terminal_origin.y;
+	c_copy.t_col = fb_info.terminal_origin.x;
 
-	soffset = c_copy.s_col * fb->bpp + c_copy.s_row * fb->pitch;
-	toffset = c_copy.t_col * fb->bpp + c_copy.t_row * fb->pitch;
-	if (fb->shadow_fb != NULL) {
-		src = fb->shadow_fb + soffset;
-		sdst = fb->shadow_fb + toffset;
+	soffset = c_copy.s_col * fb_info.bpp + c_copy.s_row * fb_info.pitch;
+	toffset = c_copy.t_col * fb_info.bpp + c_copy.t_row * fb_info.pitch;
+	if (fb_info.shadow_fb != NULL) {
+		src = fb_info.shadow_fb + soffset;
+		sdst = fb_info.shadow_fb + toffset;
 	} else {
-		src = fb->fb + soffset;
+		src = fb_info.fb + soffset;
 		sdst = NULL;
 	}
-	dst = fb->fb + toffset;
+	dst = fb_info.fb + toffset;
 
-	width = (c_copy.e_col - c_copy.s_col + 1) * fb->bpp;
+	width = (c_copy.e_col - c_copy.s_col + 1) * fb_info.bpp;
 	height = c_copy.e_row - c_copy.s_row + 1;
 	for (i = 0; i < height; i++) {
-		uint32_t increment = i * fb->pitch;
-		(void) memcpy(dst + increment, src + increment, width);
+		uint32_t increment = i * fb_info.pitch;
+		boot_fb_cpy(dst + increment, src + increment, width);
 		if (sdst != NULL)
-			(void) memcpy(sdst + increment, src + increment, width);
+			boot_fb_cpy(sdst + increment, src + increment, width);
 	}
 
 	/* now clean up the last line */
-	toffset = last_line.x * fb->bpp + last_line.y * fb->pitch;
-	dst = fb->fb + toffset;
+	toffset = last_line.x * fb_info.bpp + last_line.y * fb_info.pitch;
+	dst = fb_info.fb + toffset;
+	if (fb_info.shadow_fb != NULL)
+		sdst = fb_info.shadow_fb + toffset;
+
 	for (i = 0; i < boot_fb_font.height; i++) {
-		uint8_t *dest = dst + i * fb->pitch;
-		(void) memset(dest, 0, last_line_size);
+		uint8_t *dest = dst + i * fb_info.pitch;
+		if (fb_info.fb + fb_info.fb_size >= dest + last_line_size)
+			boot_fb_fill(dest, bg, last_line_size);
 		if (sdst != NULL) {
-			dest = sdst + i * fb->pitch;
-			(void) memset(dest, 0, last_line_size);
+			dest = sdst + i * fb_info.pitch;
+			if (fb_info.shadow_fb + fb_info.fb_size >=
+			    dest + last_line_size) {
+				boot_fb_fill(dest, bg, last_line_size);
+			}
 		}
 	}
 }
@@ -295,58 +411,123 @@ boot_fb_scroll(void)
  * screen, but never know when someone will add kmdb to have support for
  * arrow keys... kmdb is the only possible consumer for such case.
  */
-static void
-boot_fb_cursor_create(struct vis_consdisplay *cur)
-{
-	uint32_t offset;
-	uint8_t *src, *dst;
-	uint32_t size = cur->width * fb->bpp;
-	int i;
-
-	/* save data under the cursor to blank */
-	offset = cur->col * fb->bpp + cur->row * fb->pitch;
-	for (i = 0; i < cur->height; i++) {
-		src = fb->fb + offset + i * fb->pitch;
-		dst = blank + i * size;
-		(void) memcpy(dst, src, size);
-	}
-	/* set cursor buffer */
-	for (i = 0; i < cur->height * size; i++) {
-		cur->data[i] = 0xFF ^ blank[i];
-	}
-}
-
 void
 boot_fb_cursor(boolean_t visible)
 {
-	struct vis_consdisplay cur;
+	uint32_t offset, size;
+	uint32_t *fb32, *sfb32 = NULL;
+	uint16_t *fb16, *sfb16 = NULL;
+	uint8_t *fb8, *sfb8 = NULL;
+	int i, j, pitch;
+
+	if (fb_info.cursor.visible == visible)
+		return;
 
 	fb_info.cursor.visible = visible;
-	cur.col = fb->cursor.origin.x;
-	cur.row = fb->cursor.origin.y;
-	cur.width = boot_fb_font.width;
-	cur.height = boot_fb_font.height;
+	pitch = fb_info.pitch;
+	size = boot_fb_font.width * fb_info.bpp;
 
-	if (visible == B_TRUE) {
-		cur.data = cursor;
-		boot_fb_cursor_create(&cur);
-	} else {
-		cur.data = blank;
+	/*
+	 * Build cursor image. We are building mirror image of data on
+	 * frame buffer by (D xor FG) xor BG.
+	 */
+	offset = fb_info.cursor.origin.x * fb_info.bpp +
+	    fb_info.cursor.origin.y * pitch;
+	switch (fb_info.depth) {
+	case 8:
+		for (i = 0; i < boot_fb_font.height; i++) {
+			fb8 = fb_info.fb + offset + i * pitch;
+			if (fb_info.shadow_fb != NULL)
+				sfb8 = fb_info.shadow_fb + offset + i * pitch;
+			for (j = 0; j < size; j += 1) {
+				fb8[j] = (fb8[j] ^ (fg & 0xff)) ^ (bg & 0xff);
+
+				if (sfb8 == NULL)
+					continue;
+
+				sfb8[j] = (sfb8[j] ^ (fg & 0xff)) ^ (bg & 0xff);
+			}
+		}
+		break;
+	case 15:
+	case 16:
+		for (i = 0; i < boot_fb_font.height; i++) {
+			fb16 = (uint16_t *)(fb_info.fb + offset + i * pitch);
+			if (fb_info.shadow_fb != NULL)
+				sfb16 = (uint16_t *)
+				    (fb_info.shadow_fb + offset + i * pitch);
+			for (j = 0; j < boot_fb_font.width; j++) {
+				fb16[j] = (fb16[j] ^ (fg & 0xffff)) ^
+				    (bg & 0xffff);
+
+				if (sfb16 == NULL)
+					continue;
+
+				sfb16[j] = (sfb16[j] ^ (fg & 0xffff)) ^
+				    (bg & 0xffff);
+			}
+		}
+		break;
+	case 24:
+		for (i = 0; i < boot_fb_font.height; i++) {
+			fb8 = fb_info.fb + offset + i * pitch;
+			if (fb_info.shadow_fb != NULL)
+				sfb8 = fb_info.shadow_fb + offset + i * pitch;
+			for (j = 0; j < size; j += 3) {
+				fb8[j] = (fb8[j] ^ ((fg >> 16) & 0xff)) ^
+				    ((bg >> 16) & 0xff);
+				fb8[j+1] = (fb8[j+1] ^ ((fg >> 8) & 0xff)) ^
+				    ((bg >> 8) & 0xff);
+				fb8[j+2] = (fb8[j+2] ^ (fg & 0xff)) ^
+				    (bg & 0xff);
+
+				if (sfb8 == NULL)
+					continue;
+
+				sfb8[j] = (sfb8[j] ^ ((fg >> 16) & 0xff)) ^
+				    ((bg >> 16) & 0xff);
+				sfb8[j+1] = (sfb8[j+1] ^ ((fg >> 8) & 0xff)) ^
+				    ((bg >> 8) & 0xff);
+				sfb8[j+2] = (sfb8[j+2] ^ (fg & 0xff)) ^
+				    (bg & 0xff);
+			}
+		}
+		break;
+	case 32:
+		for (i = 0; i < boot_fb_font.height; i++) {
+			fb32 = (uint32_t *)(fb_info.fb + offset + i * pitch);
+			if (fb_info.shadow_fb != NULL) {
+				sfb32 = (uint32_t *)
+				    (fb_info.shadow_fb + offset + i * pitch);
+			}
+			for (j = 0; j < boot_fb_font.width; j++) {
+				fb32[j] = (fb32[j] ^ fg) ^ bg;
+
+				if (sfb32 == NULL)
+					continue;
+
+				sfb32[j] = (sfb32[j] ^ fg) ^ bg;
+			}
+		}
+		break;
 	}
-	boot_fb_blit(&cur);
 }
 
 static void
 set_cursor_row(void)
 {
-	fb->cursor.pos.y++;
-	fb->cursor.pos.x = 0;
-	fb->cursor.origin.x = fb->terminal_origin.x;
+	fb_info.cursor.pos.y++;
+	fb_info.cursor.pos.x = 0;
+	fb_info.cursor.origin.x = fb_info.terminal_origin.x;
 
-	if (fb->cursor.pos.y < fb->terminal.y) {
-		fb->cursor.origin.y += boot_fb_font.height;
+	if (fb_info.cursor.pos.y < fb_info.terminal.y &&
+	    fb_info.cursor.origin.y + boot_fb_font.height < fb_info.screen.y) {
+		fb_info.cursor.origin.y += boot_fb_font.height;
 	} else {
-		fb->cursor.pos.y--;
+		fb_info.cursor.pos.y = fb_info.terminal.y - 1;
+		/* fix the cursor origin y */
+		fb_info.cursor.origin.y = fb_info.terminal_origin.y +
+		    boot_fb_font.height * fb_info.cursor.pos.y;
 		boot_fb_scroll();
 	}
 }
@@ -354,12 +535,13 @@ set_cursor_row(void)
 static void
 set_cursor_col(void)
 {
-	fb->cursor.pos.x++;
-	if (fb->cursor.pos.x < fb->terminal.x) {
-		fb->cursor.origin.x += boot_fb_font.width;
+	fb_info.cursor.pos.x++;
+	if (fb_info.cursor.pos.x < fb_info.terminal.x &&
+	    fb_info.cursor.origin.x + boot_fb_font.width < fb_info.screen.x) {
+		fb_info.cursor.origin.x += boot_fb_font.width;
 	} else {
-		fb->cursor.pos.x = 0;
-		fb->cursor.origin.x = fb->terminal_origin.x;
+		fb_info.cursor.pos.x = 0;
+		fb_info.cursor.origin.x = fb_info.terminal_origin.x;
 		set_cursor_row();
 	}
 }
@@ -369,27 +551,23 @@ boot_fb_putchar(uint8_t c)
 {
 	struct vis_consdisplay display;
 	boolean_t bs = B_FALSE;
-	boolean_t cstate = fb->cursor.visible;
 
 	/* early tem startup will switch cursor off, if so, keep it off  */
-	if (cstate == B_TRUE)
-		boot_fb_cursor(B_FALSE);	/* cursor off */
+	boot_fb_cursor(B_FALSE);	/* cursor off */
 	switch (c) {
 	case '\n':
 		set_cursor_row();
-		if (cstate == B_TRUE)
-			boot_fb_cursor(B_TRUE);
+		boot_fb_cursor(B_TRUE);
 		return;
 	case '\r':
-		fb->cursor.pos.x = 0;
-		fb->cursor.origin.x = fb->terminal_origin.x;
-		if (cstate == B_TRUE)
-			boot_fb_cursor(B_TRUE);
+		fb_info.cursor.pos.x = 0;
+		fb_info.cursor.origin.x = fb_info.terminal_origin.x;
+		boot_fb_cursor(B_TRUE);
 		return;
 	case '\b':
-		if (fb->cursor.pos.x > 0) {
-			fb->cursor.pos.x--;
-			fb->cursor.origin.x -= boot_fb_font.width;
+		if (fb_info.cursor.pos.x > 0) {
+			fb_info.cursor.pos.x--;
+			fb_info.cursor.origin.x -= boot_fb_font.width;
 		}
 		c = ' ';
 		bs = B_TRUE;
@@ -397,8 +575,8 @@ boot_fb_putchar(uint8_t c)
 	}
 
 	bit_to_pix(c);
-	display.col = fb->cursor.origin.x;
-	display.row = fb->cursor.origin.y;
+	display.col = fb_info.cursor.origin.x;
+	display.row = fb_info.cursor.origin.y;
 	display.width = boot_fb_font.width;
 	display.height = boot_fb_font.height;
 	display.data = glyph;
@@ -406,6 +584,5 @@ boot_fb_putchar(uint8_t c)
 	boot_fb_blit(&display);
 	if (bs == B_FALSE)
 		set_cursor_col();
-	if (cstate == B_TRUE)
-		boot_fb_cursor(B_TRUE);
+	boot_fb_cursor(B_TRUE);
 }
