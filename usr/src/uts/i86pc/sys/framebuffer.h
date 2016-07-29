@@ -40,6 +40,19 @@ typedef struct fb_info_char_coord {
 	uint16_t y;
 } fb_info_char_coord_t;
 
+typedef struct fb_cursor {
+	fb_info_pixel_coord_t origin;	/* cursor upper left */
+	fb_info_char_coord_t pos;	/* cursor coord in chars */
+	uint32_t visible;
+} fb_cursor_t;
+
+typedef struct boot_framebuffer {
+	uint64_t framebuffer;	/* native_ptr_t */
+	fb_cursor_t cursor;
+	uint32_t inverse;
+	uint32_t inverse_screen;
+} __attribute__((packed)) boot_framebuffer_t;
+
 typedef struct fb_info {
 	uint64_t paddr;		/* FB address from bootloader */
 	uint8_t *fb;		/* kernel mapped frame buffer */
@@ -52,14 +65,7 @@ typedef struct fb_info {
 	fb_info_pixel_coord_t screen;		/* screen size */
 	fb_info_pixel_coord_t terminal_origin;	/* terminal upper left corner */
 	fb_info_char_coord_t terminal;		/* terminal size in chars */
-	struct {
-		boolean_t visible;
-		fb_info_pixel_coord_t origin;	/* cursor upper left */
-		fb_info_char_coord_t pos;	/* cursor coord in chars */
-		uint8_t *data;			/* cursor data */
-		uint8_t *buf;			/* saved screen area */
-		uint32_t size;			/* buffer size in bytes */
-	} cursor;
+	fb_cursor_t cursor;
 	uint16_t font_width;
 	uint16_t font_height;
 	boolean_t inverse;
@@ -68,7 +74,6 @@ typedef struct fb_info {
 
 extern fb_info_t fb_info;
 void boot_fb_cursor(boolean_t);
-void boot_fb_set(fb_info_t *);
 
 #ifdef __cplusplus
 }

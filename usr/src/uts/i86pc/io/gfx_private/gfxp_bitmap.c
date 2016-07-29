@@ -77,23 +77,6 @@ static int	bitmap_suspend(struct gfxp_fb_softc *softc);
 static void	bitmap_resume(struct gfxp_fb_softc *softc);
 static int	bitmap_devmap(dev_t dev, devmap_cookie_t dhp, offset_t off,
     size_t len, size_t *maplen, uint_t model, void *ptr);
-#if 0
-int bitmap_map(devmap_cookie_t dhp, dev_t dev, uint_t flags, offset_t off,
-    size_t len, void **pvtp);
-int  bitmap_dup(devmap_cookie_t dhp, void *pvtp, devmap_cookie_t new_dhp,
-    void **new_pvtp);
-void bitmap_unmap(devmap_cookie_t dhp, void *pvtp, offset_t off, size_t len,
-    devmap_cookie_t new_dhp1, void **new_pvtp1, devmap_cookie_t new_dhp2,
-    void **new_pvtp2);
-#endif
-
-static struct devmap_callback_ctl bitmap_cb = {
-	.devmap_rev = DEVMAP_OPS_REV,
-	.devmap_map = NULL,
-	.devmap_access = NULL,
-	.devmap_dup = NULL,
-	.devmap_unmap = NULL
-};
 
 static struct gfxp_ops gfxp_ops = {
 	.ident = &text_ident,
@@ -134,9 +117,6 @@ int gfxp_bm_detach(dev_info_t *devi, ddi_detach_cmd_t cmd,
 		    softc->console.fb.fb_size);
 		softc->console.fb.shadow_fb = NULL;
 	}
-	kmem_free(softc->console.fb.cursor.data, softc->console.fb.cursor.size);
-	kmem_free(softc->console.fb.cursor.buf, softc->console.fb.cursor.size);
-	boot_fb_set(&fb_info);
 	return (DDI_SUCCESS);
 }
 
@@ -226,8 +206,8 @@ bitmap_setup_fb(struct gfxp_fb_softc *softc)
 	softc->console.fb.font_width = fb_info.font_width;
 	softc->console.fb.font_height = fb_info.font_height;
 
-	size = fb_info.screen.y * fb_info.pitch;
-	softc->console.fb.fb_size = ptob(btopr(size));
+	softc->console.fb.fb_size = ptob(btopr(fb_info.fb_size));
+	size = softc->console.fb.fb_size;
 	softc->console.fb.fb = (uint8_t *)gfxp_map_kernel_space(fb_info.paddr,
 	    softc->console.fb.fb_size, GFXP_MEMORY_WRITECOMBINED);
 	if (softc->console.fb.fb == NULL) {
@@ -236,24 +216,16 @@ bitmap_setup_fb(struct gfxp_fb_softc *softc)
 	}
 	softc->console.fb.shadow_fb = kmem_zalloc(softc->console.fb.fb_size,
 	    KM_SLEEP);
-	softc->console.fb.cursor.size = fb_info.font_width *
-	    fb_info.font_height * fb_info.bpp;
-	softc->console.fb.cursor.data =
-	    kmem_zalloc(softc->console.fb.cursor.size, KM_SLEEP);
-	softc->console.fb.cursor.buf =
-	    kmem_zalloc(softc->console.fb.cursor.size, KM_SLEEP);
 
 	bitmap_attr.fbtype.fb_height = fb_info.screen.y;
 	bitmap_attr.fbtype.fb_width = fb_info.screen.x;
-	bitmap_attr.fbtype.fb_depth = fb_info.bpp;
+	bitmap_attr.fbtype.fb_depth = fb_info.depth;
 	bitmap_attr.fbtype.fb_size = size;
 	if (fb_info.depth == 32)
 		bitmap_attr.fbtype.fb_cmsize = 1 << 24;
 	else
 		bitmap_attr.fbtype.fb_cmsize = 1 << fb_info.depth;
 
-	/* this will enable boot_fb functions to access framebuffer */
-	boot_fb_set(&softc->console.fb);
 	return (DDI_SUCCESS);
 }
 
@@ -637,18 +609,16 @@ bitmap_devmap(dev_t dev, devmap_cookie_t dhp, offset_t off,
     size_t len, size_t *maplen, uint_t model, void *ptr)
 {
 	struct gfxp_fb_softc *softc = (struct gfxp_fb_softc *)ptr;
-	ddi_umem_cookie_t cookie;
-	int err;
 	size_t length;
 
 	if (softc == NULL) {
 		cmn_err(CE_WARN, "bitmap: Can't find softstate");
-		return (-1);
+		return (ENXIO);
 	}
 
 	if (off >= softc->console.fb.fb_size) {
 		cmn_err(CE_WARN, "bitmap: Can't map offset 0x%llx", off);
-		return (-1);
+		return (ENXIO);
 	}
 
 	if (off + len > softc->console.fb.fb_size)
@@ -656,52 +626,9 @@ bitmap_devmap(dev_t dev, devmap_cookie_t dhp, offset_t off,
 	else
 		length = len;
 
-	cookie = gfxp_umem_cookie_init((caddr_t)softc->console.fb.fb,
-	    softc->console.fb.fb_size);
-	if (cookie == NULL)
-		return (-1);
-	err = gfxp_devmap_umem_setup(dhp, softc->devi, &bitmap_cb, cookie,
-	    off, length, PROT_ALL, 0, &dev_attr);
-	if (err < 0)
-		gfxp_umem_cookie_destroy(cookie);
+	gfxp_map_devmem(dhp, softc->console.fb.paddr, length, &dev_attr);
 
 	*maplen = length;
 
-	return (err);
-}
-
-#if 0
-int bitmap_map(devmap_cookie_t dhp, dev_t dev, uint_t flags, offset_t off,
-    size_t len, void **pvtp)
-{
-	struct ddi_umem_cookie *cp;
-	devmap_handle_t *dhp;
-	struct gfxp_fb_softc *softc = (struct gfxp_fb_softc *)ptr;
-	int instance;
-
-	instance = getminor(dev);
-	softc = ddi_get_soft_state(xsvc_statep, instance);
-	if (state == NULL) {
-		return (ENXIO);
-	}
-
-	dhp = (devmap_handle_t *)dhc;
-
-	cp = (struct ddi_umem_cookie *)dhp->dh_cookie;
-	cp->cook_refcnt = 1;
-
-	*pvtp = state;
 	return (0);
 }
-
-int  bitmap_dup(devmap_cookie_t dhp, void *pvtp, devmap_cookie_t new_dhp,
-    void **new_pvtp)
-{
-}
-
-void bitmap_unmap(devmap_cookie_t dhp, void *pvtp, offset_t off, size_t len,
-    devmap_cookie_t new_dhp1, void **new_pvtp1, devmap_cookie_t new_dhp2,
-    void **new_pvtp2)
-{
-}
-#endif
