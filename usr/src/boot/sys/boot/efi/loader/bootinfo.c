@@ -112,7 +112,7 @@ bi_getboothowto(char *kargs)
  * Each variable is formatted as <name>=<value>, with a single nul
  * separating each variable, and a double nul terminating the environment.
  */
-static vm_offset_t
+vm_offset_t
 bi_copyenv(vm_offset_t start)
 {
 	struct env_var *ep;

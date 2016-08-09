@@ -25,7 +25,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 /*
  * file/module function dispatcher, support, etc.
@@ -38,6 +37,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/module.h>
 #include <sys/queue.h>
 #include <sys/stdint.h>
+#include <sys/tem.h>
 
 #include "bootstrap.h"
 
@@ -397,6 +397,73 @@ file_load_dependencies(struct preloaded_file *base_file)
         file_discard(fp);
     }
     return (error);
+}
+
+static int
+env_get_size(void)
+{
+	int size = 0;
+	struct env_var *ep;
+
+	/* Traverse the environment. */
+	for (ep = environ; ep != NULL; ep = ep->ev_next) {
+		size += strlen(ep->ev_name);
+		size++;		/* "=" */
+		if (ep->ev_value != NULL)
+			size += strlen(ep->ev_value);
+		size++;		/* nul */
+	}
+	size++;		/* nul */
+	return (size);
+}
+
+/*
+ * Create virtual module for environment variables. Since we are also
+ * passing tem state in env, we want to create this module as late as possible.
+ * When multiboot2_exec() is called, there should be no more normal
+ * messages on the console and on error, we abort anyhow.
+ */
+void
+build_environment_module(void)
+{
+	struct preloaded_file	*fp;
+	int size;
+	char *name = "environment";
+	vm_offset_t laddr;
+	extern vm_offset_t bi_copyenv(vm_offset_t);
+
+	/* We can't load first */
+	if ((file_findfile(NULL, NULL)) == NULL) {
+		printf("can't load environment before kernel\n");
+		return;
+	}
+
+	tem_save_state();
+	size = env_get_size();
+
+	if (archsw.arch_loadaddr != NULL)
+		loadaddr = archsw.arch_loadaddr(LOAD_MEM, &size, loadaddr);
+
+	if (loadaddr == 0)
+		return;
+
+	laddr = bi_copyenv(loadaddr);
+
+	/* Looks OK so far; create & populate control structure */
+	fp = file_alloc();
+	fp->f_name = strdup(name);
+	fp->f_args = NULL;
+	fp->f_type = strdup(name);
+	fp->f_metadata = NULL;
+	fp->f_loader = -1;
+	fp->f_addr = loadaddr;
+	fp->f_size = laddr - loadaddr;
+
+	/* recognise space consumption */
+	loadaddr = laddr;
+
+	file_insert_tail(fp);
+	return;
 }
 
 /*
