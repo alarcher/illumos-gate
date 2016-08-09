@@ -538,6 +538,13 @@ plat_stdoutpath(void)
  * unused on x86.
  */
 void
+plat_tem_get_colors(uint8_t *fg, uint8_t *bg)
+{
+	*fg = fb_info.fg_color;
+	*bg = fb_info.bg_color;
+}
+
+void
 plat_tem_get_inverses(int *inverse, int *inverse_screen)
 {
 	*inverse = fb_info.inverse == B_TRUE? 1 : 0;

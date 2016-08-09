@@ -925,6 +925,9 @@ tems_get_initial_color(tem_color_t *pcolor)
 
 	pcolor->fg_color = DEFAULT_ANSI_FOREGROUND;
 	pcolor->bg_color = DEFAULT_ANSI_BACKGROUND;
+#ifndef _HAVE_TEM_FIRMWARE
+	plat_tem_get_colors(&pcolor->fg_color, &pcolor->bg_color);
+#endif
 
 	if (plat_stdout_is_framebuffer()) {
 		tems_get_inverses(&inverse, &inverse_screen);

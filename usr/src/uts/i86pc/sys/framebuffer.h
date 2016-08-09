@@ -49,8 +49,6 @@ typedef struct fb_cursor {
 typedef struct boot_framebuffer {
 	uint64_t framebuffer;	/* native_ptr_t */
 	fb_cursor_t cursor;
-	uint32_t inverse;
-	uint32_t inverse_screen;
 } __attribute__((packed)) boot_framebuffer_t;
 
 typedef struct fb_info {
@@ -61,6 +59,8 @@ typedef struct fb_info {
 	uint32_t pitch;		/* scan line in bytes */
 	uint8_t bpp;		/* bytes per pixel */
 	uint8_t depth;		/* bits per pixel */
+	uint8_t fg_color;	/* ansi foreground */
+	uint8_t bg_color;	/* ansi background */
 	rgb_t	rgb;
 	fb_info_pixel_coord_t screen;		/* screen size */
 	fb_info_pixel_coord_t terminal_origin;	/* terminal upper left corner */
