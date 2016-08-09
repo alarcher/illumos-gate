@@ -1017,6 +1017,40 @@ dboot_multiboot_modcmdline(int index)
 	return (0);
 }
 
+/*
+ * Find environment for console setup. Actual module processing is elsewhere.
+ */
+static void
+dboot_find_env(void)
+{
+	int i, modcount;
+	uint32_t mod_start, mod_end;
+	char *cmdline;
+	char *p, *q;
+
+	modcount = dboot_multiboot_modcount();
+
+	for (i = 0; i < modcount; ++i) {
+		cmdline = dboot_multiboot_modcmdline(i);
+		if (cmdline == NULL)
+			continue;
+
+		if (strstr(cmdline, "type=environment") == NULL)
+			continue;
+
+		mod_start = dboot_multiboot_modstart(i);
+		mod_end = dboot_multiboot_modend(i);
+		modules[0].bm_addr = mod_start;
+		modules[0].bm_size = mod_end - mod_start;
+		modules[0].bm_name = NULL;
+		modules[0].bm_hash = NULL;
+		modules[0].bm_type = BMT_ENV;
+		bi->bi_modules = (native_ptr_t)(uintptr_t)modules;
+		bi->bi_module_cnt = 1;
+		return;
+	}
+}
+
 static int
 dboot_multiboot_basicmeminfo(uint32_t *lower, uint32_t *upper)
 {
@@ -1105,6 +1139,8 @@ type_to_str(boot_module_type_t type)
 		return ("file");
 	case BMT_HASH:
 		return ("hash");
+	case BMT_ENV:
+		return ("environment");
 	default:
 		return ("unknown");
 	}
@@ -1223,6 +1259,8 @@ process_module(int midx)
 				modules[midx].bm_type = BMT_ROOTFS;
 			} else if (strcmp(q, "hash") == 0) {
 				modules[midx].bm_type = BMT_HASH;
+			} else if (strcmp(q, "environment") == 0) {
+				modules[midx].bm_type = BMT_ENV;
 			} else if (strcmp(q, "file") != 0) {
 				dboot_printf("\tmodule #%d: unknown module "
 				    "type '%s'; defaulting to 'file'",
@@ -1665,7 +1703,7 @@ print_efi32(EFI_SYSTEM_TABLE32* efi)
 	int i;
 
 	dboot_printf("EFI32 signature: %llx\n",
-		    (unsigned long long)efi->Hdr.Signature);
+	    (unsigned long long)efi->Hdr.Signature);
 	dboot_printf("EFI system version: ");
 	dboot_print_efi_version(efi->Hdr.Revision);
 	dboot_printf("EFI system vendor: ");
@@ -1703,7 +1741,7 @@ print_efi64(EFI_SYSTEM_TABLE64* efi)
 	int i;
 
 	dboot_printf("EFI64 signature: %llx\n",
-		    (unsigned long long)efi->Hdr.Signature);
+	    (unsigned long long)efi->Hdr.Signature);
 	dboot_printf("EFI system version: ");
 	dboot_print_efi_version(efi->Hdr.Revision);
 	dboot_printf("EFI system vendor: ");
@@ -1960,6 +1998,11 @@ dboot_init_xboot_consinfo(void)
 		dboot_multiboot1_xboot_consinfo();
 	else if (multiboot_version == 2)
 		dboot_multiboot2_xboot_consinfo();
+	/*
+	 * Lookup environment module for console. Complete module list
+	 * will be built after console setup.
+	 */
+	dboot_find_env();
 #endif
 }
 
@@ -2425,7 +2468,5 @@ startup_kernel(void)
 	fb->cursor.pos.x = fb_info.cursor.pos.x;
 	fb->cursor.pos.y = fb_info.cursor.pos.y;
 	fb->cursor.visible = fb_info.cursor.visible;
-	fb->inverse = fb_info.inverse;
-	fb->inverse_screen = fb_info.inverse_screen;
 #endif
 }
