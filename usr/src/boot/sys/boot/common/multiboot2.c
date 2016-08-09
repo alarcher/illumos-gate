@@ -604,6 +604,8 @@ multiboot2_exec(struct preloaded_file *fp)
 		goto error;
 	}
 
+	build_environment_module();
+
 	/*
 	 * Set the image command line.
 	 */

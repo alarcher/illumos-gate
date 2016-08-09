@@ -746,6 +746,31 @@ tem_get_size(uint16_t *r, uint16_t *c, uint16_t *x, uint16_t *y)
 	*y = (uint16_t)tems.ts_p_dimension.height;
 }
 
+/*
+ * Loader extension. Store important data in environment. Intended to be used
+ * just before booting the OS to make the data available in kernel
+ * environment module.
+ */
+void
+tem_save_state(void)
+{
+	struct tem_vt_state *active = tems.ts_active;
+	char buf[80];
+
+	/*
+	 * Already in env:
+	 * tem.inverse, tem.inverse_screen
+	 * tem.fg_color, tem.bg_color
+	 */
+
+	if (active != NULL) {
+		snprintf(buf, sizeof (buf), "%d", active->tvs_c_cursor.col);
+		setenv("tem.cursor.col", buf, 1);
+		snprintf(buf, sizeof (buf), "%d", active->tvs_c_cursor.row);
+		setenv("tem.cursor.row", buf, 1);
+	}
+}
+
 void
 tem_register_modechg_cb(tem_modechg_cb_t func, tem_modechg_cb_arg_t arg)
 {
