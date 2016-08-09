@@ -61,10 +61,33 @@ static uint8_t		glyph[MAX_GLYPH];
 static uint32_t		last_line_size;
 static fb_info_pixel_coord_t last_line;
 
-#define	WHITE		(0)
-#define	BLACK		(1)
-#define	WHITE_32	(0xFFFFFFFF)
-#define	BLACK_32	(0x00000000)
+/* color translation */
+typedef struct {
+	uint8_t red[16];
+	uint8_t green[16];
+	uint8_t blue[16];
+} text_cmap_t;
+
+/* BEGIN CSTYLED */
+/*                             Bk  Rd  Gr  Br  Bl  Mg  Cy  Wh */
+static uint8_t dim_xlate[] = {  1,  5,  3,  7,  2,  6,  4,  8 };
+static uint8_t brt_xlate[] = {  9, 13, 11, 15, 10, 14, 12,  0 };
+/* END CSTYLED */
+
+static text_cmap_t cmap4_to_24 = {
+/* BEGIN CSTYLED */
+/* 0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15
+  Wh+  Bk   Bl   Gr   Cy   Rd   Mg   Br   Wh   Bk+  Bl+  Gr+  Cy+  Rd+  Mg+  Yw */
+  0xff,0x00,0x00,0x00,0x00,0x80,0x80,0x80,0x80,0x40,0x00,0x00,0x00,0xff,0xff,0xff,
+  0xff,0x00,0x00,0x80,0x80,0x00,0x00,0x80,0x80,0x40,0x00,0xff,0xff,0x00,0x00,0xff,
+  0xff,0x00,0x80,0x00,0x80,0x00,0x80,0x00,0x80,0x40,0xff,0x00,0xff,0x00,0xff,0x00
+/* END CSTYLED */
+};
+
+#define	WHITE		(0)		/* indexed color */
+#define	BLACK		(1)		/* indexed color */
+#define	WHITE_32	(0xFFFFFFFF)	/* RGB */
+#define	BLACK_32	(0x00000000)	/* RGB */
 static uint32_t fg = BLACK_32;
 static uint32_t bg = WHITE_32;
 
@@ -92,14 +115,14 @@ xbi_fb_init(struct xboot_info *xbi)
 	fb_info.screen.y = tag->common.framebuffer_height;
 	fb_info.fb_size = fb_info.screen.y * fb_info.pitch;
 
+#if !defined(_BOOT)
+	/* For early kernel, we get cursor position from dboot. */
 	fb_info.cursor.origin.x = xbi_fb->cursor.origin.x;
 	fb_info.cursor.origin.y = xbi_fb->cursor.origin.y;
 	fb_info.cursor.pos.x = xbi_fb->cursor.pos.x;
 	fb_info.cursor.pos.y = xbi_fb->cursor.pos.y;
 	fb_info.cursor.visible = xbi_fb->cursor.visible;
-
-	fb_info.inverse = xbi_fb->inverse;
-	fb_info.inverse_screen = xbi_fb->inverse_screen;
+#endif
 
 	switch (tag->common.framebuffer_type) {
 	case MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT:
@@ -214,6 +237,35 @@ boot_fb_shadow_init(bootops_t *bops)
 	boot_fb_cpy(fb_info.shadow_fb, fb_info.fb, fb_info.fb_size);
 }
 
+static uint32_t
+boot_color_map(uint8_t index)
+{
+	uint8_t c;
+	int pos, size;
+	uint32_t color;
+
+	/* 8bit depth is for indexed colors */
+	if (fb_info.depth == 8)
+		return (index);
+
+	c = cmap4_to_24.red[index];
+	pos = fb_info.rgb.red.pos;
+	size = fb_info.rgb.red.size;
+	color = ((c >> 8 - size) & ((1 << size) - 1)) << pos;
+
+	c = cmap4_to_24.green[index];
+	pos = fb_info.rgb.green.pos;
+	size = fb_info.rgb.green.size;
+	color |= ((c >> 8 - size) & ((1 << size) - 1)) << pos;
+
+	c = cmap4_to_24.blue[index];
+	pos = fb_info.rgb.blue.pos;
+	size = fb_info.rgb.blue.size;
+	color |= ((c >> 8 - size) & ((1 << size) - 1)) << pos;
+
+	return (color);
+}
+
 /* set up out simple console. */
 /*ARGSUSED*/
 void
@@ -232,45 +284,61 @@ boot_fb_init(int console)
 	fb_info.terminal_origin.x = window.x;
 	fb_info.terminal_origin.y = window.y;
 
-	if (fb_info.cursor.origin.x == 0 && fb_info.cursor.origin.y == 0) {
-		fb_info.cursor.origin.x = window.x;
-		fb_info.cursor.origin.y = window.y;
-		fb_info.cursor.pos.x = 0;
-		fb_info.cursor.pos.y = 0;
-	}
-
 #if defined(_BOOT)
-	if (console == CONS_FRAMEBUFFER) {
-		fb_info.inverse = B_FALSE;
-		fb_info.inverse_screen = B_FALSE;
-		fb_info.cursor.origin.x = window.x;
-		fb_info.cursor.origin.y = window.y;
-		fb_info.cursor.pos.x = 0;
-		fb_info.cursor.pos.y = 0;
+	/*
+	 * Being called from dboot, we can have cursor terminal
+	 * position passed from boot loader. In such case, fix the
+	 * cursor screen coords.
+	 */
+	if (fb_info.cursor.pos.x != 0 || fb_info.cursor.pos.y != 0) {
+		fb_info.cursor.origin.x = window.x +
+		    fb_info.cursor.pos.x * boot_fb_font.width;
+		fb_info.cursor.origin.y = window.y +
+		    fb_info.cursor.pos.y * boot_fb_font.height;
 	}
 #endif
 
-	if (fb_info.depth == 8) {
-		if (fb_info.inverse_screen == B_FALSE) {
-			bg = WHITE;
-			fg = BLACK;
-		} else {
-			fg = WHITE;
-			bg = BLACK;
-		}
-	} else {
-		if (fb_info.inverse_screen == B_FALSE) {
-			fg = BLACK_32;
-			bg = WHITE_32;
-		} else {
-			bg = BLACK_32;
-			fg = WHITE_32;
-		}
+	/* If the cursor terminal position is 0,0 just reset screen coords */
+	if (fb_info.cursor.pos.x == 0 && fb_info.cursor.pos.y == 0) {
+		fb_info.cursor.origin.x = window.x;
+		fb_info.cursor.origin.y = window.y;
 	}
 
+	/*
+	 * Validate cursor coords with screen/terminal dimensions,
+	 * if anything is off, reset to 0,0
+	 */
+	if (fb_info.cursor.pos.x > fb_info.terminal.x ||
+	    fb_info.cursor.pos.y > fb_info.terminal.y ||
+	    fb_info.cursor.origin.x > fb_info.screen.x ||
+	    fb_info.cursor.origin.y > fb_info.screen.y) {
+
+		fb_info.cursor.origin.x = window.x;
+		fb_info.cursor.origin.y = window.y;
+		fb_info.cursor.pos.x = 0;
+		fb_info.cursor.pos.y = 0;
+	}
+
+	/* ansi to solaris colors, see also boot_console.c */
+	if (fb_info.inverse == B_TRUE ||
+	    fb_info.inverse_screen == B_TRUE) {
+		bg = dim_xlate[fb_info.fg_color];
+		fg = brt_xlate[fb_info.bg_color];
+	} else {
+		if (fb_info.bg_color == 7)
+			bg = brt_xlate[fb_info.bg_color];
+		else
+			bg = dim_xlate[fb_info.bg_color];
+		fg = dim_xlate[fb_info.fg_color];
+	}
+
+	fg = boot_color_map(fg);
+	bg = boot_color_map(bg);
+
 #if defined(_BOOT)
-	/* clear the screen when called in dboot */
-	if (console == CONS_FRAMEBUFFER) {
+	/* clear the screen if cursor is set to 0,0 */
+	if (console == CONS_FRAMEBUFFER &&
+	    fb_info.cursor.pos.x == 0 && fb_info.cursor.pos.y == 0) {
 		int i;
 
 		for (i = 0; i < fb_info.screen.y; i++) {
