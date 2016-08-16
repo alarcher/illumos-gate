@@ -10,23 +10,21 @@
 #
 
 #
-# Copyright 2015 Toomas Soome <tsoome@me.com>
+# Copyright 2016 Toomas Soome <tsoome@me.com>
 #
 
-.KEEP_STATE:
+MACHINE=	$(MACH64)
+ASFLAGS=	-m64
+EFIPROG=	bootx64.efi
 
-include $(SRC)/Makefile.master
+all:		machine x86 ${EFIPROG}
 
-SUBDIRS = $(MACH) $(MACH64)
+include ../Makefile.com
 
-all	:=	TARGET = all
-clean	:=	TARGET = clean
-clobber	:=	TARGET = clobber
-install	:=	TARGET = install
+EFI_TARGET=	pei-x86-64
+LDFLAGS +=	-znocombreloc
 
-all clean clobber install: $(SUBDIRS)
+CPPFLAGS +=	-DLOADER_EFI=\"loader64.efi\"
+CFLAGS +=	-m64 -mno-red-zone
 
-$(SUBDIRS): FRC
-	@cd $@; pwd; $(MAKE) $(MFLAGS) $(TARGET)
-
-FRC:
+CLEANFILES +=	machine x86

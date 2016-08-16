@@ -10,23 +10,21 @@
 #
 
 #
-# Copyright 2015 Toomas Soome <tsoome@me.com>
+# Copyright 2016 Toomas Soome <tsoome@me.com>
 #
 
-.KEEP_STATE:
+MACHINE=	$(MACH)
+ASFLAGS=	-m32
+EFIPROG=	bootia32.efi
 
-include $(SRC)/Makefile.master
+all:		machine x86 ${EFIPROG}
 
-SUBDIRS = $(MACH) $(MACH64)
+include ../Makefile.com
 
-all	:=	TARGET = all
-clean	:=	TARGET = clean
-clobber	:=	TARGET = clobber
-install	:=	TARGET = install
+EFI_TARGET=	pei-i386
+LDFLAGS +=	-znocombreloc
 
-all clean clobber install: $(SUBDIRS)
+CPPFLAGS +=	-DLOADER_EFI=\"loader32.efi\"
+CFLAGS +=	-m32
 
-$(SUBDIRS): FRC
-	@cd $@; pwd; $(MAKE) $(MFLAGS) $(TARGET)
-
-FRC:
+CLEANFILES +=	machine x86

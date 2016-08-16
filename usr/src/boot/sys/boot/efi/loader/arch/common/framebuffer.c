@@ -27,11 +27,9 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
+#include <stand.h>
 #include <bootstrap.h>
 #include <sys/endian.h>
-#include <stand.h>
 
 #include <efi.h>
 #include <efilib.h>

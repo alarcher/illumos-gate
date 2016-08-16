@@ -13,18 +13,14 @@
 # Copyright 2016 Toomas Soome <tsoome@me.com>
 #
 
-include ../Makefile.com
+include $(SRC)/Makefile.master
 
 MACHINE=	$(MACH64)
 
-CFLAGS +=	-m64 -fPIC -mno-red-zone
-ASFLAGS =	-m64 -fPIC
+all install: machine x86 lib
 
-# _setjmp/_longjmp
-SRCS += $(LIBSTAND_SRC)/amd64/_setjmp.S
-OBJS += _setjmp.o
+include ../Makefile.com
 
-$(LIBRARY): $(SRCS) $(OBJS)
+CFLAGS += -fPIC -m64 -mno-red-zone
 
-%.o: $(LIBSTAND_SRC)/amd64/%.S
-	$(COMPILE.S) $<
+FRC:

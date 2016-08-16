@@ -15,6 +15,8 @@
 
 include $(SRC)/Makefile.master
 
+MACHINE=	$(MACH)
+
 AS=	$(GNU_ROOT)/bin/gas
 LD=	$(GNU_ROOT)/bin/gld
 CC=	$(GCC_ROOT)/bin/gcc
@@ -26,8 +28,8 @@ all install: machine x86 $(LIBRARY)
 LIB_BASE=	$(SRC)/boot/lib
 LIBSTAND_SRC=	$(LIB_BASE)/libstand
 
-CPPFLAGS =	-nostdinc -I../../../../include -I${LIBSTAND_SRC} -I../../..
-CPPFLAGS +=	-I../../../sys -I.
+CPPFLAGS =	-nostdinc -I../../../../include -I${LIBSTAND_SRC}
+CPPFLAGS +=	-I../../..  -I../../../sys -I.
 
 CFLAGS =	-O2 -ffreestanding -Wformat
 CFLAGS +=	-mno-mmx -mno-3dnow -mno-sse -mno-sse2 -mno-sse3 -msoft-float
@@ -36,8 +38,14 @@ CFLAGS +=	-Wno-pointer-sign -Wno-empty-body -Wno-string-plus-int \
 		-Wno-unused-value -Wno-parentheses-equality \
 		-Wno-unused-function -Wno-enum-conversion -Wno-switch \
 		-Wno-switch-enum -Wno-knr-promoted-parameter -Wno-parentheses
+CFLAGS +=	-m32 -fno-reorder-functions
+CFLAGS +=	-mpreferred-stack-boundary=2
 
 include ${LIBSTAND_SRC}/Makefile.inc
+
+# _setjmp/_longjmp
+SRCS += $(LIBSTAND_SRC)/i386/_setjmp.S
+OBJS += _setjmp.o
 
 $(LIBRARY): $(SRCS) $(OBJS)
 	$(AR) $(ARFLAGS) $@ $(OBJS)
@@ -53,6 +61,9 @@ machine:
 x86:
 	$(RM) x86
 	$(SYMLINK) ../../../x86/include x86
+
+%.o:	$(LIBSTAND_SRC)/i386/%.S
+	$(COMPILE.S) $<
 
 %.o:	$(LIBSTAND_SRC)/%.c
 	$(COMPILE.c) $<

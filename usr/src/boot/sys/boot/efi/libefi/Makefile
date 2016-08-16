@@ -13,57 +13,22 @@
 # Copyright 2015 Toomas Soome <tsoome@me.com>
 #
 
+.KEEP_STATE:
+
 include $(SRC)/Makefile.master
 
-CC=     $(GCC_ROOT)/bin/gcc
+SUBDIRS = $(MACH) $(MACH64)
 
-LIB=	efi
+all	:=	TARGET = all
+clean	:=	TARGET = clean
+clobber	:=	TARGET = clobber
+install	:=	TARGET = install
 
-all:	machine x86 lib$(LIB).a
-install:
+all clean clobber: $(SUBDIRS)
 
-SRCS=	delay.c devpath.c efi_console.c efinet.c efipart.c errno.c handles.c \
-	libefi.c time.c acpi.c
+install: all
 
-OBJS=	$(SRCS:%.c=%.o)
+$(SUBDIRS): FRC
+	@cd $@; pwd; $(MAKE) $(MFLAGS) $(TARGET)
 
-CPPFLAGS= -DTERM_EMU
-CFLAGS = -O2
-
-#.if ${MACHINE_CPUARCH} == "aarch64"
-#CFLAGS+=	-msoft-float -mgeneral-regs-only
-#.endif
-#.if ${MACHINE_ARCH} == "amd64"
-CFLAGS += -fPIC
-#.endif
-
-CFLAGS += -nostdinc -I. -I../../../../include -I../../..
-CFLAGS += -I../include
-CFLAGS += -I../include/${MACH64}
-CFLAGS += -I../../../../lib/libstand
-CFLAGS += -I./../../../contrib/dev/acpica/include
-
-# Pick up the bootstrap header for some interface items
-CFLAGS += -I../../common
-
-# Handle FreeBSD specific %b and %D printf format specifiers
-# CFLAGS+= ${FORMAT_EXTENSIONS}
-# CFLAGS += -D__printf__=__freebsd_kprintf__
-CFLAGS+= -DTERM_EMU
-
-include ../Makefile.inc
-
-lib$(LIB).a: $(SRCS) $(OBJS)
-	$(AR) $(ARFLAGS) $@ $(OBJS)
-
-clean: clobber
-clobber:
-	$(RM) $(CLEANFILES) $(OBJS) machine x86 lib$(LIB).a
-
-machine:
-	$(RM) machine
-	$(SYMLINK) ../../../amd64/include machine
-
-x86:
-	$(RM) x86
-	$(SYMLINK) ../../../x86/include x86
+FRC:

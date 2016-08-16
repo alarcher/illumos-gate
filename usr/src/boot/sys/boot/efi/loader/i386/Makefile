@@ -10,25 +10,20 @@
 #
 
 #
-# Copyright 2015 Toomas Soome <tsoome@me.com>
+# Copyright 2016 Toomas Soome <tsoome@me.com>
 #
 
-include $(SRC)/Makefile.master
+MACHINE=	$(MACH)
+ASFLAGS=	-m32
+EFIPROG=	loader32.efi
 
-SUBDIRS=	i386 amd64
+all:		machine x86 ${EFIPROG}
 
-all:=		TARGET= all
-install:=	TARGET= install
-clean:=		TARGET= clean
-clobber:=	TARGET= clobber
+include ../Makefile.com
 
-.KEEP_STATE:
+EFI_TARGET=	pei-i386
+LDFLAGS +=	-znocombreloc
 
-all clean clobber: $(SUBDIRS)
+CFLAGS +=	-m32
 
-install: $(SUBDIRS)
-
-FRC:
-
-$(SUBDIRS): FRC
-	@cd $@; pwd; $(MAKE) $(TARGET)
+CLEANFILES +=	machine x86 ${EFIPROG}

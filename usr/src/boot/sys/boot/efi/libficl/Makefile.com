@@ -17,15 +17,12 @@
 CC=		$(GCC_ROOT)/bin/gcc
 FICLDIR=	$(SRC)/common/ficl
 
-all: lib
+CPPFLAGS= -nostdinc -DSTAND -DEFI -I. -I.. -I../../../../../include
+CPPFLAGS += -I../../../../../lib/libstand
+CPPFLAGS += -I../../../..  -I$(FICLDIR) -I../../../common
+CFLAGS= -O2 -Wall
 
-CPPFLAGS= -DSTAND -I. -I.. -I../../../../include -I../../../../lib/libstand
-CPPFLAGS += -I../../..  -I$(FICLDIR) -I../../common
-CFLAGS= -O2 -Wall -nostdinc
-
-CFLAGS +=	-ffreestanding
-CFLAGS +=	-mno-mmx -mno-3dnow -mno-sse -mno-sse2 -mno-sse3 -msoft-float
-CFLAGS +=	-std=gnu99
+include ../../Makefile.inc
 
 OBJECTS= dictionary.o system.o fileaccess.o float.o double.o prefix.o search.o
 OBJECTS += softcore.o stack.o tools.o vm.o primitives.o unix.o utility.o
@@ -36,7 +33,7 @@ HEADERS= $(FICLDIR)/ficl.h $(FICLDIR)/ficlplatform/unix.h ../ficllocal.h
 MAJOR = 4
 MINOR = 1.0
 
-lib: machine x86 libficl.a
+lib: libficl.a
 
 # static library build
 libficl.a: $(OBJECTS)
@@ -44,11 +41,11 @@ libficl.a: $(OBJECTS)
 
 machine:
 	$(RM) machine
-	$(SYMLINK) ../../../$(MACHINE)/include machine
+	$(SYMLINK) ../../../../$(MACHINE)/include machine
 
 x86:
 	$(RM) x86
-	$(SYMLINK) ../../../x86/include x86
+	$(SYMLINK) ../../../../x86/include x86
 
 %.o:	../softcore/%.c $(HEADERS)
 	$(COMPILE.c) $<

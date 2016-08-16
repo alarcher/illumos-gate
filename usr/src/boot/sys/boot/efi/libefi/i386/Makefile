@@ -13,9 +13,14 @@
 # Copyright 2016 Toomas Soome <tsoome@me.com>
 #
 
+MACHINE=	$(MACH)
+ASFLAGS=	-m32
+
+all:		machine x86 libefi.a
+
 include ../Makefile.com
 
-CFLAGS +=	-march=i386 -m32 -fno-reorder-functions
-CFLAGS +=	-mpreferred-stack-boundary=2
+CPPFLAGS +=	-DLOADER_EFI=L\"loader32.efi\"
+CFLAGS +=	-m32
 
-MACHINE=	$(MACH)
+CLEANFILES +=	machine x86

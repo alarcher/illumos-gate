@@ -813,7 +813,7 @@ fkey(ficlVm *pVM)
 
 
 #ifdef STAND
-#ifdef __i386__
+#if defined(__i386__) && !defined(EFI)
 
 /*
  * outb ( port# c -- )
@@ -1039,7 +1039,7 @@ ficlSystemCompilePlatform(ficlSystem *pSys)
 	    FICL_WORD_DEFAULT);
 	ficlDictionarySetPrimitive(dp, "ccall", ficlCcall, FICL_WORD_DEFAULT);
 #ifdef STAND
-#ifdef __i386__
+#if defined(__i386__) && !defined(EFI)
 	ficlDictionarySetPrimitive(dp, "outb", ficlOutb, FICL_WORD_DEFAULT);
 	ficlDictionarySetPrimitive(dp, "inb", ficlInb, FICL_WORD_DEFAULT);
 #endif
@@ -1049,7 +1049,7 @@ ficlSystemCompilePlatform(ficlSystem *pSys)
 	ficlDictionarySetPrimitive(dp, "pnphandlers", ficlPnphandlers,
 	    FICL_WORD_DEFAULT);
 #endif
-#ifdef __i386__
+#if defined(__i386__) && !defined(EFI)
 	ficlDictionarySetPrimitive(dp, "pcibios-device-count",
 	    ficlPciBiosCountDevices, FICL_WORD_DEFAULT);
 	ficlDictionarySetPrimitive(dp, "pcibios-read-config",
