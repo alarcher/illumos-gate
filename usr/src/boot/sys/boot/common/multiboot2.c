@@ -32,6 +32,7 @@
 #include "libzfs.h"
 
 #include "bootstrap.h"
+#include <sys/consplat.h>
 
 #include <machine/metadata.h>
 #include <machine/pc/bios.h>
@@ -514,6 +515,9 @@ static int
 mbi_size(struct preloaded_file *fp, char *cmdline)
 {
 	int size;
+#if !defined (EFI)
+	extern multiboot_tag_framebuffer_t vbe_fb;
+#endif
 
 	size = sizeof (uint32_t) * 2; /* first 2 fields from MBI header */
 	size += sizeof (multiboot_tag_string_t) + strlen(cmdline) + 1;
@@ -530,14 +534,27 @@ mbi_size(struct preloaded_file *fp, char *cmdline)
 	size += sizeof (multiboot_tag_efi64_t);
 	size = roundup2(size, MULTIBOOT_TAG_ALIGN);
 	size += efimemmap_size();
-
 	size += sizeof (multiboot_tag_framebuffer_t);
 	size = roundup2(size, MULTIBOOT_TAG_ALIGN);
 #endif
+
 	size += biossmap_size(fp);
 	size = roundup2(size, MULTIBOOT_TAG_ALIGN);
 
 #if !defined (EFI)
+	if (vbe_fb.common.framebuffer_type ==
+	    MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED) {
+		size += sizeof (struct multiboot_tag_framebuffer_common);
+		size += vbe_fb.u.fb1.framebuffer_palette_num_colors *
+		    sizeof (multiboot_color_t);
+	} else {
+		size += sizeof (multiboot_tag_framebuffer_t);
+	}
+	size = roundup2(size, MULTIBOOT_TAG_ALIGN);
+
+	size += sizeof (multiboot_tag_vbe_t);
+	size = roundup2(size, MULTIBOOT_TAG_ALIGN);
+
 	if (strstr(getenv("loaddev"), "pxe") != NULL) {
 		size += sizeof(multiboot_tag_network_t) + sizeof (BOOTPLAYER);
 		size = roundup2(size, MULTIBOOT_TAG_ALIGN);
@@ -766,6 +783,18 @@ multiboot2_exec(struct preloaded_file *fp)
 		tag->size = sizeof(*tag) + sizeof (BOOTPLAYER);
 		memcpy(tag->dhcpack, &bootplayer, sizeof (BOOTPLAYER));
 	}
+
+	{
+		multiboot_tag_vbe_t *tag;
+		extern multiboot_tag_vbe_t vbestate;
+
+		if (vbestate.vbe_mode >= 0x100) {
+			tag = (multiboot_tag_vbe_t *)mb_malloc(sizeof(*tag));
+			memcpy(tag, &vbestate, sizeof(*tag));
+			tag->type = MULTIBOOT_TAG_TYPE_VBE;
+			tag->size = sizeof(*tag);
+		}
+	}
 #endif
 
 	if (rsdp != NULL) {
@@ -810,44 +839,48 @@ multiboot2_exec(struct preloaded_file *fp)
 		tag->pointer = (uint32_t)ST;
 	}
 #endif /* __LP64__ */
+#endif
 
 	{
 		multiboot_tag_framebuffer_t *tag;
-		int bpp;
-		struct efi_fb fb;
-		extern int efi_find_framebuffer(struct efi_fb *efifb);
+		extern multiboot_tag_framebuffer_t gfx_fb;
+#if defined (EFI)
 
-		if (efi_find_framebuffer(&fb) == 0) {
-			tag = (multiboot_tag_framebuffer_t *)
-			    mb_malloc(sizeof (*tag));
-			bpp = fls(fb.fb_mask_red | fb.fb_mask_green |
-			    fb.fb_mask_blue | fb.fb_mask_reserved);
+		tag = (multiboot_tag_framebuffer_t *) mb_malloc(sizeof (*tag));
+		memcpy(tag, &gfx_fb, sizeof (*tag));
+		tag->common.type = MULTIBOOT_TAG_TYPE_FRAMEBUFFER;
+		tag->common.size = sizeof (*tag);
+#else
+		extern multiboot_color_t *cmap;
+		uint32_t size;
 
-			tag->common.type = MULTIBOOT_TAG_TYPE_FRAMEBUFFER;
-			tag->common.size = sizeof (multiboot_tag_framebuffer_t);
-			tag->common.framebuffer_addr = fb.fb_addr;
-			tag->common.framebuffer_width = fb.fb_width;
-			tag->common.framebuffer_height = fb.fb_height;
-			tag->common.framebuffer_bpp = bpp;
-			tag->common.framebuffer_pitch =
-			    fb.fb_stride * (bpp / 8);
-			tag->common.framebuffer_type =
-			    MULTIBOOT_FRAMEBUFFER_TYPE_RGB;
-			tag->common.reserved = 0;
-			if (fb.fb_mask_red & 0x000000ff) {
-				tag->u.fb2.framebuffer_red_field_position = 0;
-				tag->u.fb2.framebuffer_blue_field_position = 16;
-			} else {
-				tag->u.fb2.framebuffer_red_field_position = 16;
-				tag->u.fb2.framebuffer_blue_field_position = 0;
-			}
-			tag->u.fb2.framebuffer_red_mask_size = 8;
-			tag->u.fb2.framebuffer_green_field_position = 8;
-			tag->u.fb2.framebuffer_green_mask_size = 8;
-			tag->u.fb2.framebuffer_blue_mask_size = 8;
+		if (gfx_fb.common.framebuffer_type ==
+		    MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED) {
+			uint16_t nc;
+			nc = gfx_fb.u.fb1.framebuffer_palette_num_colors;
+			size = sizeof (struct multiboot_tag_framebuffer_common)
+			    + sizeof (nc)
+			    + nc * sizeof (multiboot_color_t);
+		} else {
+			size = sizeof (gfx_fb);
 		}
+
+		tag = (multiboot_tag_framebuffer_t *) mb_malloc(size);
+		memcpy(tag, &gfx_fb, sizeof (*tag));
+
+		tag->common.type = MULTIBOOT_TAG_TYPE_FRAMEBUFFER;
+		tag->common.size = size;
+
+		if (gfx_fb.common.framebuffer_type ==
+		    MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED) {
+			memcpy(tag->u.fb1.framebuffer_palette, cmap,
+			    sizeof (multiboot_color_t) *
+			    gfx_fb.u.fb1.framebuffer_palette_num_colors);
+		}
+#endif
 	}
 
+#if defined (EFI)
 	/* Leave EFI memmap last as we will also switch off BS */
 	{
 		multiboot_tag_efi_mmap_t *tag;

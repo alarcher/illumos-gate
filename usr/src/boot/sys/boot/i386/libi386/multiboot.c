@@ -51,9 +51,10 @@
 #include "bootstrap.h"
 #include <sys/multiboot.h>
 #include "pxe.h"
-#include "../zfs/libzfs.h"
-#include "../i386/libi386/libi386.h"
-#include "../i386/btx/lib/btxv86.h"
+#include "vbe.h"
+#include "../../zfs/libzfs.h"
+#include "libi386.h"
+#include "../btx/lib/btxv86.h"
 
 #define MULTIBOOT_SUPPORTED_FLAGS \
 	(MULTIBOOT_AOUT_KLUDGE|MULTIBOOT_PAGE_ALIGN|MULTIBOOT_MEMORY_INFO)
@@ -452,6 +453,9 @@ multiboot_exec(struct preloaded_file *fp)
 	mb_info->flags |= MULTIBOOT_INFO_CMDLINE;
 	free(cmdline);
 	cmdline = NULL;
+
+	/* make sure we have text mode */
+	bios_set_text_mode(3);
 
 	dev_cleanup();
 	__exec((void *)VTOP(multiboot_tramp), MULTIBOOT_BOOTLOADER_MAGIC,

@@ -1,3 +1,29 @@
+/*
+ * This file and its contents are supplied under the terms of the
+ * Common Development and Distribution License ("CDDL"), version 1.0.
+ * You may only use this file in accordance with the terms of version
+ * 1.0 of the CDDL.
+ *
+ * A full copy of the text of the CDDL should have accompanied this
+ * source.  A copy of the CDDL is also available via the Internet at
+ * http://www.illumos.org/license/CDDL.
+ */
+
+/*
+ * Copyright 2016 Toomas Soome <tsoome@me.com>
+ */
+
+#ifndef	_GFX_FB_H
+#define	_GFX_FB_H
+
+#include <sys/visual_io.h>
+#include <sys/multiboot2.h>
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+#define	EDID_MAGIC	{ 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00 }
 
 struct edid_header {
 	uint8_t header[8];	/* fixed header pattern */
@@ -64,3 +90,21 @@ struct vesa_edid_info {
 	uint8_t number_of_extensions;
 	uint8_t checksum;
 } __packed;
+
+extern multiboot_tag_framebuffer_t gfx_fb;
+
+void gfx_framework_init(struct visual_ops *);
+uint32_t gfx_fb_color_map(uint8_t);
+void gfx_fb_display_cursor(struct vis_conscursor *);
+void gfx_fb_setpixel(int x, int y);
+void gfx_fb_drawrect(int x1, int y1, int x2, int y2, int fill);
+void gfx_term_drawrect(int row1, int col1, int row2, int col2);
+void gfx_fb_line(int x0, int y0, int x1, int y1);
+void gfx_fb_bezier(int x0, int y0, int x1, int y1, int x2, int y2, int width);
+void plat_cons_update_mode(void);
+
+#ifdef  __cplusplus
+}
+#endif
+
+#endif  /* _GFX_FB_H */

@@ -58,6 +58,7 @@ static int	comc_init(struct console *cp, int arg);
 static void	comc_putchar(struct console *cp, int c);
 static int	comc_getchar(struct console *cp);
 static int	comc_ischar(struct console *cp);
+static int	comc_ioctl(struct console *cp, int cmd, void *data);
 static void	comc_setup(struct console *cp);
 static char	*comc_print_mode(struct serial *sp, char *buf);
 static int	comc_parse_mode(struct serial *sp, const char *value);
@@ -66,51 +67,55 @@ static int	comc_cd_set(struct env_var *, int, const void *);
 static int	comc_rtsdtr_set(struct env_var *, int, const void *);
 
 struct console ttya = {
-    "ttya",
-    "serial port a",
-    0,
-    comc_probe,
-    comc_init,
-    comc_putchar,
-    comc_getchar,
-    comc_ischar,
-    0
+    .c_name = "ttya",
+    .c_desc = "serial port a",
+    .c_flags = 0,
+    .c_probe = comc_probe,
+    .c_init = comc_init,
+    .c_out = comc_putchar,
+    .c_in = comc_getchar,
+    .c_ready = comc_ischar,
+    .c_ioctl = comc_ioctl,
+    .c_private = NULL
 };
 
 struct console ttyb = {
-    "ttyb",
-    "serial port b",
-    0,
-    comc_probe,
-    comc_init,
-    comc_putchar,
-    comc_getchar,
-    comc_ischar,
-    0
+    .c_name = "ttyb",
+    .c_desc = "serial port b",
+    .c_flags = 0,
+    .c_probe = comc_probe,
+    .c_init = comc_init,
+    .c_out = comc_putchar,
+    .c_in = comc_getchar,
+    .c_ready = comc_ischar,
+    .c_ioctl = comc_ioctl,
+    .c_private = NULL
 };
 
 struct console ttyc = {
-    "ttyc",
-    "serial port c",
-    0,
-    comc_probe,
-    comc_init,
-    comc_putchar,
-    comc_getchar,
-    comc_ischar,
-    0
+    .c_name = "ttyc",
+    .c_desc = "serial port c",
+    .c_flags = 0,
+    .c_probe = comc_probe,
+    .c_init = comc_init,
+    .c_out = comc_putchar,
+    .c_in = comc_getchar,
+    .c_ready = comc_ischar,
+    .c_ioctl = comc_ioctl,
+    .c_private = NULL
 };
 
 struct console ttyd = {
-    "ttyd",
-    "serial port d",
-    0,
-    comc_probe,
-    comc_init,
-    comc_putchar,
-    comc_getchar,
-    comc_ischar,
-    0
+    .c_name = "ttyd",
+    .c_desc = "serial port d",
+    .c_flags = 0,
+    .c_probe = comc_probe,
+    .c_init = comc_init,
+    .c_out = comc_putchar,
+    .c_in = comc_getchar,
+    .c_ready = comc_ischar,
+    .c_ioctl = comc_ioctl,
+    .c_private = NULL
 };
 
 EFI_STATUS
@@ -156,14 +161,14 @@ comc_probe(struct console *cp)
 	int nhandles = 0;		/* number of handles in array */
 
 	/* are we already set up? */
-	if (cp->private != NULL)
+	if (cp->c_private != NULL)
 		return;
 
 	/* make sure the handles are available */
 	status = efi_serial_init(&handles, &nhandles);
 
-	cp->private = malloc(sizeof (struct serial));
-	port = cp->private;
+	cp->c_private = malloc(sizeof (struct serial));
+	port = cp->c_private;
 	port->baudrate = COMSPEED;
 
 	if (strcmp(cp->c_name, "ttya") == 0)
@@ -253,7 +258,7 @@ comc_putchar(struct console *cp, int c)
 	EFI_STATUS status;
 	UINTN bufsz = 1;
 	char cb = c;
-	struct serial *sp = cp->private;
+	struct serial *sp = cp->c_private;
 
 	if (sp->sio == NULL)
 		return;
@@ -271,7 +276,7 @@ comc_getchar(struct console *cp)
 	EFI_STATUS status;
 	UINTN bufsz = 1;
 	char c;
-	struct serial *sp = cp->private;
+	struct serial *sp = cp->c_private;
 
 	if (sp->sio == NULL || !comc_ischar(cp))
 		return (-1);
@@ -288,7 +293,7 @@ comc_ischar(struct console *cp)
 {
 	EFI_STATUS status;
 	uint32_t control;
-	struct serial *sp = cp->private;
+	struct serial *sp = cp->c_private;
 
 	if (sp->sio == NULL)
 		return (0);
@@ -298,6 +303,12 @@ comc_ischar(struct console *cp)
 		return (0);
 
 	return (!(status & EFI_SERIAL_INPUT_BUFFER_EMPTY));
+}
+
+static int
+comc_ioctl(struct console *cp __unused, int cmd __unused, void *data __unused)
+{
+	return (ENOTTY);
 }
 
 static char *
@@ -441,7 +452,7 @@ comc_mode_set(struct env_var *ev, int flags, const void *value)
 	if ((cp = get_console(ev->ev_name)) == NULL)
 		return (CMD_ERROR);
 
-	if (comc_parse_mode(cp->private, value) == CMD_ERROR)
+	if (comc_parse_mode(cp->c_private, value) == CMD_ERROR)
 		return (CMD_ERROR);
 
 	comc_setup(cp);
@@ -462,7 +473,7 @@ comc_cd_set(struct env_var *ev, int flags, const void *value)
 	if ((cp = get_console(ev->ev_name)) == NULL)
 		return (CMD_ERROR);
 
-	sp = cp->private;
+	sp = cp->c_private;
 	if (strcmp(value, "true") == 0)
 		sp->ignore_cd = 1;
 	else if (strcmp(value, "false") == 0)
@@ -488,7 +499,7 @@ comc_rtsdtr_set(struct env_var *ev, int flags, const void *value)
 	if ((cp = get_console(ev->ev_name)) == NULL)
 		return (CMD_ERROR);
 
-	sp = cp->private;
+	sp = cp->c_private;
 	if (strcmp(value, "true") == 0)
 		sp->rtsdtr_off = 1;
 	else if (strcmp(value, "false") == 0)
@@ -507,7 +518,7 @@ comc_setup(struct console *cp)
 {
 	EFI_STATUS status;
 	uint32_t control;
-	struct serial *sp = cp->private;
+	struct serial *sp = cp->c_private;
 
 	if ((cp->c_flags & (C_ACTIVEIN | C_ACTIVEOUT)) == 0)
 		return;

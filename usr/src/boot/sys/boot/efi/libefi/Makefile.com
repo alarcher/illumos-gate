@@ -20,7 +20,7 @@ CC=     $(GCC_ROOT)/bin/gcc
 install:
 
 SRCS=	delay.c devpath.c efi_console.c efinet.c efipart.c errno.c handles.c \
-	libefi.c time.c acpi.c
+	libefi.c time.c acpi.c gfx_fb.c
 
 OBJS=	$(SRCS:%.c=%.o)
 
@@ -38,7 +38,7 @@ CPPFLAGS += -I.././../../../contrib/dev/acpica/include
 
 # Pick up the bootstrap header for some interface items
 CPPFLAGS += -I../../../common
-CPPFLAGS += -DTERM_EMU
+CPPFLAGS += -DEFI
 
 # Handle FreeBSD specific %b and %D printf format specifiers
 # CFLAGS+= ${FORMAT_EXTENSIONS}
@@ -62,4 +62,7 @@ x86:
 	$(SYMLINK) ../../../../x86/include x86
 
 %.o:	../%.c
+	$(COMPILE.c) $<
+
+%.o:	../../../common/%.c
 	$(COMPILE.c) $<

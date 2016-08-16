@@ -42,6 +42,7 @@
 #include <uuid.h>
 
 #include <bootstrap.h>
+#include <gfx_fb.h>
 #include <smbios.h>
 
 #ifdef EFI_ZFS_BOOT
@@ -659,10 +660,8 @@ command_mode(int argc, char *argv[])
 	unsigned int mode;
 	int i;
 	char *cp;
-	char rowenv[8];
 	EFI_STATUS status;
 	SIMPLE_TEXT_OUTPUT_INTERFACE *conout;
-	extern void HO(void);
 
 	conout = ST->ConOut;
 
@@ -682,11 +681,7 @@ command_mode(int argc, char *argv[])
 			printf("couldn't set mode %d\n", mode);
 			return (CMD_ERROR);
 		}
-		sprintf(rowenv, "%u", (unsigned)rows);
-		setenv("LINES", rowenv, 1);
-		sprintf(rowenv, "%u", (unsigned)cols);
-		setenv("COLUMNS", rowenv, 1);
-		HO();		/* set cursor */
+		plat_cons_update_mode();
 		return (CMD_OK);
 	}
 

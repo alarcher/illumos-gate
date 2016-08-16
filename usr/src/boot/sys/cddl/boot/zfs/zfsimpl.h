@@ -63,8 +63,6 @@
 
 #define _NOTE(s)
 
-typedef enum { B_FALSE, B_TRUE } boolean_t;
-
 /* CRC64 table */
 #define	ZFS_CRC64_POLY	0xC96C5795D7870F42ULL	/* ECMA-182, reflected form */
 

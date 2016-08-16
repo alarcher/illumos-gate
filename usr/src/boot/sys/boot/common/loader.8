@@ -71,7 +71,7 @@ Then, devices are probed,
 and
 .Va loaddev
 are set, and
-.Va LINES
+.Va screen-#rows
 is set to 24.
 Next,
 .Tn FICL
@@ -257,7 +257,7 @@ is specified, more details are shown.
 .Pp
 .It Ic more Ar file Op Ar
 Display the files specified, with a pause at each
-.Va LINES
+.Va screen-#rows
 displayed.
 .Pp
 .It Ic pnpscan Op Fl v
@@ -538,7 +538,7 @@ script is executed with the standard shell
 Has the value
 .Dq Li OK
 if the Forth's current state is interpreting.
-.It Va LINES
+.It Va screen-#rows
 Define the number of lines on the screen, to be used by the pager.
 .It Va module_path
 Sets the list of directories which will be searched for modules
