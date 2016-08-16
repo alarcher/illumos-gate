@@ -22,12 +22,18 @@ OBJDUMP=	$(GNU_ROOT)/bin/gobjdump
 
 PROG=		loader.sym
 
+VGATEXT_FONT	= 8x16
+VGATEXT_FONT_SRC= 8859-1
+VGATEXT_FONT_DIR= $(SRC)/uts/common/io/font
+
 # architecture-specific loader code
 SRCS=	autoload.c bootinfo.c conf.c copy.c devicename.c main.c self_reloc.c \
-	smbios.c vers.c memmap.c multiboot2.c
+	smbios.c vers.c memmap.c multiboot2.c font.c 12x22.c 6x10.c 7x14.c \
+	8x16.c list.c tem.c
 
 OBJS= autoload.o bootinfo.o conf.o copy.o devicename.o main.o self_reloc.o \
-	smbios.o vers.o memmap.o multiboot2.o
+	smbios.o vers.o memmap.o multiboot2.o font.o 12x22.o 6x10.o 7x14.o \
+	8x16.o list.o tem.o
 
 CFLAGS=	-O2
 CPPFLAGS= -nostdinc -I../../../../../include -I../../..../
@@ -47,7 +53,7 @@ CPPFLAGS +=	-I../../../zfs
 CPPFLAGS +=	-I../../../../cddl/boot/zfs
 CPPFLAGS +=	-I../../../../contrib/dev/acpica/include
 CPPFLAGS +=	-DEFI_ZFS_BOOT
-CPPFLAGS +=	-DNO_PCI -DEFI -DTERM_EMU
+CPPFLAGS +=	-DNO_PCI -DEFI
 
 # Export serial numbers, UUID, and asset tag from loader.
 CPPFLAGS += -DSMBIOS_SERIAL_NUMBERS
@@ -161,6 +167,11 @@ clean clobber:
 
 %.o: $(SRC)/uts/common/io/font/%.c
 	$(COMPILE.c) $<
+
+$(VGATEXT_FONT).c: $(VGATEXT_FONT_DIR)/$(VGATEXT_FONT_SRC).bdf \
+	$(VGATEXT_FONT_DIR)/bdf_to_c.awk
+	$(AWK) -f $(VGATEXT_FONT_DIR)/bdf_to_c.awk	\
+		$(VGATEXT_FONT_DIR)/$(VGATEXT_FONT_SRC).bdf > $@
 
 $(ROOT_BOOT)/%: %
 	$(INS.file)

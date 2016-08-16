@@ -37,7 +37,7 @@
 #include <efipciio.h>
 #include <machine/metadata.h>
 
-#include "video.h"
+#include "gfx_fb.h"
 #include "framebuffer.h"
 
 static EFI_GUID gop_guid = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
@@ -426,47 +426,8 @@ efifb_from_uga(struct efi_fb *efifb, EFI_UGA_DRAW_PROTOCOL *uga)
 	return (0);
 }
 
-int
-efi_find_framebuffer(struct efi_fb *efifb)
-{
-	EFI_GRAPHICS_OUTPUT *gop;
-	EFI_UGA_DRAW_PROTOCOL *uga;
-	EFI_STATUS status;
-
-	status = BS->LocateProtocol(&gop_guid, NULL, (VOID **)&gop);
-	if (status == EFI_SUCCESS)
-		return (efifb_from_gop(efifb, gop->Mode, gop->Mode->Info));
-
-	status = BS->LocateProtocol(&uga_guid, NULL, (VOID **)&uga);
-	if (status == EFI_SUCCESS)
-		return (efifb_from_uga(efifb, uga));
-
-	return (1);
-}
-
-static void
-print_efifb(int mode, struct efi_fb *efifb, int verbose)
-{
-	u_int depth;
-
-	if (mode >= 0)
-		printf("mode %d: ", mode);
-	depth = efifb_color_depth(efifb);
-	printf("%ux%ux%u, stride=%u", efifb->fb_width, efifb->fb_height,
-	    depth, efifb->fb_stride);
-	if (verbose) {
-		printf("\n    frame buffer: address=%jx, size=%jx",
-		    (uintmax_t)efifb->fb_addr, (uintmax_t)efifb->fb_size);
-		printf("\n    color mask: R=%08x, G=%08x, B=%08x\n",
-		    efifb->fb_mask_red, efifb->fb_mask_green,
-		    efifb->fb_mask_blue);
-	}
-}
-
-COMMAND_SET(edid, "edid", "show edid mode", command_edid);
-
 static int
-grub_video_gop_get_edid (EFI_HANDLE gop, struct vesa_edid_info *edid_info)
+video_gop_get_edid (EFI_HANDLE gop, struct vesa_edid_info *edid_info)
 {
 	EFI_EDID_ACTIVE_PROTOCOL *edid;
 	EFI_GUID *guid;
@@ -497,45 +458,91 @@ grub_video_gop_get_edid (EFI_HANDLE gop, struct vesa_edid_info *edid_info)
 	return (0);
 }
 
-static int
-command_edid(int argc, char *argv[])
+static void
+find_edid(void)
 {
-	struct vesa_edid_info edid_info;
+	extern struct vesa_edid_info edid_info;
 	EFI_HANDLE *handles;
 	UINTN bufsz = 0;
 	EFI_STATUS status;
-	u_int mode;
 	int rc, i;
 
 	status = BS->LocateHandle(ByProtocol, &gop_guid, NULL, &bufsz, NULL);
-	if (status != EFI_BUFFER_TOO_SMALL) {
-		sprintf(command_errbuf, "%s: Graphics Output Protocol not "
-		    "present (error=%lu)", argv[0], EFI_ERROR_CODE(status));
-		return (CMD_ERROR);
-	}
-	if ((handles = malloc(bufsz)) == NULL) {
-		sprintf(command_errbuf, "out of memory");
-		return (CMD_ERROR);
-	}
+	if (status != EFI_BUFFER_TOO_SMALL)
+		return;
+
+	if ((handles = malloc(bufsz)) == NULL)
+		return;
 
 	status = BS->LocateHandle(ByProtocol, &gop_guid, NULL, &bufsz, handles);
 	if (EFI_ERROR(status)) {
-		sprintf(command_errbuf, "unexpected error: %lu",
-		    EFI_ERROR_CODE(status));
 		free(handles);
-		return (CMD_ERROR);
+		return;
 	}
 
 	for (i = 0; i < (bufsz / sizeof (EFI_HANDLE)); i++) {
-		rc = grub_video_gop_get_edid (handles[i], &edid_info);
+		rc = video_gop_get_edid (handles[i], &edid_info);
 		if (rc == 0)
 			break;
 	}
 
 	free(handles);
-	if (rc != 0)
-		return (CMD_ERROR);
+}
 
+int
+efi_find_framebuffer(struct efi_fb *efifb)
+{
+	extern EFI_GRAPHICS_OUTPUT *gop;
+	extern EFI_UGA_DRAW_PROTOCOL *uga;
+	EFI_STATUS status;
+
+	status = BS->LocateProtocol(&gop_guid, NULL, (VOID **)&gop);
+	if (status == EFI_SUCCESS) {
+		find_edid();
+		return (efifb_from_gop(efifb, gop->Mode, gop->Mode->Info));
+	}
+
+	status = BS->LocateProtocol(&uga_guid, NULL, (VOID **)&uga);
+	if (status == EFI_SUCCESS)
+		return (efifb_from_uga(efifb, uga));
+
+	return (1);
+}
+
+static void
+print_efifb(int mode, struct efi_fb *efifb, int verbose)
+{
+	u_int depth;
+
+	if (mode >= 0)
+		printf("mode %d: ", mode);
+	depth = efifb_color_depth(efifb);
+	printf("%ux%ux%u, stride=%u", efifb->fb_width, efifb->fb_height,
+	    depth, efifb->fb_stride);
+	if (verbose) {
+		printf("\n    frame buffer: address=%jx, size=%jx",
+		    (uintmax_t)efifb->fb_addr, (uintmax_t)efifb->fb_size);
+		printf("\n    color mask: R=%08x, G=%08x, B=%08x\n",
+		    efifb->fb_mask_red, efifb->fb_mask_green,
+		    efifb->fb_mask_blue);
+	}
+}
+
+COMMAND_SET(edid, "edid", "show edid mode", command_edid);
+
+static int
+command_edid(int argc, char *argv[])
+{
+	extern struct vesa_edid_info edid_info;
+	extern EFI_GRAPHICS_OUTPUT *gop;
+
+	if (gop == NULL) {
+		sprintf(command_errbuf,
+		    "%s: Graphics Output Protocol not present", argv[0]);
+		return (CMD_ERROR);
+	}
+
+	/* TODO validate edid checksum */
 	printf("edid version: %d.%d\n", edid_info.header.version,
 	    edid_info.header.revision);
 	if (edid_info.header.version == 1 &&
@@ -558,16 +565,15 @@ COMMAND_SET(gop, "gop", "graphics output protocol", command_gop);
 static int
 command_gop(int argc, char *argv[])
 {
-	struct efi_fb efifb;
-	EFI_GRAPHICS_OUTPUT *gop;
+	extern struct efi_fb efifb;
+	extern EFI_GRAPHICS_OUTPUT *gop;
+	struct efi_fb fb;
 	EFI_STATUS status;
 	u_int mode;
 
-	status = BS->LocateProtocol(&gop_guid, NULL, (VOID **)&gop);
-	if (EFI_ERROR(status)) {
+	if (gop == NULL) {
 		snprintf(command_errbuf, sizeof (command_errbuf),
-		    "%s: Graphics Output Protocol not present (error=%lu)",
-		    argv[0], EFI_ERROR_CODE(status));
+		    "%s: Graphics Output Protocol not present", argv[0]);
 		return (CMD_ERROR);
 	}
 
@@ -584,6 +590,11 @@ command_gop(int argc, char *argv[])
 			sprintf(command_errbuf, "mode is an integer");
 			return (CMD_ERROR);
 		}
+
+		/* check if this mode is current */
+		if (mode == gop->Mode->Mode)
+			return (CMD_OK);
+
 		status = gop->SetMode(gop, mode);
 		if (EFI_ERROR(status)) {
 			snprintf(command_errbuf, sizeof (command_errbuf),
@@ -591,10 +602,11 @@ command_gop(int argc, char *argv[])
 			    argv[0], mode, EFI_ERROR_CODE(status));
 			return (CMD_ERROR);
 		}
+		efifb_from_gop(&efifb, gop->Mode, gop->Mode->Info);
+		plat_cons_update_mode();
 	} else if (!strcmp(argv[1], "get")) {
 		if (argc != 2)
 			goto usage;
-		efifb_from_gop(&efifb, gop->Mode, gop->Mode->Info);
 		print_efifb(gop->Mode->Mode, &efifb, 1);
 		printf("\n");
 	} else if (!strcmp(argv[1], "list")) {
@@ -608,8 +620,8 @@ command_gop(int argc, char *argv[])
 			status = gop->QueryMode(gop, mode, &infosz, &info);
 			if (EFI_ERROR(status))
 				continue;
-			efifb_from_gop(&efifb, gop->Mode, info);
-			print_efifb(mode, &efifb, 0);
+			efifb_from_gop(&fb, gop->Mode, info);
+			print_efifb(mode, &fb, 0);
 			if (pager_output("\n"))
 				break;
 		}
@@ -628,22 +640,19 @@ COMMAND_SET(uga, "uga", "universal graphics adapter", command_uga);
 static int
 command_uga(int argc, char *argv[])
 {
-	struct efi_fb efifb;
-	EFI_UGA_DRAW_PROTOCOL *uga;
-	EFI_STATUS status;
+	extern struct efi_fb efifb;
+	extern EFI_UGA_DRAW_PROTOCOL *uga;
 
-	status = BS->LocateProtocol(&uga_guid, NULL, (VOID **)&uga);
-	if (EFI_ERROR(status)) {
+	if (uga == NULL) {
 		snprintf(command_errbuf, sizeof (command_errbuf),
-		    "%s: UGA Protocol not present (error=%lu)",
-		    argv[0], EFI_ERROR_CODE(status));
+		    "%s: UGA Protocol not present", argv[0]);
 		return (CMD_ERROR);
 	}
 
 	if (argc != 1)
 		goto usage;
 
-	if (efifb_from_uga(&efifb, uga) != CMD_OK) {
+	if (efifb.fb_addr == 0) {
 		snprintf(command_errbuf, sizeof (command_errbuf),
 		    "%s: Unable to get UGA information", argv[0]);
 		return (CMD_ERROR);

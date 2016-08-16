@@ -73,6 +73,7 @@ static void	comc_putchar(struct console *cp, int c);
 static int	comc_getchar(struct console *cp);
 static int	comc_getspeed(struct serial *sp);
 static int	comc_ischar(struct console *cp);
+static int	comc_ioctl(struct console *cp, int cmd, void *data);
 static uint32_t comc_parse_pcidev(const char *string);
 static int	comc_pcidev_set(struct env_var *ev, int flags,
 		    const void *value);
@@ -85,51 +86,55 @@ static int	comc_cd_set(struct env_var *, int, const void *);
 static int	comc_rtsdtr_set(struct env_var *, int, const void *);
 
 struct console ttya = {
-    "ttya",
-    "serial port a",
-    0,
-    comc_probe,
-    comc_init,
-    comc_putchar,
-    comc_getchar,
-    comc_ischar,
-    NULL
+    .c_name = "ttya",
+    .c_desc = "serial port a",
+    .c_flags = 0,
+    .c_probe = comc_probe,
+    .c_init = comc_init,
+    .c_out = comc_putchar,
+    .c_in = comc_getchar,
+    .c_ready = comc_ischar,
+    .c_ioctl = comc_ioctl,
+    .c_private = NULL
 };
 
 struct console ttyb = {
-    "ttyb",
-    "serial port b",
-    0,
-    comc_probe,
-    comc_init,
-    comc_putchar,
-    comc_getchar,
-    comc_ischar,
-    NULL
+    .c_name = "ttyb",
+    .c_desc = "serial port b",
+    .c_flags = 0,
+    .c_probe = comc_probe,
+    .c_init = comc_init,
+    .c_out = comc_putchar,
+    .c_in = comc_getchar,
+    .c_ready = comc_ischar,
+    .c_ioctl = comc_ioctl,
+    .c_private = NULL
 };
 
 struct console ttyc = {
-    "ttyc",
-    "serial port c",
-    0,
-    comc_probe,
-    comc_init,
-    comc_putchar,
-    comc_getchar,
-    comc_ischar,
-    NULL
+    .c_name = "ttyc",
+    .c_desc = "serial port c",
+    .c_flags = 0,
+    .c_probe = comc_probe,
+    .c_init = comc_init,
+    .c_out = comc_putchar,
+    .c_in = comc_getchar,
+    .c_ready = comc_ischar,
+    .c_ioctl = comc_ioctl,
+    .c_private = NULL
 };
 
 struct console ttyd = {
-    "ttyd",
-    "serial port d",
-    0,
-    comc_probe,
-    comc_init,
-    comc_putchar,
-    comc_getchar,
-    comc_ischar,
-    NULL
+    .c_name = "ttyd",
+    .c_desc = "serial port d",
+    .c_flags = 0,
+    .c_probe = comc_probe,
+    .c_init = comc_init,
+    .c_out = comc_putchar,
+    .c_in = comc_getchar,
+    .c_ready = comc_ischar,
+    .c_ioctl = comc_ioctl,
+    .c_private = NULL
 };
 
 static void
@@ -140,9 +145,9 @@ comc_probe(struct console *cp)
     char value[20];
     char *cons, *env;
 
-    if (cp->private == NULL) {
-	cp->private = malloc(sizeof(struct serial));
-	port = cp->private;
+    if (cp->c_private == NULL) {
+	cp->c_private = malloc(sizeof(struct serial));
+	port = cp->c_private;
 	port->speed = COMSPEED;
 
 	if (strcmp(cp->c_name, "ttya") == 0)
@@ -235,7 +240,7 @@ static void
 comc_putchar(struct console *cp, int c)
 {
     int wait;
-    struct serial *sp = cp->private;
+    struct serial *sp = cp->c_private;
 
     for (wait = COMC_TXWAIT; wait > 0; wait--)
         if (inb(sp->ioaddr + com_lsr) & LSR_TXRDY) {
@@ -247,15 +252,21 @@ comc_putchar(struct console *cp, int c)
 static int
 comc_getchar(struct console *cp)
 {
-    struct serial *sp = cp->private;
+    struct serial *sp = cp->c_private;
     return (comc_ischar(cp) ? inb(sp->ioaddr + com_data) : -1);
 }
 
 static int
 comc_ischar(struct console *cp)
 {
-    struct serial *sp = cp->private;
+    struct serial *sp = cp->c_private;
     return (inb(sp->ioaddr + com_lsr) & LSR_RXRDY);
+}
+
+static int
+comc_ioctl(struct console *cp __unused, int cmd __unused, void *data __unused)
+{
+	return (ENOTTY);
 }
 
 static char *
@@ -387,7 +398,7 @@ comc_mode_set(struct env_var *ev, int flags, const void *value)
     if ((cp = get_console(ev->ev_name)) == NULL)
 	return (CMD_ERROR);
 
-    if (comc_parse_mode(cp->private, value) == CMD_ERROR)
+    if (comc_parse_mode(cp->c_private, value) == CMD_ERROR)
 	return (CMD_ERROR);
 
     comc_setup(cp);
@@ -409,7 +420,7 @@ comc_cd_set(struct env_var *ev, int flags, const void *value)
     if ((cp = get_console(ev->ev_name)) == NULL)
 	return (CMD_ERROR);
 
-    sp = cp->private;
+    sp = cp->c_private;
     if (strcmp(value, "true") == 0)
 	sp->ignore_cd = 1;
     else if (strcmp(value, "false") == 0)
@@ -436,7 +447,7 @@ comc_rtsdtr_set(struct env_var *ev, int flags, const void *value)
     if ((cp = get_console(ev->ev_name)) == NULL)
 	return (CMD_ERROR);
 
-    sp = cp->private;
+    sp = cp->c_private;
     if (strcmp(value, "true") == 0)
 	sp->rtsdtr_off = 1;
     else if (strcmp(value, "false") == 0)
@@ -506,7 +517,7 @@ comc_pcidev_handle(struct console *cp, uint32_t locator)
 	(void)locator;
 	return (CMD_ERROR);
 #else
-	struct serial *sp = cp->private;
+	struct serial *sp = cp->c_private;
 	char intbuf[64];
 	uint32_t port;
 
@@ -538,7 +549,7 @@ comc_pcidev_set(struct env_var *ev, int flags, const void *value)
 
 	if ((cp = get_console(ev->ev_name)) == NULL)
 		return (CMD_ERROR);
-	sp = cp->private;
+	sp = cp->c_private;
 
 	if (value == NULL || (locator = comc_parse_pcidev(value)) <= 0) {
 		printf("Invalid pcidev\n");
@@ -557,7 +568,7 @@ comc_pcidev_set(struct env_var *ev, int flags, const void *value)
 static void
 comc_setup(struct console *cp)
 {
-    struct serial *sp = cp->private;
+    struct serial *sp = cp->c_private;
     static int TRY_COUNT = 1000000;
     int tries;
 
