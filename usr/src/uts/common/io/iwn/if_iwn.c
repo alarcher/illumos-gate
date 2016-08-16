@@ -502,7 +502,7 @@ iwn_kstat_free(kstat_t *ks, void *data, size_t size)
 {
 	if (ks)
 		kstat_delete(ks);
-	else
+	else if (data && size)
 		kmem_free(data, size);
 }
 
