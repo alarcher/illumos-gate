@@ -11,23 +11,16 @@
 
 #
 # Copyright 2016 Toomas Soome <tsoome@me.com>
-# Copyright 2016 RackTop Systems.
 #
-
-.KEEP_STATE:
 
 include $(SRC)/Makefile.master
 
-SUBDIRS = $(MACH) $(MACH64)
+MACHINE=	$(MACH)
 
-all	:=	TARGET = all
-clean	:=	TARGET = clean
-clobber	:=	TARGET = clobber
-install	:=	TARGET = install
+all install: machine x86 lib
 
-all clean clobber install: $(SUBDIRS)
+include ../Makefile.com
 
-$(SUBDIRS): FRC
-	@cd $@; pwd; $(MAKE) $(MFLAGS) $(TARGET)
+CFLAGS += -fPIC -m32
 
 FRC:

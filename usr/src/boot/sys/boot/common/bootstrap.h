@@ -303,7 +303,7 @@ struct arch_switch
      * Interface to adjust the load address according to the "object"
      * being loaded.
      */
-    uint64_t	(*arch_loadaddr)(u_int type, void *data, uint64_t addr);
+    vm_offset_t	(*arch_loadaddr)(u_int type, void *data, vm_offset_t addr);
 #define	LOAD_ELF	1	/* data points to the ELF header. */
 #define	LOAD_RAW	2	/* data points to the module file name. */
 #define	LOAD_KERN	3	/* data points to the kernel file name. */
@@ -311,7 +311,7 @@ struct arch_switch
     /*
      * Interface to release the load address.
      */
-    void	(*arch_free_loadaddr)(uint64_t addr, uint64_t pages);
+    void	(*arch_free_loadaddr)(vm_offset_t addr, size_t pages);
 
     /*
      * Interface to inform MD code about a loaded (ELF) segment. This

@@ -11,23 +11,25 @@
 
 #
 # Copyright 2016 Toomas Soome <tsoome@me.com>
-# Copyright 2016 RackTop Systems.
 #
 
-.KEEP_STATE:
+MACHINE=	$(MACH64)
+LIBRARY=	libstand.a
 
-include $(SRC)/Makefile.master
+all install:    machine x86 $(LIBRARY)
 
-SUBDIRS = $(MACH) $(MACH64)
+include ../Makefile.com
 
-all	:=	TARGET = all
-clean	:=	TARGET = clean
-clobber	:=	TARGET = clobber
-install	:=	TARGET = install
+CFLAGS +=	-m64 -fPIC -mno-red-zone
+ASFLAGS =	-m64 -fPIC
 
-all clean clobber install: $(SUBDIRS)
+CLEANFILES += x86
 
-$(SUBDIRS): FRC
-	@cd $@; pwd; $(MAKE) $(MFLAGS) $(TARGET)
+# _setjmp/_longjmp
+SRCS += $(LIBSTAND_SRC)/amd64/_setjmp.S
+OBJS += _setjmp.o
 
-FRC:
+$(LIBRARY): $(SRCS) $(OBJS)
+
+%.o: $(LIBSTAND_SRC)/amd64/%.S
+	$(COMPILE.S) $<

@@ -11,23 +11,16 @@
 
 #
 # Copyright 2016 Toomas Soome <tsoome@me.com>
-# Copyright 2016 RackTop Systems.
 #
 
-.KEEP_STATE:
+MACHINE=	$(MACH64)
+ASFLAGS=	-m64
 
-include $(SRC)/Makefile.master
+all:		machine x86 libefi.a
 
-SUBDIRS = $(MACH) $(MACH64)
+include ../Makefile.com
 
-all	:=	TARGET = all
-clean	:=	TARGET = clean
-clobber	:=	TARGET = clobber
-install	:=	TARGET = install
+CPPFLAGS +=	-DLOADER_EFI=L\"loader64.efi\"
+CFLAGS +=	-m64
 
-all clean clobber install: $(SUBDIRS)
-
-$(SUBDIRS): FRC
-	@cd $@; pwd; $(MAKE) $(MFLAGS) $(TARGET)
-
-FRC:
+CLEANFILES +=	machine x86

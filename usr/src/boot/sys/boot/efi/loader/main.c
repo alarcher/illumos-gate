@@ -548,9 +548,9 @@ command_memmap(int argc __unused, char *argv[] __unused)
 	     i++, p = NextMemoryDescriptor(p, dsz)) {
 		snprintf(line, 80, "%23s %012lx %012lx %08lx ",
 		    types[p->Type],
-		    p->PhysicalStart,
-		    p->VirtualStart,
-		    p->NumberOfPages);
+		    (unsigned long)p->PhysicalStart,
+		    (unsigned long)p->VirtualStart,
+		    (unsigned long)p->NumberOfPages);
 		rv = pager_output(line);
 		if (rv)
 			break;
@@ -966,14 +966,16 @@ efi_print_var(CHAR16 *varnamearg, EFI_GUID *matchguid, int lflag)
 	status = RS->GetVariable(varnamearg, matchguid, &attr,
 	    &datasz, NULL);
 	if (status != EFI_BUFFER_TOO_SMALL) {
-		printf("Can't get the variable: error %#lx\n", status);
+		printf("Can't get the variable: error %lu\n",
+		    EFI_ERROR_CODE(status));
 		return (CMD_ERROR);
 	}
 	data = malloc(datasz);
 	status = RS->GetVariable(varnamearg, matchguid, &attr,
 	    &datasz, data);
 	if (status != EFI_SUCCESS) {
-		printf("Can't get the variable: error %#lx\n", status);
+		printf("Can't get the variable: error %lu\n",
+		    EFI_ERROR_CODE(status));
 		return (CMD_ERROR);
 	}
 	uuid_status = uuid_s_ok;
@@ -1007,7 +1009,7 @@ efi_print_var(CHAR16 *varnamearg, EFI_GUID *matchguid, int lflag)
 		if (is_ascii)
 			printf("%s", str);
 		else {
-			printf("%lu bytes of data", datasz);
+			printf("%lu bytes of data", (unsigned long)datasz);
 #if 0
 			/*
 			 * Variables can have different type of data,

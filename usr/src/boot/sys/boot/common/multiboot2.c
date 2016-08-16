@@ -48,13 +48,10 @@ extern void multiboot_tramp();
 #include <efilib.h>
 #include "loader_efi.h"
 
-extern uint64_t efi_loadaddr(u_int type, void *data, uint64_t addr);
-extern void efi_free_loadaddr(uint64_t addr, uint64_t pages);
 extern int efi_getdev(void **vdev, const char *devspec, const char **path);
 extern void multiboot_tramp(uint32_t magic, struct relocator *mbi,
     uint64_t entry);
 extern void efi_addsmapdata(struct preloaded_file *kfp);
-extern multiboot2_info_header_t *efi_copy_finish(struct relocator *relocator);
 static void (*trampoline)(uint32_t magic, struct relocator *relocator,
     uint64_t entry);
 #endif
@@ -792,6 +789,7 @@ multiboot2_exec(struct preloaded_file *fp)
 	}
 
 #if defined (EFI)
+#ifdef  __LP64__
 	{
 		multiboot_tag_efi64_t *tag;
 		tag = (multiboot_tag_efi64_t *)
@@ -801,6 +799,17 @@ multiboot2_exec(struct preloaded_file *fp)
 		tag->size = sizeof (*tag);
 		tag->pointer = (uint64_t)ST;
 	}
+#else
+	{
+		multiboot_tag_efi32_t *tag;
+		tag = (multiboot_tag_efi32_t *)
+		    mb_malloc(sizeof (*tag));
+
+		tag->type = MULTIBOOT_TAG_TYPE_EFI32;
+		tag->size = sizeof (*tag);
+		tag->pointer = (uint32_t)ST;
+	}
+#endif /* __LP64__ */
 
 	{
 		multiboot_tag_framebuffer_t *tag;
@@ -937,7 +946,7 @@ multiboot2_exec(struct preloaded_file *fp)
 		    MULTIBOOT_TAG_ALIGN);
 	}
 	chunk = &relocator->chunklist[i++];
-	chunk->vaddr = (EFI_VIRTUAL_ADDRESS)mbi;
+	chunk->vaddr = (EFI_VIRTUAL_ADDRESS)(uintptr_t)mbi;
 	chunk->paddr = tmp;
 	chunk->size = mbi->total_size;
 	STAILQ_INSERT_TAIL(relocator, chunk, next);
@@ -965,7 +974,7 @@ error:
 		free(cmdline);
 #if defined (EFI)
 	if (mbi != NULL)
-		efi_free_loadaddr((uint64_t)mbi, size >> 12);
+		efi_free_loadaddr((vm_offset_t)mbi, size >> 12);
 #endif
 	return (error);
 }

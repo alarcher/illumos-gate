@@ -83,8 +83,8 @@ extern char end[];
 static void *heap_top;
 static void *heap_bottom;
 
-static uint64_t
-i386_loadaddr(u_int type, void *data, uint64_t addr)
+static vm_offset_t
+i386_loadaddr(u_int type, void *data, vm_offset_t addr)
 {
 	/*
 	 * our modules are page aligned

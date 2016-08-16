@@ -137,14 +137,15 @@ load(const char *filepath, dev_info_t *devinfo, void **bufp, size_t *bufsize)
 
 	if ((status = bs->AllocatePool(EfiLoaderData, (UINTN)st.st_size, &buf))
 	    != EFI_SUCCESS) {
-		printf("Failed to allocate load buffer %zd for pool '%s' for '%s' "
-		    "(%lu)\n", st.st_size, spa->spa_name, filepath, EFI_ERROR_CODE(status));
+		printf("Failed to allocate load buffer %zd for pool '%s' "
+		    "for '%s' (%lu)\n", (ssize_t)st.st_size, spa->spa_name,
+		    filepath, EFI_ERROR_CODE(status));
 		return (EFI_INVALID_PARAMETER);
 	}
 
 	if ((err = dnode_read(spa, &dn, 0, buf, st.st_size)) != 0) {
-		printf("Failed to read node from %s (%d)\n", spa->spa_name,
-		    err);
+		printf("Failed to read node from %s (%d)\n",
+		    spa->spa_name, err);
 		(void)bs->FreePool(buf);
 		return (EFI_INVALID_PARAMETER);
 	}

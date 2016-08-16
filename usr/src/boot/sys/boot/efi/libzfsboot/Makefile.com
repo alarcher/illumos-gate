@@ -11,14 +11,11 @@
 
 #
 # Copyright 2016 Toomas Soome <tsoome@me.com>
-# Copyright 2016 RackTop Systems.
 #
 
 include $(SRC)/Makefile.master
 
 LIB=		zfsboot
-
-all: libzfsboot.a
 
 clean: clobber
 
@@ -26,41 +23,38 @@ clobber:
 	$(RM) machine x86 $(OBJS) libzfsboot.a
 
 CC=     $(GCC_ROOT)/bin/gcc
-CPPFLAGS=
 
-SRCS +=		../zfs.c ../gzip.c
+CFLAGS=		-O2
+
+SRCS +=		$(SRC)/boot/sys/boot/zfs/zfs.c $(SRC)/boot/sys/boot/zfs/gzip.c
 SRCS +=		$(SRC)/common/crypto/edonr/edonr.c
 SRCS +=		$(SRC)/common/crypto/skein/skein.c
 SRCS +=		$(SRC)/common/crypto/skein/skein_iv.c
 SRCS +=		$(SRC)/common/crypto/skein/skein_block.c
 OBJS +=		zfs.o gzip.o edonr.o skein.o skein_iv.o skein_block.o
 
-CFLAGS= -O2 -nostdinc -I../../../../include -I../../..
-CFLAGS +=	-I../../common -I../../.. -I.. -I.
-CFLAGS +=	-I../../../../lib/libstand
-CFLAGS +=	-I../../../../lib/libz
-CFLAGS +=	-I../../../cddl/boot/zfs
+CPPFLAGS=	-nostdinc -I../../../../../include -I../../..
+CPPFLAGS +=	-I../../../common -I../../../.. -I.. -I.
+CPPFLAGS +=	-I../../../../../lib/libstand
+CPPFLAGS +=	-I../../../../../lib/libz
+CPPFLAGS +=	-I../../../../cddl/boot/zfs
 
-CFLAGS +=	-ffreestanding
-CFLAGS +=	-mno-mmx -mno-3dnow -mno-sse -mno-sse2 -mno-sse3 -msoft-float
-CFLAGS +=	-Wformat -Wall -std=gnu99
+include ../../Makefile.inc
 
-CLEANFILES +=    machine x86
+CLEANFILES +=    machine
 
 machine:
 	$(RM) machine
-	$(SYMLINK) ../../../$(MACHINE)/include machine
+	$(SYMLINK) ../../../../$(MACHINE)/include machine
 
 x86:
 	$(RM) x86
-	$(SYMLINK) ../../../x86/include x86
-
-$(OBJS): machine x86
+	$(SYMLINK) ../../../../x86/include x86
 
 libzfsboot.a: $(OBJS)
 	$(AR) $(ARFLAGS) $@ $(OBJS)
 
-%.o:	../%.c
+%.o:	$(SRC)/boot/sys/boot/zfs/%.c
 	$(COMPILE.c) -o $@ $<
 
 %.o:	$(SRC)/common/crypto/edonr/%.c
@@ -69,4 +63,4 @@ libzfsboot.a: $(OBJS)
 %.o:	$(SRC)/common/crypto/skein/%.c
 	$(COMPILE.c) -DSTAND -o $@ $<
 
-zfs.o: ../zfsimpl.c
+zfs.o: $(SRC)/boot/sys/boot/zfs/zfsimpl.c

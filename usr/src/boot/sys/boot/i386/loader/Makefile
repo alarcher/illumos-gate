@@ -26,7 +26,7 @@ MAN=
 # Set by zfsloader Makefile
 CPPFLAGS +=	-DLOADER_ZFS_SUPPORT -I../../zfs
 CPPFLAGS +=	-I../libi386
-LIBZFSBOOT=	../../zfs/i386/libzfsboot.a
+LIBZFSBOOT=	../libzfsboot/libzfsboot.a
 LIBI386=        ../libi386/libi386.a
 
 # loader.help build needs better awk
@@ -57,8 +57,8 @@ SRCS=		main.c conf.c vers.c chain.c
 CPPFLAGS +=	-DLOADER_TFTP_SUPPORT -DLOADER_GZIP_SUPPORT
 
 # Enable BootForth
-CPPFLAGS +=	-DBOOT_FORTH -I$(SRC)/common/ficl -I../../ficl
-LIBFICL=	../../ficl/i386/libficl.a
+CPPFLAGS +=	-DBOOT_FORTH -I$(SRC)/common/ficl -I../libficl
+LIBFICL=	../libficl/libficl.a
 
 # Always add MI sources
 SRCS +=	boot.c commands.c console.c devopen.c interp.c
@@ -96,7 +96,7 @@ LDFLAGS=	-static -Ttext 0x0
 
 # i386 standalone support library
 CPPFLAGS +=	-I.. -I../../../../lib/libstand
-LIBSTAND=	../../libstand/i386/libstand.a
+LIBSTAND=	../libstand/libstand.a
 
 # BTX components
 CPPFLAGS +=	-I../btx/lib

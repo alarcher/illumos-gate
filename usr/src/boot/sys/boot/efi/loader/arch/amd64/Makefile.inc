@@ -14,6 +14,3 @@ SRCS +=	nullconsole.c \
 OBJS += nullconsole.o \
 	spinconsole.o \
 	comconsole.o
-
-CFLAGS +=	-fPIC
-LDFLAGS +=	-znocombreloc

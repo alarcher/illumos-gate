@@ -13,14 +13,11 @@
 # Copyright 2016 Toomas Soome <tsoome@me.com>
 #
 
-include $(SRC)/Makefile.master
-
 MACHINE=	$(MACH64)
 
-all install: lib
+all install: machine x86 libzfsboot.a
 
-include ../Makefile.inc
+include ../Makefile.com
 
-CFLAGS += -fPIC -m64 -mno-red-zone
-
-FRC:
+CLEANFILES +=	x86
+CFLAGS +=	-mno-red-zone -m64

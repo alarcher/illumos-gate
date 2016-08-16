@@ -40,14 +40,14 @@
 struct chunk {
 	EFI_VIRTUAL_ADDRESS vaddr;
 	EFI_PHYSICAL_ADDRESS paddr;
-	UINT64 size;
+	size_t size;
 	STAILQ_ENTRY(chunk) next;
 };
 
 struct relocator {
-	UINT64 stack;
-	UINT64 copy;
-	UINT64 memmove;
+	vm_offset_t stack;
+	vm_offset_t copy;
+	vm_offset_t memmove;
 	struct chunk *stqh_first;
 	struct chunk **stqh_last;
 	struct chunk chunklist[1];
@@ -62,8 +62,8 @@ int	efi_setcurrdev(struct env_var *ev, int flags, const void *value);
 ssize_t	efi_copyin(const void *src, vm_offset_t dest, const size_t len);
 ssize_t	efi_copyout(const vm_offset_t src, void *dest, const size_t len);
 ssize_t	efi_readin(const int fd, vm_offset_t dest, const size_t len);
-uint64_t efi_loadaddr(u_int type, void *data, uint64_t addr);
-void efi_free_loadaddr(uint64_t addr, uint64_t pages);
+vm_offset_t efi_loadaddr(u_int type, void *data, vm_offset_t addr);
+void efi_free_loadaddr(vm_offset_t addr, size_t pages);
 void * efi_translate(vm_offset_t ptr);
 
 multiboot2_info_header_t *efi_copy_finish(struct relocator *);

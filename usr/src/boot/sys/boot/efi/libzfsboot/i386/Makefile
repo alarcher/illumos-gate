@@ -13,18 +13,11 @@
 # Copyright 2016 Toomas Soome <tsoome@me.com>
 #
 
-include ../Makefile.com
-
 MACHINE=	$(MACH)
 
-CFLAGS +=	-m32 -fno-reorder-functions
-CFLAGS +=	-mpreferred-stack-boundary=2
+all install: machine x86 libzfsboot.a
 
-# _setjmp/_longjmp
-SRCS += $(LIBSTAND_SRC)/i386/_setjmp.S
-OBJS += _setjmp.o
+include ../Makefile.com
 
-$(LIBRARY): $(SRCS) $(OBJS)
-
-%.o: $(LIBSTAND_SRC)/i386/%.S
-	$(COMPILE.S) $<
+CLEANFILES +=	x86
+CFLAGS +=	-m32
