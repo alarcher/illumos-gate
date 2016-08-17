@@ -85,6 +85,10 @@ set_console_mode(uint8_t val)
 {
 	struct bop_regs rp = {0};
 
+	/* nothing to do in UEFI system */
+	if (BOP_GETPROPLEN(bootops, "efi-systab") > 0)
+		return;
+
 	rp.eax.byte.ah = 0x0;
 	rp.eax.byte.al = val;
 	rp.ebx.word.bx = 0x0;
