@@ -81,8 +81,10 @@ startup_bios_disk()
 	uchar_t	name[20];
 	dev_info_t	*devi;
 	int extensions;
+	extern struct bootops *bootops;
 
-	if (dobiosdev == 0)
+	/* only probe in case of BIOS system */
+	if (dobiosdev == 0 || BOP_GETPROPLEN(bootops, "efi-systab") > 0)
 		return;
 
 	for (drivenum = 0x80; drivenum < (0x80 + BIOSDEV_NUM); drivenum++) {
