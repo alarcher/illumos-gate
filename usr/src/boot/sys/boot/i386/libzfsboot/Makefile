@@ -35,7 +35,7 @@ SRCS +=		$(SRC)/common/crypto/skein/skein_iv.c
 SRCS +=		$(SRC)/common/crypto/skein/skein_block.c
 OBJS +=		zfs.o gzip.o edonr.o skein.o skein_iv.o skein_block.o
 
-CPPFLAGS=	-O2 -nostdinc -I../../../../include -I../../..
+CPPFLAGS=	-Os -nostdinc -I../../../../include -I../../..
 CPPFLAGS +=	-I../../common -I../../.. -I.. -I.
 CPPFLAGS +=	-I../../../../lib/libstand
 CPPFLAGS +=	-I../../../../lib/libz

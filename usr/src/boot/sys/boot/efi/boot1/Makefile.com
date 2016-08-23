@@ -32,7 +32,7 @@ SRCS=	multiboot.S boot1.c self_reloc.c start.S ufs_module.c zfs_module.c \
 OBJS=	multiboot.o boot1.o self_reloc.o start.o ufs_module.o zfs_module.o \
 	devopen.o
 
-CFLAGS= -O2
+CFLAGS= -Os
 CPPFLAGS=	-nostdinc
 CPPFLAGS +=	-I.
 CPPFLAGS +=	-I../../include
