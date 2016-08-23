@@ -24,7 +24,7 @@ clobber:
 
 CC=     $(GCC_ROOT)/bin/gcc
 
-CFLAGS=		-O2
+CFLAGS=		-Os
 
 SRCS +=		$(SRC)/boot/sys/boot/zfs/zfs.c $(SRC)/boot/sys/boot/zfs/gzip.c
 SRCS +=		$(SRC)/common/crypto/edonr/edonr.c

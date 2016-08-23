@@ -24,7 +24,7 @@ SRCS=	delay.c devpath.c efi_console.c efinet.c efipart.c errno.c handles.c \
 
 OBJS=	$(SRCS:%.c=%.o)
 
-CFLAGS = -O2
+CFLAGS = -Os
 
 #.if ${MACHINE_CPUARCH} == "aarch64"
 #CFLAGS+=	-msoft-float -mgeneral-regs-only

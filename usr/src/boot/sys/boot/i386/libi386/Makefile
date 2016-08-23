@@ -15,7 +15,7 @@
 
 include $(SRC)/Makefile.master
 
-CFLAGS= -O2 -I../../../../include -I../../..
+CFLAGS= -Os -I../../../../include -I../../..
 CFLAGS += -DLOADER_ZFS_SUPPORT
 CPPFLAGS=
 

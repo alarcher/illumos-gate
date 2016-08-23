@@ -25,7 +25,7 @@ LIBSTAND_SRC=	$(LIB_BASE)/libstand
 CPPFLAGS =	-nostdinc -I../../../../../include -I${LIBSTAND_SRC}
 CPPFLAGS +=	-I../../../..  -I../../../../sys -I.
 
-CFLAGS =	-O2 -ffreestanding -Wformat
+CFLAGS =	-Os -ffreestanding -Wformat
 CFLAGS +=	-mno-mmx -mno-3dnow -mno-sse -mno-sse2 -mno-sse3 -msoft-float
 CFLAGS +=	-Wno-pointer-sign -Wno-empty-body -Wno-string-plus-int \
 		-Wno-unused-const-variable -Wno-tautological-compare \

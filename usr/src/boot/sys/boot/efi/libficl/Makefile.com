@@ -20,7 +20,7 @@ FICLDIR=	$(SRC)/common/ficl
 CPPFLAGS= -nostdinc -DSTAND -DEFI -I. -I.. -I../../../../../include
 CPPFLAGS += -I../../../../../lib/libstand
 CPPFLAGS += -I../../../..  -I$(FICLDIR) -I../../../common
-CFLAGS= -O2 -Wall
+CFLAGS= -Os -Wall
 
 include ../../Makefile.inc
 

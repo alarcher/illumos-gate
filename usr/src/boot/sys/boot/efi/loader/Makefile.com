@@ -35,7 +35,7 @@ OBJS= autoload.o bootinfo.o conf.o copy.o devicename.o main.o self_reloc.o \
 	smbios.o vers.o memmap.o multiboot2.o font.o 12x22.o 6x10.o 7x14.o \
 	8x16.o list.o tem.o
 
-CFLAGS=	-O2
+CFLAGS=	-Os
 CPPFLAGS= -nostdinc -I../../../../../include -I../../..../
 CPPFLAGS += -I../../../../../lib/libstand
 

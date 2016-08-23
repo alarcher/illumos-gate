@@ -31,7 +31,7 @@ CPPFLAGS=	-DSTAND -I. -I../../../../include
 CPPFLAGS +=	-I../../../../lib/libstand
 CPPFLAGS +=	-I../../..  -I$(FICLDIR) -I../../common
 
-CFLAGS=		-O2 -Wall -nostdinc
+CFLAGS=		-Os -Wall -nostdinc
 CFLAGS +=	-m32 -march=i386 -mpreferred-stack-boundary=2
 CFLAGS +=	-fno-reorder-functions
 CFLAGS +=	-ffreestanding
