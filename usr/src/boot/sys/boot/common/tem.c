@@ -2571,8 +2571,8 @@ bit_to_pix32(struct tem_vt_state *tem,
 {
 	uint32_t fg_color32, bg_color32, *dest;
 
-	fg_color32 = tems.ts_color_map(fg_color4);
-	bg_color32 = tems.ts_color_map(bg_color4);
+	fg_color32 = (0xFF << 24) | tems.ts_color_map(fg_color4);
+	bg_color32 = (0xFF << 24) | tems.ts_color_map(bg_color4);
 
 	dest = (uint32_t *)tem->tvs_pix_data;
 	font_bit_to_pix32(&tems.ts_font, dest, c, fg_color32, bg_color32);
