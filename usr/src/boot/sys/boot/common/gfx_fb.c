@@ -392,6 +392,55 @@ gfx_fb_cons_copy(struct vis_conscopy *ma)
 #endif
 }
 
+/*
+ * Implements alpha blending for RGBA data, could use pixels for arguments,
+ * but byte stream seems more generic.
+ * The generic alpha blending is:
+ * blend = alpha * fg + (1.0 - alpha) * bg.
+ * Since our alpha is not from range [0..1], we scale appropriately.
+ */
+static uint8_t
+alpha_blend(uint8_t fg, uint8_t bg, uint8_t alpha)
+{
+	uint16_t blend, h, l;
+
+	/* trivial corner cases */
+	if (alpha == 0)
+		return (bg);
+	if (alpha == 0xFF)
+		return (fg);
+	blend = (alpha * fg + (0xFF - alpha) * bg);
+	/* Division by 0xFF */
+	h = blend >> 8;
+	l = blend & 0xFF;
+	if (h + l >= 0xFF)
+		h++;
+	return (h);
+}
+
+/* Copy memory to framebuffer or to memory. */
+static void
+bitmap_cpy(uint8_t *dst, uint8_t *src, uint32_t len, int bpp)
+{
+	uint32_t i;
+	uint8_t a;
+
+	switch (bpp) {
+	case 4:
+		for (i = 0; i < len; i += bpp) {
+			a = src[i+3];
+			dst[i] = alpha_blend(src[i], dst[i], a);
+			dst[i+1] = alpha_blend(src[i+1], dst[i+1], a);
+			dst[i+2] = alpha_blend(src[i+2], dst[i+2], a);
+			dst[i+3] = a;
+		}
+		break;
+	default:
+		(void) memcpy(dst, src, len);
+		break;
+	}
+}
+
 static void
 gfx_fb_cons_display(struct vis_consdisplay *da)
 {
@@ -423,7 +472,7 @@ gfx_fb_cons_display(struct vis_consdisplay *da)
 	for (i = 0; i < da->height; i++) {
 		uint8_t *dest = fbp + i * pitch;
 		uint8_t *src = da->data + i * size;
-		(void) memcpy(dest, src, size);
+		bitmap_cpy(dest, src, size, bpp);
 	}
 #if defined (EFI)
 	BS->RestoreTPL(tpl);
