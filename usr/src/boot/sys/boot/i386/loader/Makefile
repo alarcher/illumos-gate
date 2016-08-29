@@ -22,6 +22,7 @@ VGATEXT_FONT_DIR= $(SRC)/uts/common/io/font
 CFLAGS=		-Os
 CPPFLAGS=	-DSTAND -nostdinc -I../../../../include -I../../..
 CPPFLAGS +=	-I../../../contrib/dev/acpica/include
+CPPFLAGS +=	-I../../../../lib/libz
 LOADER=		zfsloader
 NEWVERSWHAT=	"ZFS enabled bootstrap loader" x86
 
@@ -75,7 +76,6 @@ SRCS +=	dev_net.c
 
 SRCS +=	disk.c part.c
 CPPFLAGS += -DLOADER_DISK_SUPPORT
-SRCS +=	crc32.c
 CPPFLAGS += -DLOADER_GPT_SUPPORT
 CPPFLAGS += -DLOADER_MBR_SUPPORT
 

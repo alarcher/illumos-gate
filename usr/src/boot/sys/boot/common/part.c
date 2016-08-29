@@ -37,7 +37,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/queue.h>
 #include <sys/vtoc.h>
 
-#include <crc32.h>
+#include <zlib.h>
 #include <part.h>
 #include <uuid.h>
 
@@ -185,8 +185,8 @@ gpt_checkhdr(struct gpt_hdr *hdr, uint64_t lba_self,
 		return (NULL);
 	}
 	crc = le32toh(hdr->hdr_crc_self);
-	hdr->hdr_crc_self = 0;
-	if (crc32(hdr, sz) != crc) {
+	hdr->hdr_crc_self = crc32(0, Z_NULL, 0);
+	if (crc32(hdr->hdr_crc_self, (const Bytef *)hdr, sz) != crc) {
 		DEBUG("GPT header's CRC doesn't match");
 		return (NULL);
 	}
@@ -234,7 +234,7 @@ gpt_checktbl(const struct gpt_hdr *hdr, u_char *tbl, size_t size,
 		cnt = hdr->hdr_entries;
 		/* Check CRC only when buffer size is enough for table. */
 		if (hdr->hdr_crc_table !=
-		    crc32(tbl, hdr->hdr_entries * hdr->hdr_entsz)) {
+		    crc32(0, tbl, hdr->hdr_entries * hdr->hdr_entsz)) {
 			DEBUG("GPT table's CRC doesn't match");
 			return (-1);
 		}
