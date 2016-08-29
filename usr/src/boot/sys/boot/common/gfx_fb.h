@@ -18,6 +18,7 @@
 
 #include <sys/visual_io.h>
 #include <sys/multiboot2.h>
+#include <pnglite.h>
 
 #ifdef  __cplusplus
 extern "C" {
@@ -102,6 +103,7 @@ void gfx_term_drawrect(int row1, int col1, int row2, int col2);
 void gfx_fb_line(int x0, int y0, int x1, int y1);
 void gfx_fb_bezier(int x0, int y0, int x1, int y1, int x2, int y2, int width);
 void plat_cons_update_mode(void);
+int gfx_fb_putimage(png_t *);
 
 #ifdef  __cplusplus
 }

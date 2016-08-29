@@ -30,6 +30,7 @@
 #include <sys/visual_io.h>
 #include <sys/multiboot2.h>
 #include <gfx_fb.h>
+#include <pnglite.h>
 
 /*
  * Global framebuffer struct, to be updated with mode changes.
@@ -641,6 +642,9 @@ gfx_fb_line(int x0, int y0, int x1, int y1)
 	int dx, sx, dy, sy;
 	int err, e2;
 
+	if (plat_stdout_is_framebuffer() == 0)
+		return;
+
 	sx = x0 < x1? 1:-1;
 	if (sx > 0)
 		dx = x1 - x0;
@@ -678,6 +682,9 @@ gfx_fb_bezier(int x0, int y0, int x1, int y1, int x2, int y2, int width)
 	int sx, sy, xx, yy, xy;
 	int dx, dy, err, curvature;
 	int i;
+
+	if (plat_stdout_is_framebuffer() == 0)
+		return;
 
 	sx = x2 - x1;
 	sy = y2 - y1;
@@ -822,4 +829,97 @@ gfx_term_drawrect(int row1, int col1, int row2, int col2)
 	y2 = col2 * tems.ts_font.height + tems.ts_p_offset.y;
 	for (i = 0; i <= width; i++)
 		gfx_fb_bezier(x1, y1 - i, x2 + i, y1 - i, x2 + i, y2, width-i);
+}
+
+int
+gfx_fb_putimage(png_t *png)
+{
+	struct vis_consdisplay da;
+	uint32_t i, j, height, width, color;
+	int bpp;
+	uint8_t r, g, b, a, *p;
+
+	if (plat_stdout_is_framebuffer() == 0 ||
+	    png->color_type != PNG_TRUECOLOR_ALPHA) {
+		return (1);
+	}
+
+	bpp = gfx_fb.common.framebuffer_bpp >> 3;
+	width = png->width;
+	height = png->height;
+	da.width = png->width;
+	da.height = png->height;
+	da.col = gfx_fb.common.framebuffer_width - tems.ts_p_offset.x;
+	da.col -= da.width;
+	da.row = gfx_fb.common.framebuffer_height - tems.ts_p_offset.y;
+	da.row -= da.height;
+
+	da.data = malloc(width * height * bpp);
+	if (da.data == NULL)
+		return (1);
+
+	/*
+	 * Build image for our framebuffer.
+	 */
+	for (i = 0; i < height * width * png->bpp; i += png->bpp) {
+		r = png->image[i];
+		g = png->image[i+1];
+		b = png->image[i+2];
+		a = png->image[i+3];
+
+		j = i / png->bpp * bpp;
+		color = r >> (8 - gfx_fb.u.fb2.framebuffer_red_mask_size)
+		    << gfx_fb.u.fb2.framebuffer_red_field_position;
+		color |= g >> (8 - gfx_fb.u.fb2.framebuffer_green_mask_size)
+		    << gfx_fb.u.fb2.framebuffer_green_field_position;
+		color |= b >> (8 - gfx_fb.u.fb2.framebuffer_blue_mask_size)
+		    << gfx_fb.u.fb2.framebuffer_blue_field_position;
+
+		switch (gfx_fb.common.framebuffer_bpp) {
+#if !defined (EFI)
+		case 8: {
+			uint32_t best, dist, k;
+			int diff;
+
+			color = 0;
+			for (k = 0; k < 16; k++) {
+				diff = r - cmap4_to_24.red[k];
+				dist = diff * diff;
+				diff = g - cmap4_to_24.green[k];
+				dist += diff * diff;
+				diff = b - cmap4_to_24.blue[k];
+				dist += diff * diff;
+				if (k == 0)
+					best = dist;
+
+				if (dist < best) {
+					color = k;
+					best = dist;
+					if (dist == 0)
+						break;
+				}
+			}
+			da.data[j] = color;
+			break;
+		}
+#endif
+		case 16:
+			*(uint16_t *)(da.data+j) = color;
+			break;
+		case 24:
+			p = (uint8_t *)&color;
+			da.data[j] = p[0];
+			da.data[j+1] = p[1];
+			da.data[j+2] = p[2];
+			break;
+		case 32:
+			color |= a << 24;
+			*(uint32_t *)(da.data+j) = color;
+			break;
+		}
+	}
+
+	gfx_fb_cons_display(&da);
+	free(da.data);
+	return (0);
 }
