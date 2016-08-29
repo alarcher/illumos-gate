@@ -20,7 +20,7 @@ CC=     $(GCC_ROOT)/bin/gcc
 install:
 
 SRCS=	delay.c devpath.c efi_console.c efinet.c efipart.c errno.c handles.c \
-	libefi.c time.c acpi.c gfx_fb.c
+	libefi.c time.c acpi.c gfx_fb.c pnglite.c
 
 OBJS=	$(SRCS:%.c=%.o)
 
@@ -34,6 +34,7 @@ CPPFLAGS = -nostdinc -I. -I../../../../../include -I../../../..
 CPPFLAGS += -I../../include
 CPPFLAGS += -I../../include/${MACHINE}
 CPPFLAGS += -I../../../../../lib/libstand
+CPPFLAGS += -I../../../../../lib/libz
 CPPFLAGS += -I.././../../../contrib/dev/acpica/include
 
 # Pick up the bootstrap header for some interface items
