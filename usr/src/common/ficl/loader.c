@@ -44,6 +44,7 @@
 #else
 #include <stand.h>
 #include <gfx_fb.h>
+#include <pnglite.h>
 #ifdef __i386__
 #include <machine/cpufunc.h>
 #endif
@@ -76,6 +77,38 @@ extern uint32_t biospci_locator(uint8_t, uint8_t, uint8_t);
  */
 
 #ifdef STAND
+void
+ficl_fb_putimage(ficlVm *pVM)
+{
+	char *namep, *name;
+	int names, ret = 0;
+	png_t png;
+
+	FICL_STACK_CHECK(ficlVmGetDataStack(pVM), 2, 1);
+
+	names = ficlStackPopInteger(ficlVmGetDataStack(pVM));
+	namep = (char *)ficlStackPopPointer(ficlVmGetDataStack(pVM));
+
+	name = ficlMalloc(names+1);
+	if (!name)
+		ficlVmThrowError(pVM, "Error: out of memory");
+	strncpy(name, namep, names);
+	name[names] = '\0';
+
+	if ((ret = png_open(&png, name)) != PNG_NO_ERROR) {
+		ret = 0;
+		ficlFree(name);
+		ficlStackPushInteger(ficlVmGetDataStack(pVM), ret);
+		return;
+	}
+
+	if (gfx_fb_putimage(&png) == 0)
+		ret = -1;	/* success */
+	ficlFree(name);
+	png_close(&png);
+	ficlStackPushInteger(ficlVmGetDataStack(pVM), ret);
+}
+
 void
 ficl_fb_setpixel(ficlVm *pVM)
 {
@@ -1121,6 +1154,8 @@ ficlSystemCompilePlatform(ficlSystem *pSys)
 	ficlDictionarySetPrimitive(dp, "fb-bezier", ficl_fb_bezier,
 	    FICL_WORD_DEFAULT);
 	ficlDictionarySetPrimitive(dp, "fb-drawrect", ficl_fb_drawrect,
+	    FICL_WORD_DEFAULT);
+	ficlDictionarySetPrimitive(dp, "fb-putimage", ficl_fb_putimage,
 	    FICL_WORD_DEFAULT);
 	ficlDictionarySetPrimitive(dp, "term-drawrect", ficl_term_drawrect,
 	    FICL_WORD_DEFAULT);
