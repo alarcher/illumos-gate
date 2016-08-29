@@ -49,6 +49,7 @@ CFLAGS=	-nostdinc -DBOOTPROG=\"gptzfsboot\" \
 	-DSIOSPD=${BOOT_COMCONSOLE_SPEED} \
 	-I../../../../include \
 	-I../../../../lib/libstand \
+	-I../../../../lib/libz \
 	-I../../common \
 	-I../common \
 	-I../../zfs \
@@ -80,7 +81,7 @@ install: all $(ROOTBOOTPROG)
 
 OBJS =	multiboot.o zfsboot.o sio.o cons.o panic.o devopen.o \
 	part.o biosmem.o smbios.o biosdisk.o devicename.o disk.o bcache.o \
-	time.o crc32.o
+	time.o
 
 CLEANFILES=	gptzfsboot $(OBJS)
 

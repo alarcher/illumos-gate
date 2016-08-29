@@ -38,6 +38,7 @@ OBJS= autoload.o bootinfo.o conf.o copy.o devicename.o main.o self_reloc.o \
 CFLAGS=	-Os
 CPPFLAGS= -nostdinc -I../../../../../include -I../../..../
 CPPFLAGS += -I../../../../../lib/libstand
+CPPFLAGS += -I../../../../../lib/libz
 
 include ../../Makefile.inc
 
