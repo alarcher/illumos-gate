@@ -186,6 +186,7 @@ static int
 bitmap_setup_fb(struct gfxp_fb_softc *softc)
 {
 	size_t size;
+	struct gfxfb_info *gfxfb_info;
 
 	softc->console.fb.paddr = fb_info.paddr;
 	softc->console.fb.pitch = fb_info.pitch;
@@ -225,6 +226,19 @@ bitmap_setup_fb(struct gfxp_fb_softc *softc)
 		bitmap_attr.fbtype.fb_cmsize = 1 << 24;
 	else
 		bitmap_attr.fbtype.fb_cmsize = 1 << fb_info.depth;
+
+	gfxfb_info = (struct gfxfb_info *)bitmap_attr.sattr.dev_specific;
+	gfxfb_info->terminal_origin_x = fb_info.terminal_origin.x;
+	gfxfb_info->terminal_origin_y = fb_info.terminal_origin.y;
+	gfxfb_info->pitch = fb_info.pitch;
+	gfxfb_info->font_width = fb_info.font_width;
+	gfxfb_info->font_height = fb_info.font_height;
+	gfxfb_info->red_mask_size = fb_info.rgb.red.size;
+	gfxfb_info->red_field_position = fb_info.rgb.red.pos;
+	gfxfb_info->green_mask_size = fb_info.rgb.green.size;
+	gfxfb_info->green_field_position = fb_info.rgb.green.pos;
+	gfxfb_info->blue_mask_size = fb_info.rgb.blue.size;
+	gfxfb_info->blue_field_position = fb_info.rgb.blue.pos;
 
 	return (DDI_SUCCESS);
 }
