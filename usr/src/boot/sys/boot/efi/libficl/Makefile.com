@@ -17,10 +17,11 @@
 
 CC=		$(GCC_ROOT)/bin/gcc
 FICLDIR=	$(SRC)/common/ficl
+PNGLITE=	$(SRC)/common/pnglite
 
 CPPFLAGS= -nostdinc -DSTAND -DEFI -I. -I.. -I../../../../../include
 CPPFLAGS += -I../../../../../lib/libstand
-CPPFLAGS += -I../../../..  -I$(FICLDIR) -I../../../common
+CPPFLAGS += -I../../../..  -I$(FICLDIR) -I../../../common -I$(PNGLITE)
 CFLAGS= -Os -Wall
 
 include ../../Makefile.inc

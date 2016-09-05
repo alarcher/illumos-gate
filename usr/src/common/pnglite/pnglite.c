@@ -3,8 +3,16 @@
  * For conditions of distribution and use, see copyright notice in pnglite.h
  */
 
+#ifdef STAND
 #include <sys/cdefs.h>
 #include <stand.h>
+#else
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
 #include <zlib.h>
 #include "pnglite.h"
 

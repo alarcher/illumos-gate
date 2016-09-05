@@ -922,6 +922,7 @@ gfx_fb_putimage(png_t *png)
 			int diff;
 
 			color = 0;
+			best = 256 * 256 * 256;
 			for (k = 0; k < 16; k++) {
 				diff = r - cmap4_to_24.red[k];
 				dist = diff * diff;
@@ -929,8 +930,6 @@ gfx_fb_putimage(png_t *png)
 				dist += diff * diff;
 				diff = b - cmap4_to_24.blue[k];
 				dist += diff * diff;
-				if (k == 0)
-					best = dist;
 
 				if (dist < best) {
 					color = k;
