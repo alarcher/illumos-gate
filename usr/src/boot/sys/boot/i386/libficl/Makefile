@@ -24,12 +24,13 @@ clobber	:=	TARGET = clobber
 MACHINE=	$(MACH)
 CC=		$(GCC_ROOT)/bin/gcc
 FICLDIR=	$(SRC)/common/ficl
+PNGLITE=	$(SRC)/common/pnglite
 
 all install: $(SUBDIRS) machine x86 libficl.a
 
 CPPFLAGS=	-DSTAND -I. -I../../../../include
 CPPFLAGS +=	-I../../../../lib/libstand
-CPPFLAGS +=	-I../../..  -I$(FICLDIR) -I../../common
+CPPFLAGS +=	-I../../..  -I$(FICLDIR) -I../../common -I$(PNGLITE)
 
 CFLAGS=		-Os -Wall -nostdinc
 CFLAGS +=	-m32 -march=i386 -mpreferred-stack-boundary=2

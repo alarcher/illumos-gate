@@ -24,18 +24,21 @@ SRCS=	delay.c devpath.c efi_console.c efinet.c efipart.c errno.c handles.c \
 
 OBJS=	$(SRCS:%.c=%.o)
 
+PNGLITE=$(SRC)/common/pnglite
+
 CFLAGS = -Os
 
 #.if ${MACHINE_CPUARCH} == "aarch64"
 #CFLAGS+=	-msoft-float -mgeneral-regs-only
 #.endif
 
-CPPFLAGS = -nostdinc -I. -I../../../../../include -I../../../..
+CPPFLAGS = -nostdinc -DSTAND -I. -I../../../../../include -I../../../..
 CPPFLAGS += -I../../include
 CPPFLAGS += -I../../include/${MACHINE}
 CPPFLAGS += -I../../../../../lib/libstand
 CPPFLAGS += -I../../../../../lib/libz
 CPPFLAGS += -I.././../../../contrib/dev/acpica/include
+CPPFLAGS += -I$(PNGLITE)
 
 # Pick up the bootstrap header for some interface items
 CPPFLAGS += -I../../../common
@@ -66,4 +69,7 @@ x86:
 	$(COMPILE.c) $<
 
 %.o:	../../../common/%.c
+	$(COMPILE.c) $<
+
+%.o:	$(PNGLITE)/%.c
 	$(COMPILE.c) $<

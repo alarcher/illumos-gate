@@ -20,6 +20,7 @@
  * Graphics support for loader emulation.
  */
 #include <sys/visual_io.h>
+#include <pnglite.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +37,16 @@ struct framebuffer {
 	int fb_bpp;		/* bytes per pixel */
 	int fb_size;		/* total size in bytes */
 	int fb_pitch;		/* bytes per scanline */
+	uint16_t terminal_origin_x;
+	uint16_t terminal_origin_y;
+	uint16_t font_width;
+	uint16_t font_height;
+	uint8_t red_mask_size;
+	uint8_t red_field_position;
+	uint8_t green_mask_size;
+	uint8_t green_field_position;
+	uint8_t blue_mask_size;
+	uint8_t blue_field_position;
 };
 
 extern struct framebuffer fb;
@@ -47,6 +58,7 @@ void gfx_fb_drawrect(int x1, int y1, int x2, int y2, int fill);
 void gfx_term_drawrect(int row1, int col1, int row2, int col2);
 void gfx_fb_line(int x0, int y0, int x1, int y1, int width);
 void gfx_fb_bezier(int x0, int y0, int x1, int y1, int x2, int y2, int width);
+int gfx_fb_putimage(png_t *);
 
 #ifdef __cplusplus
 }
