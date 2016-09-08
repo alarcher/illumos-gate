@@ -41,6 +41,9 @@ CPPFLAGS +=	-I../../../../lib/libstand
 CPPFLAGS +=	-I../../../../lib/libz
 CPPFLAGS +=	-I../../../cddl/boot/zfs
 
+# Do not unroll skein loops, reduce code size
+CPPFLAGS +=	-DSKEIN_LOOP=111
+
 CFLAGS=		-march=i386 -m32 -fno-reorder-functions
 CFLAGS +=	-mpreferred-stack-boundary=2
 CFLAGS +=	-ffreestanding

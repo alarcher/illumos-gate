@@ -39,6 +39,9 @@ CPPFLAGS +=	-I../../../../../lib/libstand
 CPPFLAGS +=	-I../../../../../lib/libz
 CPPFLAGS +=	-I../../../../cddl/boot/zfs
 
+# Do not unroll skein loops, reduce code size
+CPPFLAGS +=	-DSKEIN_LOOP=111
+
 include ../../Makefile.inc
 
 CLEANFILES +=    machine
