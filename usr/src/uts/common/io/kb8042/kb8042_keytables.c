@@ -48,7 +48,7 @@
 /* BEGIN CSTYLED */
 static keymap_entry_t keytab_pc_lc[KEYMAP_SIZE_PC] = {
 /*  0 */	HOLE,	'`',	'1',	'2',	'3',	'4',	'5',	'6',
-/*  8 */	'7', 	'8',	'9',	'0',	'-',	'=',	HOLE,	'\b',
+/*  8 */	'7', 	'8',	'9',	'0',	'-',	'=',	HOLE,	DEL,
 /* 16 */	'\t',	'q',	'w',	'e',	'r',	't',	'y',	'u',
 /* 24 */	'i',	'o', 	'p', 	'[',	']',	'\\',
 							SHIFTKEYS+CAPSLOCK,
@@ -145,7 +145,7 @@ static keymap_entry_t keytab_pc_uc[KEYMAP_SIZE_PC] = {
 
 static keymap_entry_t keytab_pc_cl[KEYMAP_SIZE_PC] = {
 /*  0 */	HOLE,	'`',	'1',	'2',	'3',	'4',	'5',	'6',
-/*  8 */	'7', 	'8',	'9',	'0',	'-',	'=',	HOLE,	'\b',
+/*  8 */	'7', 	'8',	'9',	'0',	'-',	'=',	HOLE,	DEL,
 /* 16 */	'\t',	'Q',	'W',	'E',	'R',	'T',	'Y',	'U',
 /* 24 */	'I',	'O', 	'P', 	'[',	']',	'\\',
 							SHIFTKEYS+CAPSLOCK,
