@@ -22,6 +22,7 @@
  * Copyright 2010 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  * Copyright 2012 Joyent, Inc.  All rights reserved.
+ * Copyright (c) 2015, 2016 Intel-DRM/KMS Backport to OpenSolaris by Martin Bochnig opensxce@gmx.org
  */
 
 #include <regex.h>
@@ -499,9 +500,12 @@ drm_node(di_minor_t minor, di_node_t node)
 	char *devfspath;
 	char *I_path, *p_path, *buf;
 	char *name = "card";
+	int lun;
 
 	devfsadm_enumerate_t drm_rules[1] = {"^dri$/^card([0-9]+)$", 1,
 		MATCH_ALL };
+	//devfsadm_enumerate_t drm_controlD_rules[1] = {"^dri$/^controlD([0-9]+)$", 1,
+	//	MATCH_ALL};
 
 
 	minor_nm = di_minor_name(minor);
@@ -547,8 +551,18 @@ drm_node(di_minor_t minor, di_node_t node)
 		free(p_path);
 		devfsadm_print(debug_mid, "drm_node: exit/coninue\n");
 		return (DEVFSADM_CONTINUE);
+	} else if (strncmp(minor_nm, "drm", 3) == 0) {
+		lun = atoi(buf);
+		if (lun > 0)
+			lun -= 1;
+		name = "card";
+	} else if (strncmp(minor_nm, "controlD", 8) == 0) {
+		lun = atoi(buf);
+		if (lun < 64)
+			lun += 64;
+		name = "controlD";
 	}
-	(void) snprintf(I_path, PATH_MAX, "dri/%s%s", name, buf);
+	(void) snprintf(I_path, PATH_MAX, "dri/%s%d", name, lun);
 
 	devfsadm_print(debug_mid, "drm_node: p_path=%s buf=%s\n",
 	    p_path, buf);
