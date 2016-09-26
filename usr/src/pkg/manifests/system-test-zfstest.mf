@@ -314,7 +314,6 @@ file path=opt/zfs-tests/tests/functional/bootfs/bootfs_004_neg mode=0555
 file path=opt/zfs-tests/tests/functional/bootfs/bootfs_005_neg mode=0555
 file path=opt/zfs-tests/tests/functional/bootfs/bootfs_006_pos mode=0555
 file path=opt/zfs-tests/tests/functional/bootfs/bootfs_007_pos mode=0555
-file path=opt/zfs-tests/tests/functional/bootfs/bootfs_008_neg mode=0555
 file path=opt/zfs-tests/tests/functional/cache/cache.cfg mode=0555
 file path=opt/zfs-tests/tests/functional/cache/cache.kshlib mode=0555
 file path=opt/zfs-tests/tests/functional/cache/cache_001_pos mode=0555
