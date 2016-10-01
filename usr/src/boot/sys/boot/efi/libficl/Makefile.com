@@ -11,6 +11,7 @@
 
 #
 # Copyright 2016 Toomas Soome <tsoome@me.com>
+# Copyright 2016 RackTop Systems.
 #
 
 
@@ -47,6 +48,8 @@ machine:
 x86:
 	$(RM) x86
 	$(SYMLINK) ../../../../x86/include x86
+
+$(OBJECTS): machine x86
 
 %.o:	../softcore/%.c $(HEADERS)
 	$(COMPILE.c) $<

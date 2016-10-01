@@ -11,6 +11,7 @@
 
 #
 # Copyright 2015 Toomas Soome <tsoome@me.com>
+# Copyright 2016 RackTop Systems.
 #
 
 #
@@ -74,7 +75,7 @@ include ../Makefile.inc
 
 .PARALLEL:
 
-all: machine x86 $(PROG)
+all: $(PROG)
 
 install: all $(ROOTBOOTPROG)
 
@@ -112,6 +113,8 @@ machine:
 x86:
 	$(RM) x86
 	$(SYMLINK) ../../../x86/include x86
+
+$(OBJS): machine x86
 
 %.o:	../common/%.c
 	$(COMPILE.c) -o $@ $<

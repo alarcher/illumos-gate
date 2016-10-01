@@ -11,9 +11,21 @@
 
 #
 # Copyright 2015 Toomas Soome <tsoome@me.com>
+# Copyright 2016 RackTop Systems.
 #
 
-.KEEP_STATE:
+include $(SRC)/Makefile.master
+
+CC=     $(GCC_ROOT)/bin/gcc
+
+LIB=	efi
+
+all:	lib$(LIB).a
+
+install:
+
+SRCS=	delay.c efi_console.c efinet.c efipart.c errno.c handles.c \
+	libefi.c time.c
 
 include $(SRC)/Makefile.master
 
@@ -31,4 +43,8 @@ install: all
 $(SUBDIRS): FRC
 	@cd $@; pwd; $(MAKE) $(MFLAGS) $(TARGET)
 
-FRC:
+x86:
+	$(RM) x86
+	$(SYMLINK) ../../../x86/include x86
+
+$(OBJS): machine x86
