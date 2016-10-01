@@ -63,8 +63,7 @@ x86:
 	$(RM) x86
 	$(SYMLINK) ../../../x86/include x86
 
-%.o:	$(LIBSTAND_SRC)/i386/%.S
-	$(COMPILE.S) $<
+$(OBJS): machine x86
 
 %.o:	$(LIBSTAND_SRC)/%.c
 	$(COMPILE.c) $<
