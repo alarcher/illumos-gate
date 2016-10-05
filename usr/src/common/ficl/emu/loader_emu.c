@@ -842,8 +842,6 @@ bf_init(const char *rc, ficlOutputFunction out)
 		}
 	}
 
-	/* Do this again, so that interpret can be redefined. */
-	pInterp = ficlSystemLookup(bf_sys, "interpret");
 	gfx_framework_init();
 	return (bf_vm);
 }
