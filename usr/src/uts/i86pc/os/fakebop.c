@@ -1819,7 +1819,7 @@ _start(struct xboot_info *xbp)
 	}
 #endif
 
-	bcons_init(xbootp);
+	bcons_init((void *)xbp->bi_cmdline);
 	have_console = 1;
 
 	/*
