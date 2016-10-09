@@ -44,8 +44,8 @@
 #include <sys/kd.h>
 #include <sys/ddi_impldefs.h>
 
-#include "gfx_private.h"
 #include "gfxp_fb.h"
+#include <sys/gfx_private.h>
 
 #define	MYNAME	"gfxp_vgatext"
 
