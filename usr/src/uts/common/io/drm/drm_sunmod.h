@@ -70,7 +70,7 @@ extern "C" {
 #include <sys/ddi_impldefs.h>
 #include <sys/sunldi.h>
 #include <sys/mkdev.h>
-#include <gfx_private.h>
+#include <sys/gfx_private.h>
 #include <sys/agpgart.h>
 #include <sys/agp/agpdefs.h>
 #include <sys/agp/agpmaster_io.h>
