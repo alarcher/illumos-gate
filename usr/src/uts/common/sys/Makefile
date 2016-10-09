@@ -50,6 +50,7 @@ i386_HDRS=			\
 	fd_debug.h		\
 	fdc.h			\
 	fdmedia.h		\
+	gfx_private.h		\
 	mouse.h			\
 	ucode.h
 
