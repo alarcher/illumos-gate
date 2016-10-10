@@ -68,18 +68,6 @@ typedef struct _agp_allocate {
 	uint32_t	agpa_physical;	/* for i810 only, private */
 } agp_allocate_t;
 
-typedef struct _agp_bind_pages {
-	uint32_t	agpb_pgstart;
-	pfn_t		*agpb_pages;
-	unsigned long 	agpb_pgcount;
-} agp_bind_pages_t;
-
-typedef struct _agp_unbind_pages {
-	uint32_t	agpb_pgstart;
-	unsigned long	agpb_pgcount;
-	uint32_t	agpb_type;
-} agp_unbind_pages_t;
-
 typedef struct _agp_bind {
 	int32_t		agpb_key;
 	uint32_t	agpb_pgstart;
@@ -89,6 +77,27 @@ typedef struct _agp_unbind {
 	int32_t		agpu_key;
 	uint32_t	agpu_pri;	/* no use in solaris */
 } agp_unbind_t;
+
+typedef struct _agp_bind_pages {
+	uint32_t	agpb_pgstart;
+	uint32_t 	agpb_pgcount;
+	pfn_t		*agpb_pages;
+	uint32_t	agpb_type;	/* AGP_USER_MEMORY */
+} agp_bind_pages_t;
+
+typedef struct _agp_unbind_pages {
+	uint32_t	agpu_pgstart;
+	uint32_t	agpu_pgcount;
+	pfn_t		agpu_scratch;
+	uint32_t	agpu_flags;
+} agp_unbind_pages_t;
+
+typedef struct _agp_rw_gtt {
+	uint32_t	agprw_pgstart;
+	uint32_t	agprw_pgcount;
+	void		*agprw_addr;	/* buffer */
+	uint32_t	agprw_flags;	/* 0:read, 1:write */
+} agp_rw_gtt_t;
 
 #define	AGPIOC_BASE		'G'
 #define	AGPIOC_INFO		_IOR(AGPIOC_BASE, 0, 100)
@@ -106,7 +115,12 @@ typedef struct _agp_unbind {
 #define	AGPIOC_FLUSHCHIPSET	_IO(AGPIOC_BASE, 12)
 #define	AGPIOC_PAGES_BIND	_IOW(AGPIOC_BASE, 13, agp_bind_pages_t)
 #define	AGPIOC_PAGES_UNBIND	_IOW(AGPIOC_BASE, 14, agp_unbind_pages_t)
-#define	AGPIOC_PAGES_REBIND	_IO(AGPIOC_BASE, 15)
+#define	AGPIOC_RW_GTT		_IOW(AGPIOC_BASE, 15, agp_rw_gtt_t)
+
+/* AGP bind pages type values */
+#define AGP_USER_TYPES (1 << 16)
+#define AGP_USER_MEMORY (AGP_USER_TYPES)
+#define AGP_USER_CACHED_MEMORY (AGP_USER_TYPES + 1)
 
 /* AGP status register bits definition */
 #define	AGPSTAT_RQ_MASK		0xff000000	/* target only */
