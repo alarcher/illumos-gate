@@ -74,10 +74,6 @@ typedef char *gfxp_kva_t;
 extern gfxp_kva_t gfxp_map_kernel_space(uint64_t start, size_t size,
 	uint32_t mode);
 extern void gfxp_unmap_kernel_space(gfxp_kva_t address, size_t size);
-extern int gfxp_va2pa(struct as *as, caddr_t addr, uint64_t *pa);
-extern void gfxp_fix_mem_cache_attrs(caddr_t kva_start, size_t length,
-	int cache_attr);
-extern gfx_maddr_t gfxp_convert_addr(paddr_t paddr);
 
 typedef char *gfxp_fb_softc_ptr_t;
 
@@ -98,6 +94,55 @@ extern int gfxp_mlock_user_memory(caddr_t address, size_t length);
 extern int gfxp_munlock_user_memory(caddr_t address, size_t length);
 extern int gfxp_fb_devmap(dev_t dev, devmap_cookie_t dhp, offset_t off,
 	size_t len, size_t *maplen, uint_t model, void *ptr);
+extern int gfxp_vgatext_devmap(dev_t dev, devmap_cookie_t dhp, offset_t off,
+	size_t len, size_t *maplen, uint_t model, void *ptr);
+
+
+/*
+ * Updated "glue" for newer libdrm code.
+ * See: kernel/drm/src/drm_fb_helper.c
+ */
+
+
+/* Same as: gfxp_vgatext_softc_ptr_t; */
+typedef char * gfxp_fb_softc_ptr_t;
+
+/*
+ * Used by drm_register_fbops().
+ * Note: only setmode is supplied.
+ */
+struct gfxp_blt_ops {
+	int (*blt)(void *);
+	int (*copy) (void *);
+	int (*clear) (void *);
+	int (*setmode) (int);
+};
+
+extern void gfxp_bm_register_fbops(gfxp_fb_softc_ptr_t,
+    struct gfxp_blt_ops *);
+
+/* See: kernel/drm/src/drm_fb_helper.c */
+
+struct gfxp_bm_fb_info {
+	uint16_t xres;
+	uint16_t yres;
+	uint8_t bpp;
+	uint8_t depth;
+};
+
+void gfxp_bm_getfb_info(gfxp_fb_softc_ptr_t, struct gfxp_bm_fb_info *);
+
+
+/* See: kernel/drm/src/drm_bufs.c etc */
+
+caddr_t	gfxp_alloc_kernel_space(size_t size);	/* vmem_alloc heap_arena */
+void	gfxp_free_kernel_space(caddr_t address, size_t size);
+
+void	gfxp_load_kernel_space(uint64_t start, size_t size,
+				uint32_t mode, caddr_t cvaddr);
+void	gfxp_unload_kernel_space(caddr_t address, size_t size);
+
+
 
 #ifdef __cplusplus
 }

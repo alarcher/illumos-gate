@@ -399,7 +399,8 @@ static gms_mode_t gms_modes[] = {
 	{INTEL_BR_IGDNG_MC2, I8XX_CONF_GC, I8XX_GC_MODE_MASK,
 		GMS_SIZE(gms_G4X), gms_G4X},
 	{INTEL_BR_B43, I8XX_CONF_GC, I8XX_GC_MODE_MASK,
-		GMS_SIZE(gms_G4X), gms_G4X}
+		GMS_SIZE(gms_G4X), gms_G4X},
+	/* Todo: Add SandyBridge chips... */
 };
 static int
 get_chip_gms(uint32_t devid)
@@ -411,10 +412,10 @@ get_chip_gms(uint32_t devid)
 
 	for (i = 0; i < num_modes; i++) {
 		if (gms_modes[i].gm_devid == devid)
-			break;
+			return (i);
 	}
 
-	return ((i == num_modes) ? -1 : i);
+	return (-1);
 }
 
 /* Returns the size (kbytes) of pre-allocated graphics memory */
@@ -557,8 +558,8 @@ agp_target_attach(dev_info_t *dip, ddi_attach_cmd_t cmd)
 	    PCI_CONF_VENID);
 	softstate->tsoft_gms_off = get_chip_gms(softstate->tsoft_devid);
 	if (softstate->tsoft_gms_off < 0) {
-		TARGETDB_PRINT2((CE_WARN, "agp_target_attach:"
-		    "read gms offset failed"));
+		TARGETDB_PRINT2((CE_WARN, "agp_target_attach: "
+		    "unknown bridge ID 0x%x", softstate->tsoft_devid));
 		pci_config_teardown(&softstate->tsoft_pcihdl);
 		ddi_soft_state_free(agptarget_glob_soft_handle,
 		    instance);
@@ -627,6 +628,7 @@ agp_target_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
     cred_t *cred, int *rval)
 {
 	int instance = DEV2INST(dev);
+	int ret = 0;
 	agp_target_softstate_t *st;
 	static char kernel_only[] =
 	    "amd64_gart_ioctl: is a kernel only ioctl";
@@ -657,8 +659,8 @@ agp_target_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
 		}
 
 		if (ddi_copyout(&type, (void *)data, sizeof (int), mode)) {
-			mutex_exit(&st->tsoft_lock);
-			return (EFAULT);
+			ret = EFAULT;
+			break;
 		}
 
 		break;
@@ -668,15 +670,15 @@ agp_target_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
 		size_t prealloc_size;
 
 		if (!is_intel_br(st)) {
-			mutex_exit(&st->tsoft_lock);
-			return (EINVAL);
+			ret = EINVAL;
+			break;
 		}
 
 		prealloc_size = i8xx_biosmem_detect(st);
 		if (ddi_copyout(&prealloc_size, (void *)data,
 		    sizeof (size_t), mode)) {
-			mutex_exit(&st->tsoft_lock);
-			return (EFAULT);
+			ret = EFAULT;
+			break;
 		}
 
 		break;
@@ -701,8 +703,8 @@ agp_target_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
 
 		if (ddi_copyout(&info, (void *)data,
 		    sizeof (i_agp_info_t), mode)) {
-			mutex_exit(&st->tsoft_lock);
-			return (EFAULT);
+			ret = EFAULT;
+			break;
 		}
 		break;
 
@@ -721,8 +723,8 @@ agp_target_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
 
 		if (ddi_copyin((void *)data, &gartaddr,
 		    sizeof (uint32_t), mode)) {
-			mutex_exit(&st->tsoft_lock);
-			return (EFAULT);
+			ret = EFAULT;
+			break;
 		}
 
 		agp_target_set_gartaddr(st, gartaddr);
@@ -734,8 +736,8 @@ agp_target_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
 
 		if (ddi_copyin((void *)data, &command,
 		    sizeof (uint32_t), mode)) {
-			mutex_exit(&st->tsoft_lock);
-			return (EFAULT);
+			ret = EFAULT;
+			break;
 		}
 
 		ASSERT(st->tsoft_acaptr);
@@ -822,14 +824,58 @@ agp_target_ioctl(dev_t dev, int cmd, intptr_t data, int mode,
 	case INTEL_CHIPSET_FLUSH:
 	case INTEL_CHIPSET_FLUSH_FREE:
 		break;
+
+	/* See i915_bridge_dev_read_config_word */	
+	case AGP_TARGET_PCICONFIG_GET16:
+	{
+		uint16_t offset, value;
+
+		if (ddi_copyin(
+		    (void *)data, &offset, sizeof (uint16_t), mode)) {
+			ret = EFAULT;
+			break;
+		}
+
+		value = pci_config_get16(st->tsoft_pcihdl, offset);
+
+		if (ddi_copyout(
+		    &value, (void *)data, sizeof (uint16_t), mode)) {
+			ret = EFAULT;
+			break;
+		}
+
+		break;
+	}
+
+	/*
+	 * See i915_bridge_dev_write_config_word
+	 * Offset + value come in as 32 bits:
+	 * data = (offset << 16) | value;
+	 */
+	case AGP_TARGET_PCICONFIG_SET16:
+	{
+		uint32_t off_val;
+		uint16_t offset, value;
+
+		if (ddi_copyin((void *)data, &off_val,
+		    sizeof (off_val), mode)) {
+			ret = EFAULT;
+			break;
+		}
+		offset = (off_val >> 16) & 0xffff;
+		value = off_val & 0xffff;
+		pci_config_put16(st->tsoft_pcihdl, offset, value);
+		break;
+	}
+
 	default:
-		mutex_exit(&st->tsoft_lock);
-		return (ENXIO);
+		ret = ENXIO;
+		break;
 	} /* end switch */
 
 	mutex_exit(&st->tsoft_lock);
 
-	return (0);
+	return (ret);
 }
 
 /*ARGSUSED*/

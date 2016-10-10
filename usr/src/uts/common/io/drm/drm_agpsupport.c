@@ -515,8 +515,9 @@ drm_agp_bind_pages(drm_device_t *dev,
 	int	ret, rval;
 
 	bind.agpb_pgstart = gtt_offset / AGP_PAGE_SIZE;
-	bind.agpb_pgcount = num_pages;
+	bind.agpb_pgcount = (uint32_t)num_pages;
 	bind.agpb_pages = pages;
+	bind.agpb_type = AGP_USER_MEMORY;
 	ret = ldi_ioctl(dev->agp->agpgart_lh, AGPIOC_PAGES_BIND,
 	    (intptr_t)&bind, FKIOCTL, kcred, &rval);
 	if (ret) {
@@ -536,9 +537,10 @@ drm_agp_unbind_pages(drm_device_t *dev,
 	agp_unbind_pages_t unbind;
 	int	ret, rval;
 
-	unbind.agpb_pgstart = gtt_offset / AGP_PAGE_SIZE;
-	unbind.agpb_pgcount = num_pages;
-	unbind.agpb_type = type;
+	unbind.agpu_pgstart = gtt_offset / AGP_PAGE_SIZE;
+	unbind.agpu_pgcount = (uint32_t)num_pages;
+	unbind.agpu_scratch = 0;
+	unbind.agpu_flags = type; /* 0: vtswitch, 1: other */
 	ret = ldi_ioctl(dev->agp->agpgart_lh, AGPIOC_PAGES_UNBIND,
 	    (intptr_t)&unbind, FKIOCTL, kcred, &rval);
 	if (ret) {
@@ -569,19 +571,13 @@ drm_agp_chipset_flush(struct drm_device *dev)
 
 /*
  * The pages are evict on suspend, so re-bind it at resume time
+ *
+ * Used to do AGPIOC_PAGES_REBIND here but that's gone in
+ * the new DRM code.  This might break suspend/resume
+ * until we get the DRM code updated.
  */
+/* ARGSUSED */
 void
 drm_agp_rebind(struct drm_device *dev)
 {
-	int ret, rval;
-
-	if (!dev->agp) {
-		return;
-	}
-
-	ret = ldi_ioctl(dev->agp->agpgart_lh, AGPIOC_PAGES_REBIND,
-	    (intptr_t)0, FKIOCTL, kcred, &rval);
-	if (ret != 0) {
-		DRM_ERROR("rebind failed %d", ret);
-	}
 }
