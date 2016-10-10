@@ -150,29 +150,6 @@ gfxp_unmap_kernel_space(gfxp_kva_t address, size_t size)
 	vmem_free(heap_arena, base, ptob(npages));
 }
 
-/*
- * For a VA return the pfn
- */
-int
-gfxp_va2pa(struct as *as, caddr_t addr, uint64_t *pa)
-{
-#ifdef __xpv
-	ASSERT(DOMAIN_IS_INITDOMAIN(xen_info));
-	*pa = pa_to_ma(pfn_to_pa(hat_getpfnum(as->a_hat, addr)));
-#else
-	*pa = pfn_to_pa(hat_getpfnum(as->a_hat, addr));
-#endif
-	return (0);
-}
-
-/*
- * NOP now
- */
-/* ARGSUSED */
-void
-gfxp_fix_mem_cache_attrs(caddr_t kva_start, size_t length, int cache_attr)
-{
-}
 
 int
 gfxp_ddi_dma_mem_alloc(ddi_dma_handle_t handle, size_t length,
@@ -204,53 +181,114 @@ gfxp_ddi_dma_mem_alloc(ddi_dma_handle_t handle, size_t length,
 	return (e);
 }
 
-int
-gfxp_mlock_user_memory(caddr_t address, size_t length)
+
+/*
+ * Support getting VA space separately from pages
+ * XXX: Need __xpv sections in these?
+ */
+
+/*
+ * A little like gfxp_map_kernel_space, but
+ * just the vmem_alloc part.
+ */
+caddr_t
+gfxp_alloc_kernel_space(size_t size)
 {
-	struct as *as = ttoproc(curthread)->p_as;
-	int error = 0;
+	caddr_t cvaddr;
+	pgcnt_t npages;
 
-	if (((uintptr_t)address & PAGEOFFSET) != 0 || length == 0)
-		return (set_errno(EINVAL));
-
-	if (valid_usr_range(address, length, 0, as, as->a_userlimit) !=
-	    RANGE_OKAY)
-		return (set_errno(ENOMEM));
-
-	error = as_ctl(as, address, length, MC_LOCK, 0, 0, NULL, 0);
-	if (error)
-		(void) set_errno(error);
-
-	return (error);
+	npages = btopr(size);
+	cvaddr = vmem_alloc(heap_arena, ptob(npages), VM_NOSLEEP);
+	return (cvaddr);
 }
 
-int
-gfxp_munlock_user_memory(caddr_t address, size_t length)
+/*
+ * Like gfxp_unmap_kernel_space, but
+ * just the vmem_free part.
+ */
+void
+gfxp_free_kernel_space(caddr_t address, size_t size)
 {
-	struct as *as = ttoproc(curthread)->p_as;
-	int error = 0;
 
-	if (((uintptr_t)address & PAGEOFFSET) != 0 || length == 0)
-		return (set_errno(EINVAL));
+	uint_t pgoffset;
+	caddr_t base;
+	pgcnt_t npages;
 
-	if (valid_usr_range(address, length, 0, as, as->a_userlimit) !=
-	    RANGE_OKAY)
-		return (set_errno(ENOMEM));
+	if (size == 0 || address == NULL)
+		return;
 
-	error = as_ctl(as, address, length, MC_UNLOCK, 0, 0, NULL, 0);
-	if (error)
-		(void) set_errno(error);
-
-	return (error);
+	pgoffset = (uintptr_t)address & PAGEOFFSET;
+	base = (caddr_t)address - pgoffset;
+	npages = btopr(size + pgoffset);
+	vmem_free(heap_arena, base, ptob(npages));
 }
 
-gfx_maddr_t
-gfxp_convert_addr(paddr_t paddr)
+/*
+ * Like gfxp_map_kernel_space, but
+ * just the hat_devload part.
+ */
+void
+gfxp_load_kernel_space(uint64_t start, size_t size,
+	uint32_t mode, caddr_t cvaddr)
 {
+	uint_t pgoffset;
+	uint64_t base;
+	pgcnt_t npages;
+	int hat_flags;
+	uint_t hat_attr;
+	pfn_t pfn;
+
+	if (size == 0)
+		return;
+
+#ifdef __xpv
+	/*
+	 * The hypervisor doesn't allow r/w mappings to some pages, such as
+	 * page tables, gdt, etc. Detect %cr3 to notify users of this interface.
+	 */
+	if (start == mmu_ptob(mmu_btop(getcr3())))
+		return;
+#endif
+
+	if (mode == GFXP_MEMORY_CACHED)
+		hat_attr = HAT_STORECACHING_OK;
+	else if (mode == GFXP_MEMORY_WRITECOMBINED)
+		hat_attr = HAT_MERGING_OK | HAT_PLAT_NOCACHE;
+	else	/* GFXP_MEMORY_UNCACHED */
+		hat_attr = HAT_STRICTORDER | HAT_PLAT_NOCACHE;
+	hat_flags = HAT_LOAD_LOCK;
+
+	pgoffset = start & PAGEOFFSET;
+	base = start - pgoffset;
+	npages = btopr(size + pgoffset);
+
 #ifdef __xpv
 	ASSERT(DOMAIN_IS_INITDOMAIN(xen_info));
-	return (pfn_to_pa(xen_assign_pfn(btop(paddr))));
+	pfn = xen_assign_pfn(mmu_btop(base));
 #else
-	return ((gfx_maddr_t)paddr);
+	pfn = btop(base);
 #endif
+
+	hat_devload(kas.a_hat, cvaddr, ptob(npages), pfn,
+	    PROT_READ|PROT_WRITE|hat_attr, hat_flags);
+}
+
+/*
+ * Like gfxp_unmap_kernel_space, but
+ * just the had_unload part.
+ */
+void
+gfxp_unload_kernel_space(caddr_t address, size_t size)
+{
+	uint_t pgoffset;
+	caddr_t base;
+	pgcnt_t npages;
+
+	if (size == 0 || address == NULL)
+		return;
+
+	pgoffset = (uintptr_t)address & PAGEOFFSET;
+	base = (caddr_t)address - pgoffset;
+	npages = btopr(size + pgoffset);
+	hat_unload(kas.a_hat, base, ptob(npages), HAT_UNLOAD_UNLOCK);
 }

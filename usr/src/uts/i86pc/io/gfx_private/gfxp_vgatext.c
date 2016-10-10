@@ -1386,3 +1386,49 @@ vgatext_return_pointers(struct vgatext_softc *softc, struct vgaregmap *fbs,
 	regss->handle	= softc->regs.handle;
 	regss->mapped	= softc->regs.mapped;
 }
+
+
+/*
+ * ****************************************************************
+ * If we had a "bitmap" console implementation, it could
+ * use the functions below to cooperate with DRM.
+ */
+
+
+/*
+ * If we had "bitmap" console support, this would
+ * register call-back functions: drm_gfxp_setmode,
+ * (and maybe others for blt, copy, clear) for the
+ * "bitmap" console to use.
+ *
+ * The current (text) console doesn't need it.
+ */
+/* ARGSUSED */
+void
+gfxp_bm_register_fbops(gfxp_fb_softc_ptr_t softc,
+    struct gfxp_blt_ops *ops)
+{
+}
+
+
+/*
+ * If we had "bitmap" console support, this would
+ * ask the size of it. (how is TBD)
+ *
+ * Just guess (for now)
+ */
+void
+gfxp_bm_getfb_info(gfxp_fb_softc_ptr_t softc,
+    struct gfxp_bm_fb_info *fbip)
+{
+	_NOTE(ARGUNUSED(softc))
+
+	static struct gfxp_bm_fb_info fb_info = {
+		.xres = 640,
+		.yres = 480,
+		.bpp = 8,
+		.depth = 8,
+	};
+
+	*fbip = fb_info;
+}
