@@ -16,13 +16,34 @@
 #ifndef _SYS_NULL_H
 #define	_SYS_NULL_H
 
+#include <sys/feature_tests.h>
+
 #ifndef	NULL
 
+/*
+ * POSIX.1-2008 requires the cast to type void * whereas ISO C does not.
+ */
+
+#if defined(_XPG7) && !defined(__cplusplus)
+#define NULL ((void *)0)
+#else
+
+/*
+ * ISO C++ requires the macro NULL to be a constant integral type evaluating
+ * to zero until C++11, and an integer or pointer literal with value zero from 
+ * C++11 onwards.
+ */
+
+#if defined(__cplusplus) && __cplusplus >= 201103L
+#define	NULL	nullptr
+#else
 #if defined(_LP64)
 #define	NULL	0L
 #else
 #define	NULL	0
-#endif
+#endif	/* _LP64 */
+#endif	/* C++11 */
+#endif	/* _XPG7 */
 
 #endif	/* NULL */
 
