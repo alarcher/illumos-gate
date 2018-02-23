@@ -176,7 +176,7 @@ xpv_panic_map(int level, pfn_t pfn)
 		*(x86pte32_t *)pteptr = pte;
 	XPV_DISALLOW_PAGETABLE_UPDATES();
 
-	mmu_tlbflush_entry(PWIN_VA(level));
+	mmu_flush_tlb_page((uintptr_t)PWIN_VA(level));
 }
 
 /*

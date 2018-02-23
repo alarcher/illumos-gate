@@ -131,6 +131,19 @@ extern "C" {
 #define	PT_NOCONSIST	(0x400)	/* PTE was created with HAT_LOAD_NOCONSIST */
 #define	PT_FOREIGN	(0x600)	/* MFN mapped on the hypervisor has no PFN */
 
+#ifndef _BOOT
+
+extern ulong_t getcr3(void);
+extern void setcr3(ulong_t);
+
+#define	getcr3_pa() (getcr3() & MMU_PAGEMASK)
+#define	getpcid() ((getcr4() & CR4_PCIDE) ? \
+	(getcr3() & MMU_PAGEOFFSET) : PCID_NONE)
+
+extern void mmu_invlpg(caddr_t);
+
+#endif
+
 #ifdef __xpv
 #include <sys/xen_mmu.h>
 #else
@@ -150,10 +163,6 @@ void set_pteval(paddr_t, uint_t, uint_t, x86pte_t);
 paddr_t make_ptable(x86pte_t *, uint_t);
 x86pte_t *find_pte(uint64_t, paddr_t *, uint_t, uint_t);
 x86pte_t *map_pte(paddr_t, uint_t);
-
-#ifndef _BOOT
-ulong_t getcr3();
-#endif
 
 extern uint_t *shift_amt;
 extern uint_t ptes_per_table;

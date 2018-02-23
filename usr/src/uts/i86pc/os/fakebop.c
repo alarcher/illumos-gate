@@ -847,6 +847,12 @@ do_bsys_doint(bootops_t *bop, int intnum, struct bop_regs *rp)
 	bios_regs_t br;
 
 	/*
+	 * We're about to disable paging; we shouldn't be PCID enabled.
+	 */
+	if (getcr4() & CR4_PCIDE)
+		prom_panic("do_bsys_doint() with PCID enabled\n");
+
+	/*
 	 * The first time we do this, we have to copy the pre-packaged
 	 * low memory bios call code image into place.
 	 */

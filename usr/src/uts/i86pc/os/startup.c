@@ -2337,6 +2337,12 @@ startup_end(void)
 	 * Start it up now.
 	 */
 	immu_startup();
+
+	/*
+	 * Now that we're no longer going to drop into real mode for a BIOS call
+	 * via bootops, we can enable PCID (which requires CR0.PG).
+	 */
+	enable_pcid();
 #endif
 
 	PRM_POINT("Enabling interrupts");

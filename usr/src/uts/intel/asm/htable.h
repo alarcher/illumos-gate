@@ -36,8 +36,6 @@ extern "C" {
 
 #if !defined(__lint) && defined(__GNUC__)
 
-#if defined(__i386) || defined(__amd64)
-
 /*
  * This set of atomic operations are designed primarily
  * for some ia32 hat layer operations.
@@ -82,17 +80,6 @@ atomic_dec16(uint16_t *addr)
 	    : "m" (*addr)
 	    : "cc");
 }
-
-extern __GNU_INLINE void
-mmu_tlbflush_entry(caddr_t addr)
-{
-	__asm__ __volatile__(
-	    "invlpg %0"
-	    : "=m" (*addr)
-	    : "m" (*addr));
-}
-
-#endif	/* __i386 || __amd64 */
 
 #endif	/* !__lint && __GNUC__ */
 

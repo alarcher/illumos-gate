@@ -156,9 +156,10 @@ typedef	int8_t level_t;
 #define	PFN_ABOVE64G(pfn) ((pfn) >= PFN_64G)
 
 /*
- * The CR3 register holds the physical address of the top level page table.
+ * The CR3 register holds the physical address of the top level page table,
+ * along with the current PCID if any.
  */
-#define	MAKECR3(pfn)	mmu_ptob(pfn)
+#define	MAKECR3(pfn, pcid)	(mmu_ptob(pfn) | pcid)
 
 /*
  * HAT/MMU parameters that depend on kernel mode and/or processor type

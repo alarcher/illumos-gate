@@ -436,25 +436,25 @@ getfp(void)
 
 /* ARGSUSED */
 void
-mmu_tlbflush_entry(caddr_t m)
+mmu_invlpg(caddr_t m)
 {}
 
 #else	/* __lint */
 
 #if defined(__amd64)
 
-	ENTRY(mmu_tlbflush_entry)
+	ENTRY(mmu_invlpg)
 	invlpg	(%rdi)
 	ret
-	SET_SIZE(mmu_tlbflush_entry)
+	SET_SIZE(mmu_invlpg)
 
 #elif defined(__i386)
 
-	ENTRY(mmu_tlbflush_entry)
+	ENTRY(mmu_invlpg)
 	movl	4(%esp), %eax
 	invlpg	(%eax)
 	ret
-	SET_SIZE(mmu_tlbflush_entry)
+	SET_SIZE(mmu_invlpg)
 
 #endif	/* __i386 */
 #endif	/* __lint */

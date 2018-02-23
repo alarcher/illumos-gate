@@ -32,7 +32,7 @@
  * Portions Copyright 2009 Advanced Micro Devices, Inc.
  */
 /*
- * Copyright 2017 Joyent, Inc.
+ * Copyright 2018 Joyent, Inc.
  */
 /*
  * Various routines to handle identification
@@ -58,6 +58,7 @@
 #include <sys/memnode.h>
 #include <sys/pci_cfgspace.h>
 #include <sys/comm_page.h>
+#include <sys/mach_mmu.h>
 #include <sys/tsc.h>
 
 #ifdef __xpv
@@ -83,7 +84,7 @@
  *	  x86_vendor accordingly.
  *	o Processing the feature flags returned by the cpuid instruction while
  *	  applying any workarounds or tricks for the specific processor.
- *	o Mapping the feature flags into Solaris feature bits (X86_*).
+ *	o Mapping the feature flags into illumos feature bits (X86_*).
  *	o Processing extended feature flags if supported by the processor,
  *	  again while applying specific processor knowledge.
  *	o Determining the CMT characteristics of the system.
@@ -121,6 +122,9 @@
 uint_t x86_vendor = X86_VENDOR_IntelClone;
 uint_t x86_type = X86_TYPE_OTHER;
 uint_t x86_clflush_size = 0;
+
+uint_t x86_use_pcid = 1;
+uint_t x86_use_invpcid = 1;
 
 uint_t pentiumpro_bug4046376;
 
@@ -196,6 +200,8 @@ static char *x86_feature_names[NUM_X86_FEATURES] = {
 	"umip",
 	"pku",
 	"ospke",
+	"pcid",
+	"invpcid",
 };
 
 boolean_t
@@ -1298,6 +1304,10 @@ cpuid_pass1(cpu_t *cpu, uchar_t *featureset)
 		if (ecp->cp_ebx & CPUID_INTC_EBX_7_0_SMEP)
 			add_x86_feature(featureset, X86FSET_SMEP);
 
+		if (ecp->cp_ebx & CPUID_INTC_EBX_7_0_INVPCID) {
+			add_x86_feature(featureset, X86FSET_INVPCID);
+		}
+
 		/*
 		 * We check disable_smap here in addition to in startup_smap()
 		 * to ensure CPUs that aren't the boot CPU don't accidentally
@@ -1500,6 +1510,13 @@ cpuid_pass1(cpu_t *cpu, uchar_t *featureset)
 			}
 		}
 	}
+
+	if (cpi->cpi_vendor == X86_VENDOR_Intel) {
+		if (cp->cp_ecx & CPUID_INTC_ECX_PCID) {
+			add_x86_feature(featureset, X86FSET_PCID);
+		}
+	}
+
 	if (cp->cp_ecx & CPUID_INTC_ECX_X2APIC) {
 		add_x86_feature(featureset, X86FSET_X2APIC);
 	}
@@ -4990,6 +5007,23 @@ post_startup_cpu_fixups(void)
 		no_trap();
 	}
 #endif	/* !__xpv */
+}
+
+void
+enable_pcid(void)
+{
+#if !defined(__xpv)
+	if (!x86_use_pcid || !is_x86_feature(x86_featureset, X86FSET_PCID))
+		return;
+
+	/*
+	 * Intel say that on setting PCIDE, it immediately starts using the PCID
+	 * bits; better make sure there's nothing there.
+	 */
+	ASSERT((getcr3() & MMU_PAGEOFFSET) == PCID_NONE);
+
+	setcr4(getcr4() | CR4_PCIDE);
+#endif
 }
 
 /*

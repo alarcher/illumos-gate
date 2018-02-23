@@ -113,12 +113,6 @@ kdi_dreg_set(int reg, ulong_t value)
 	}
 }
 
-void
-kdi_flush_caches(void)
-{
-	reload_cr3();
-}
-
 extern void kdi_slave_entry(void);
 
 void
