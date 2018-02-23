@@ -78,6 +78,7 @@
 #include <sys/kdi_impl.h>
 #include <sys/x_call.h>
 #include <ia32/sys/psw.h>
+#include <vm/hat_i86.h>
 
 #define	KDI_GATE_NVECS	3
 
@@ -116,7 +117,7 @@ typedef void idt_hdlr_f(void);
 extern idt_hdlr_f kdi_trap0, kdi_trap1, kdi_int2, kdi_trap3, kdi_trap4;
 extern idt_hdlr_f kdi_trap5, kdi_trap6, kdi_trap7, kdi_trap9;
 extern idt_hdlr_f kdi_traperr10, kdi_traperr11, kdi_traperr12;
-extern idt_hdlr_f kdi_traperr13, kdi_traperr14, kdi_trap16, kdi_trap17;
+extern idt_hdlr_f kdi_traperr13, kdi_traperr14, kdi_trap16, kdi_traperr17;
 extern idt_hdlr_f kdi_trap18, kdi_trap19, kdi_trap20, kdi_ivct32;
 extern idt_hdlr_f kdi_invaltrap;
 extern size_t kdi_ivct_size;
@@ -137,7 +138,7 @@ static const kdi_gate_spec_t kdi_gate_specs[KDI_GATE_NVECS] = {
 
 static gate_desc_t kdi_kgates[KDI_GATE_NVECS];
 
-gate_desc_t kdi_idt[NIDT];
+extern gate_desc_t kdi_idt[NIDT];
 
 struct idt_description {
 	uint_t id_low;
@@ -153,7 +154,9 @@ struct idt_description {
 	{ T_BOUNDFLT, 0,	kdi_trap5, NULL },
 	{ T_ILLINST, 0,		kdi_trap6, NULL },
 	{ T_NOEXTFLT, 0,	kdi_trap7, NULL },
-#if !defined(__xpv)
+#if defined(__amd64) && !defined(__xpv)
+	{ T_DBLFLT, 0,		tr_syserrtrap, NULL },
+#elif !defined(__xpv)
 	{ T_DBLFLT, 0,		syserrtrap, NULL },
 #endif
 	{ T_EXTOVRFLT, 0,	kdi_trap9, NULL },
@@ -164,7 +167,7 @@ struct idt_description {
 	{ T_PGFLT, 0,		kdi_traperr14, NULL },
 	{ 15, 0,		kdi_invaltrap, NULL },
 	{ T_EXTERRFLT, 0, 	kdi_trap16, NULL },
-	{ T_ALIGNMENT, 0, 	kdi_trap17, NULL },
+	{ T_ALIGNMENT, 0, 	kdi_traperr17, NULL },
 	{ T_MCE, 0,		kdi_trap18, NULL },
 	{ T_SIMDFPE, 0,		kdi_trap19, NULL },
 	{ T_DBGENTR, 0,		kdi_trap20, NULL },
@@ -187,7 +190,7 @@ kdi_idt_init(selector_t sel)
 			caddr_t hdlr = (caddr_t)id->id_basehdlr +
 			    incr * (i - id->id_low);
 			set_gatesegd(&kdi_idt[i], (void (*)())hdlr, sel,
-			    SDT_SYSIGT, TRP_KPL, i);
+			    SDT_SYSIGT, TRP_KPL, IST_DBG);
 		}
 	}
 }
@@ -204,7 +207,7 @@ kdi_idt_gates_install(selector_t sel, int saveold)
 		const kdi_gate_spec_t *gs = &kdi_gate_specs[i];
 		uintptr_t func = GATESEG_GETOFFSET(&kdi_idt[gs->kgs_vec]);
 		set_gatesegd(&gates[i], (void (*)())func, sel, SDT_SYSIGT,
-		    gs->kgs_dpl, gs->kgs_vec);
+		    gs->kgs_dpl, IST_DBG);
 	}
 
 	for (i = 0; i < KDI_GATE_NVECS; i++) {
@@ -390,9 +393,17 @@ kdi_trap_pass(kdi_cpusave_t *cpusave)
 	 * See the comments in the kernel's T_SGLSTP handler for why we need to
 	 * do this.
 	 */
+#if !defined(__xpv)
 	if (tt == T_SGLSTP &&
-	    (pc == (greg_t)sys_sysenter || pc == (greg_t)brand_sys_sysenter))
+	    (pc == (greg_t)sys_sysenter || pc == (greg_t)brand_sys_sysenter ||
+	    pc == (greg_t)tr_sys_sysenter ||
+	    pc == (greg_t)tr_brand_sys_sysenter)) {
+#else
+	if (tt == T_SGLSTP &&
+	    (pc == (greg_t)sys_sysenter || pc == (greg_t)brand_sys_sysenter)) {
+#endif
 		return (1);
+	}
 
 	return (0);
 }

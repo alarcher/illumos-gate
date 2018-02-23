@@ -22,6 +22,8 @@
 /*
  * Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
+ *
+ * Copyright 2018 Joyent, Inc.
  */
 
 #ifndef	_SYS_MACHPRIVREGS_H
@@ -439,8 +441,12 @@ extern "C" {
 	pushq	%r11;	\
 	pushq	%rcx
 
-#endif	/* __amd64 */
+#else
 
+#define	XPV_TRAP_POP	/* empty */
+#define	XPV_TRAP_PUSH	/* empty */
+
+#endif
 
 /*
  * Macros for saving the original segment registers and restoring them

@@ -23,6 +23,8 @@
  * Copyright 2016 PALO, Richard.
  *
  * Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
+ *
+ * Copyright 2018 Joyent, Inc.
  */
 
 #include <sys/types.h>
@@ -502,9 +504,10 @@ switch_to_xpv_panic_idt()
 	gate_desc_t *idt = xpv_panic_idt;
 	selector_t cs = get_cs_register();
 
-	for (i = 0; i < 32; i++)
+	for (i = 0; i < 32; i++) {
 		set_gatesegd(&idt[i], &xpv_invaltrap, cs, SDT_SYSIGT, TRP_XPL,
 		    0);
+	}
 
 	set_gatesegd(&idt[T_ZERODIV], &xpv_div0trap, cs, SDT_SYSIGT, TRP_XPL,
 	    0);

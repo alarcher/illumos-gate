@@ -216,7 +216,7 @@ static	struct {
 };
 
 /* Patchable global variables. */
-int		apic_kmdb_on_nmi = 0;		/* 0 - no, 1 - yes enter kmdb */
+int		apic_kmdb_on_nmi = 1;		/* 0 - no, 1 - yes enter kmdb */
 uint32_t	apic_divide_reg_init = 0;	/* 0 - divide by 2 */
 
 /* default apic ops without interrupt remapping */
