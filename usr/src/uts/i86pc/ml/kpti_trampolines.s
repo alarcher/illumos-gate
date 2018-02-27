@@ -720,8 +720,6 @@ tr_intr_ret_end:
 	 */
 	ENTRY_NP(tr_mmu_flush_user_range)
 	push	%rbx
-	pushf
-	cli
 	/* When we read cr3, it never has the NOINVL bit set. */
 	mov	%cr3, %rax
 	movq	$CR3_NOINVL_BIT, %rbx
@@ -736,7 +734,6 @@ tr_intr_ret_end:
 	cmp	%rsi, %rdi
 	jb	1b
 	mov	%rax, %cr3
-	popf
 	pop	%rbx
 	retq
 	SET_SIZE(tr_mmu_flush_user_range)

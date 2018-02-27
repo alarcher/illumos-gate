@@ -428,7 +428,8 @@ hat_kern_setup(void)
 static void
 invpcid(uint64_t type, uint64_t pcid, uintptr_t addr)
 {
-	ulong_t cr4;
+	ulong_t	flag;
+	uint64_t cr4;
 
 	if (x86_use_invpcid &&
 	    is_x86_feature(x86_featureset, X86FSET_INVPCID)) {
@@ -436,30 +437,36 @@ invpcid(uint64_t type, uint64_t pcid, uintptr_t addr)
 		return;
 	}
 
-	cr4 = getcr4();
-
 	switch (type) {
 	case INVPCID_ALL_GLOBAL:
+		flag = intr_clear();
+		cr4 = getcr4();
 		setcr4(cr4 & ~(ulong_t)CR4_PGE);
 		setcr4(cr4 | CR4_PGE);
+		intr_restore(flag);
 		break;
 
 	case INVPCID_ALL_NONGLOBAL:
-		if (!(cr4 & CR4_PCIDE)) {
+		if (!(getcr4() & CR4_PCIDE)) {
 			reload_cr3();
 		} else {
+			flag = intr_clear();
+			cr4 = getcr4();
 			setcr4(cr4 & ~(ulong_t)CR4_PGE);
 			setcr4(cr4 | CR4_PGE);
+			intr_restore(flag);
 		}
 		break;
 
 	case INVPCID_ADDR:
 		if (pcid == PCID_USER) {
+			flag = intr_clear();
 			ASSERT(addr < kernelbase);
 			ASSERT(ON_USER_HAT(CPU));
 			ASSERT(CPU->cpu_m.mcpu_kpti.kf_user_cr3 != 0);
 			tr_mmu_flush_user_range(addr, MMU_PAGESIZE,
 			    MMU_PAGESIZE, CPU->cpu_m.mcpu_kpti.kf_user_cr3);
+			intr_restore(flag);
 		} else {
 			mmu_invlpg((caddr_t)addr);
 		}
@@ -539,9 +546,11 @@ mmu_flush_tlb_range(uintptr_t addr, size_t len, size_t pgsz)
 	 * user range if we're on a user-space HAT.
 	 */
 	if (addr < kernelbase && ON_USER_HAT(CPU)) {
+		ulong_t flag = intr_clear();
 		ASSERT(CPU->cpu_m.mcpu_kpti.kf_user_cr3 != 0);
 		tr_mmu_flush_user_range(addr, len, pgsz,
 		    CPU->cpu_m.mcpu_kpti.kf_user_cr3);
+		intr_restore(flag);
 	}
 
 	for (uintptr_t va = addr; va < (addr + len); va += pgsz)
