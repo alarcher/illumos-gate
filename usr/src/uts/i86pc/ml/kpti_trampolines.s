@@ -597,8 +597,10 @@ tr_intr_ret_end:
 	MK_INTR_TRAMPOLINE_NOERR(invaltrap)
 	MK_INTR_TRAMPOLINE_NOERR(fasttrap)
 	MK_INTR_TRAMPOLINE_NOERR(dtrace_ret)
+#ifdef HAVE_LX_BRAND
 	MK_INTR_TRAMPOLINE_NOERR(brand_sys_int80)
 	MK_INTR_TRAMPOLINE_NOERR(sys_int80)
+#endif
 
 	/*
 	 * These are special because they can interrupt other traps, and
