@@ -3365,7 +3365,7 @@ bofi_dma_allochdl(dev_info_t *dip, dev_info_t *rdip, ddi_dma_attr_t *attrp,
 		 * what to do here? Wait a bit and try again
 		 */
 		if (waitfp != DDI_DMA_DONTWAIT)
-			(void) timeout((void (*)())waitfp, arg, 10);
+			(void) timeout((void (*)())(uintptr_t)waitfp, arg, 10);
 		return (retval);
 	}
 	(void) strncpy(hp->name, ddi_get_name(rdip), NAMESIZE);
@@ -3610,7 +3610,7 @@ error:
 		/*
 		 * what to do here? Wait a bit and try again
 		 */
-		(void) timeout((void (*)())dmareqp->dmar_fp,
+		(void) timeout((void (*)())(uintptr_t)dmareqp->dmar_fp,
 		    dmareqp->dmar_arg, 10);
 	}
 error2:
