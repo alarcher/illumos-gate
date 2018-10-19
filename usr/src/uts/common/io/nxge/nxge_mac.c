@@ -6679,8 +6679,8 @@ nxge_link_monitor(p_nxge_t nxgep, link_mon_enable_t enable)
 			 * argument to the check_link function.
 			 */
 			if (nxgep->xcvr.check_link) {
-				timerid = timeout(
-				    (fptrv_t)(nxgep->xcvr.check_link),
+				timerid = timeout((fptrv_t)(uintptr_t)
+				    (nxgep->xcvr.check_link),
 				    nxgep,
 				    drv_usectohz(LINK_MONITOR_PERIOD));
 				MUTEX_ENTER(&nxgep->poll_lock);
