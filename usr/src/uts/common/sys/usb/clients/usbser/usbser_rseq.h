@@ -142,7 +142,8 @@ enum {
 /*
  * convenience macros for rseq definition
  */
-#define	RSEQT(func, cb)	{ (rseq_func_t)(func), #func, (rseq_cb_t)(cb), 0 }
+#define	RSEQT(func, cb)	{ (rseq_func_t)(uintptr_t)(func), #func, \
+	(rseq_cb_t)(uintptr_t)(cb), 0 }
 #define	RSEQE(f1, cb1, f2, cb2) { RSEQT(f1, cb1), RSEQT(f2, cb2) }
 
 /*
