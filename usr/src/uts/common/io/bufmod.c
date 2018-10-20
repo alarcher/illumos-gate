@@ -107,9 +107,9 @@ struct sb {
  */
 static	int	sbopen(queue_t *, dev_t *, int, int, cred_t *);
 static	int	sbclose(queue_t *, int, cred_t *);
-static	void	sbwput(queue_t *, mblk_t *);
-static	void	sbrput(queue_t *, mblk_t *);
-static	void	sbrsrv(queue_t *);
+static	int	sbwput(queue_t *, mblk_t *);
+static	int	sbrput(queue_t *, mblk_t *);
+static	int	sbrsrv(queue_t *);
 static	void	sbioctl(queue_t *, mblk_t *);
 static	void	sbaddmsg(queue_t *, mblk_t *);
 static	void	sbtick(void *);
@@ -126,8 +126,8 @@ static struct module_info	sb_minfo = {
 };
 
 static struct qinit	sb_rinit = {
-	(int (*)())sbrput,	/* qi_putp */
-	(int (*)())sbrsrv,	/* qi_srvp */
+	sbrput,			/* qi_putp */
+	sbrsrv,			/* qi_srvp */
 	sbopen,			/* qi_qopen */
 	sbclose,		/* qi_qclose */
 	NULL,			/* qi_qadmin */
@@ -136,7 +136,7 @@ static struct qinit	sb_rinit = {
 };
 
 static struct qinit	sb_winit = {
-	(int (*)())sbwput,	/* qi_putp */
+	sbwput,			/* qi_putp */
 	NULL,			/* qi_srvp */
 	NULL,			/* qi_qopen */
 	NULL,			/* qi_qclose */
@@ -402,7 +402,7 @@ sbioc(queue_t *wq, mblk_t *mp)
  * for manipulating the buffering state and hand them to sbioctl.
  * Other message types are passed on through.
  */
-static void
+static int
 sbwput(queue_t *wq, mblk_t *mp)
 {
 	struct	sb	*sbp = (struct sb *)wq->q_ptr;
@@ -447,6 +447,7 @@ sbwput(queue_t *wq, mblk_t *mp)
 		putnext(wq, mp);
 		break;
 	}
+	return (0);
 }
 
 /*
@@ -454,7 +455,7 @@ sbwput(queue_t *wq, mblk_t *mp)
  * messages and grouping them into aggregates according to the current
  * buffering parameters.
  */
-static void
+static int
 sbrput(queue_t *rq, mblk_t *mp)
 {
 	struct	sb	*sbp = (struct sb *)rq->q_ptr;
@@ -535,13 +536,14 @@ sbrput(queue_t *rq, mblk_t *mp)
 		}
 		break;
 	}
+	return (0);
 }
 
 /*
  *  read service procedure.
  */
 /* ARGSUSED */
-static void
+static int
 sbrsrv(queue_t *rq)
 {
 	mblk_t	*mp;
@@ -554,10 +556,11 @@ sbrsrv(queue_t *rq)
 		if (!canputnext(rq) && (mp->b_datap->db_type <= QPCTL)) {
 			/* should only get here if SB_NO_SROPS */
 			(void) putbq(rq, mp);
-			return;
+			return (0);
 		}
 		putnext(rq, mp);
 	}
+	return (0);
 }
 
 /*
