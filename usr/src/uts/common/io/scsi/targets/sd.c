@@ -12858,7 +12858,7 @@ sd_mapblockaddr_iostart(int index, struct sd_lun *un, struct buf *bp)
 		ASSERT(bp->b_bcount >= resid);
 
 		bp = sd_bioclone_alloc(bp, count, blocknum,
-		    (int (*)(struct buf *)) sd_mapblockaddr_iodone);
+		    (int (*)(struct buf *))(uintptr_t) sd_mapblockaddr_iodone);
 		xp = SD_GET_XBUF(bp); /* Update for 'new' bp! */
 		ASSERT(xp != NULL);
 	}
@@ -12903,7 +12903,7 @@ sd_mapblockaddr_iodone(int index, struct sd_lun *un, struct buf *bp)
 	SD_TRACE(SD_LOG_IO_PARTITION, un,
 	    "sd_mapblockaddr_iodone: entry: buf:0x%p\n", bp);
 
-	if (bp->b_iodone == (int (*)(struct buf *)) sd_mapblockaddr_iodone) {
+	if ((uintptr_t)bp->b_iodone == (uintptr_t)sd_mapblockaddr_iodone) {
 		/*
 		 * We have an "overrun" buf to deal with...
 		 */
@@ -13135,7 +13135,7 @@ sd_mapblocksize_iostart(int index, struct sd_lun *un, struct buf *bp)
 		 */
 		shadow_bp = sd_shadow_buf_alloc(bp, request_bytes, B_READ,
 		    xp->xb_blkno,
-		    (int (*)(struct buf *)) sd_mapblocksize_iodone);
+		    (int (*)(struct buf *))(uintptr_t) sd_mapblocksize_iodone);
 
 		shadow_xp = SD_GET_XBUF(shadow_bp);
 
@@ -13255,7 +13255,7 @@ sd_mapblocksize_iodone(int index, struct sd_lun *un, struct buf *bp)
 		bsp->mbs_wmp = NULL;
 	}
 
-	if ((bp->b_iodone != (int(*)(struct buf *))sd_mapblocksize_iodone)) {
+	if ((uintptr_t)bp->b_iodone != (uintptr_t)sd_mapblocksize_iodone) {
 		/*
 		 * An aligned read or write command will have no shadow buf;
 		 * there is not much else to do with it.
