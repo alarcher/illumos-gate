@@ -65,8 +65,8 @@ static int e1000g_quiesce(dev_info_t *);
  */
 static int e1000g_resume(dev_info_t *);
 static int e1000g_suspend(dev_info_t *);
-static uint_t e1000g_intr_pciexpress(caddr_t);
-static uint_t e1000g_intr(caddr_t);
+static uint_t e1000g_intr_pciexpress(caddr_t, caddr_t);
+static uint_t e1000g_intr(caddr_t, caddr_t);
 static void e1000g_intr_work(struct e1000g *, uint32_t);
 #pragma inline(e1000g_intr_work)
 static int e1000g_init(struct e1000g *);
@@ -2301,7 +2301,7 @@ e1000g_global_reset(struct e1000g *Adapter)
  * bit is set.
  */
 static uint_t
-e1000g_intr_pciexpress(caddr_t arg)
+e1000g_intr_pciexpress(caddr_t arg, caddr_t arg1 __unused)
 {
 	struct e1000g *Adapter;
 	uint32_t icr;
@@ -2339,7 +2339,7 @@ e1000g_intr_pciexpress(caddr_t arg)
  * bit is set or not.
  */
 static uint_t
-e1000g_intr(caddr_t arg)
+e1000g_intr(caddr_t arg, caddr_t arg1 __unused)
 {
 	struct e1000g *Adapter;
 	uint32_t icr;
@@ -6207,9 +6207,9 @@ e1000g_intr_add(struct e1000g *Adapter, int intr_type)
 	 * devices.
 	 */
 	if (Adapter->shared.mac.type < e1000_82571)
-		intr_handler = (ddi_intr_handler_t *)e1000g_intr;
+		intr_handler = e1000g_intr;
 	else
-		intr_handler = (ddi_intr_handler_t *)e1000g_intr_pciexpress;
+		intr_handler = e1000g_intr_pciexpress;
 
 	/* Call ddi_intr_add_handler() */
 	for (x = 0; x < actual; x++) {
