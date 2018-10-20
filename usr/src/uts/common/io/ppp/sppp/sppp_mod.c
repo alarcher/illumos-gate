@@ -93,8 +93,8 @@ static struct qinit sppp_urinit = {
 };
 
 static struct qinit sppp_uwinit = {
-	(int (*)())sppp_uwput,	/* qi_putp */
-	(int (*)())sppp_uwsrv,	/* qi_srvp */
+	sppp_uwput,		/* qi_putp */
+	sppp_uwsrv,		/* qi_srvp */
 	NULL,			/* qi_qopen */
 	NULL,			/* qi_qclose */
 	NULL,			/* qi_qadmin */
@@ -103,8 +103,8 @@ static struct qinit sppp_uwinit = {
 };
 
 static struct qinit sppp_lrinit = {
-	(int (*)())sppp_lrput,	/* qi_putp */
-	(int (*)())sppp_lrsrv,	/* qi_srvp */
+	sppp_lrput,		/* qi_putp */
+	sppp_lrsrv,		/* qi_srvp */
 	NULL,			/* qi_qopen */
 	NULL,			/* qi_qclose */
 	NULL,			/* qi_qadmin */
@@ -114,7 +114,7 @@ static struct qinit sppp_lrinit = {
 
 static struct qinit sppp_lwinit = {
 	NULL,			/* qi_putp */
-	(int (*)())sppp_lwsrv,	/* qi_srvp */
+	sppp_lwsrv,		/* qi_srvp */
 	NULL,			/* qi_qopen */
 	NULL,			/* qi_qclose */
 	NULL,			/* qi_qadmin */
