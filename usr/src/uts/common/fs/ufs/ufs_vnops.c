@@ -5201,7 +5201,7 @@ ufs_putpages(struct vnode *vp, offset_t off, size_t len, int flags,
 	return (err);
 }
 
-static void
+static int
 ufs_iodone(buf_t *bp)
 {
 	struct inode *ip;
@@ -5223,6 +5223,7 @@ ufs_iodone(buf_t *bp)
 
 	mutex_exit(&ip->i_tlock);
 	iodone(bp);
+	return (0);
 }
 
 /*
@@ -5414,7 +5415,7 @@ ufs_putapage(struct vnode *vp, page_t *pp, u_offset_t *offp, size_t *lenp,
 	/* write throttle */
 
 	ASSERT(bp->b_iodone == NULL);
-	bp->b_iodone = (int (*)())ufs_iodone;
+	bp->b_iodone = ufs_iodone;
 	mutex_enter(&ip->i_tlock);
 	ip->i_writes += bp->b_bcount;
 	mutex_exit(&ip->i_tlock);
