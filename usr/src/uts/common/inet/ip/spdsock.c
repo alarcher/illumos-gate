@@ -154,9 +154,9 @@ static	spdsockparam_t	lcl_param_arr[] = {
 
 static int spdsock_close(queue_t *, int, cred_t *);
 static int spdsock_open(queue_t *, dev_t *, int, int, cred_t *);
-static void spdsock_wput(queue_t *, mblk_t *);
-static void spdsock_wsrv(queue_t *);
-static void spdsock_rsrv(queue_t *);
+static int spdsock_wput(queue_t *, mblk_t *);
+static int spdsock_wsrv(queue_t *);
+static int spdsock_rsrv(queue_t *);
 static void *spdsock_stack_init(netstackid_t stackid, netstack_t *ns);
 static void spdsock_stack_shutdown(netstackid_t stackid, void *arg);
 static void spdsock_stack_fini(netstackid_t stackid, void *arg);
@@ -171,12 +171,12 @@ static struct module_info info = {
 };
 
 static struct qinit rinit = {
-	NULL, (pfi_t)spdsock_rsrv, spdsock_open, spdsock_close,
+	NULL, spdsock_rsrv, spdsock_open, spdsock_close,
 	NULL, &info
 };
 
 static struct qinit winit = {
-	(pfi_t)spdsock_wput, (pfi_t)spdsock_wsrv, NULL, NULL, NULL, &info
+	spdsock_wput, spdsock_wsrv, NULL, NULL, NULL, &info
 };
 
 struct streamtab spdsockinfo = {
@@ -3452,7 +3452,7 @@ spdsock_wput_other(queue_t *q, mblk_t *mp)
 	freemsg(mp);
 }
 
-static void
+static int
 spdsock_wput(queue_t *q, mblk_t *mp)
 {
 	uint8_t *rptr = mp->b_rptr;
@@ -3467,7 +3467,7 @@ spdsock_wput(queue_t *q, mblk_t *mp)
 	if (ss->spdsock_dump_req != NULL) {
 		if (!putq(q, mp))
 			freemsg(mp);
-		return;
+		return (0);
 	}
 
 	switch (mp->b_datap->db_type) {
@@ -3477,7 +3477,7 @@ spdsock_wput(queue_t *q, mblk_t *mp)
 		 */
 		ss2dbg(spds, ("raw M_DATA in spdsock.\n"));
 		freemsg(mp);
-		return;
+		return (0);
 	case M_PROTO:
 	case M_PCPROTO:
 		if ((mp->b_wptr - rptr) >= sizeof (struct T_data_req)) {
@@ -3487,7 +3487,7 @@ spdsock_wput(queue_t *q, mblk_t *mp)
 					ss2dbg(spds,
 					    ("No data after DATA_REQ.\n"));
 					freemsg(mp);
-					return;
+					return (0);
 				}
 				freeb(mp);
 				mp = mp1;
@@ -3500,11 +3500,12 @@ spdsock_wput(queue_t *q, mblk_t *mp)
 		ss3dbg(spds, ("In default wput case (%d %d).\n",
 		    mp->b_datap->db_type, ((union T_primitives *)rptr)->type));
 		spdsock_wput_other(q, mp);
-		return;
+		return (0);
 	}
 
 	/* I now have a PF_POLICY message in an M_DATA block. */
 	spdsock_parse(q, mp);
+	return (0);
 }
 
 /*
@@ -3577,7 +3578,7 @@ spdsock_open(queue_t *q, dev_t *devp, int flag, int sflag, cred_t *credp)
  * Dump another chunk if we were dumping before; when we finish, kick
  * the write-side queue in case it's waiting for read queue space.
  */
-void
+int
 spdsock_rsrv(queue_t *q)
 {
 	spdsock_t *ss = q->q_ptr;
@@ -3587,13 +3588,14 @@ spdsock_rsrv(queue_t *q)
 
 	if (ss->spdsock_dump_req == NULL)
 		qenable(OTHERQ(q));
+	return (0);
 }
 
 /*
  * Write-side service procedure, invoked when we defer processing
  * if another message is received while a dump is in progress.
  */
-void
+int
 spdsock_wsrv(queue_t *q)
 {
 	spdsock_t *ss = q->q_ptr;
@@ -3602,20 +3604,21 @@ spdsock_wsrv(queue_t *q)
 
 	if (ss->spdsock_dump_req != NULL) {
 		qenable(OTHERQ(q));
-		return;
+		return (0);
 	}
 
 	while ((mp = getq(q)) != NULL) {
 		if (ipsec_loaded(ipss)) {
 			spdsock_wput(q, mp);
 			if (ss->spdsock_dump_req != NULL)
-				return;
+				return (0);
 		} else if (!ipsec_failed(ipss)) {
 			(void) putq(q, mp);
 		} else {
 			spdsock_error(q, mp, EPFNOSUPPORT, 0);
 		}
 	}
+	return (0);
 }
 
 /* ARGSUSED */
