@@ -430,9 +430,9 @@ extern	char	ti_statetbl[TE_NOEVENTS][TS_NOSTATES];
  */
 static int tl_open(queue_t *, dev_t *, int, int, cred_t *);
 static int tl_close(queue_t *, int, cred_t *);
-static void tl_wput(queue_t *, mblk_t *);
-static void tl_wsrv(queue_t *);
-static void tl_rsrv(queue_t *);
+static int tl_wput(queue_t *, mblk_t *);
+static int tl_wsrv(queue_t *);
+static int tl_rsrv(queue_t *);
 
 static int tl_attach(dev_info_t *, ddi_attach_cmd_t);
 static int tl_detach(dev_info_t *, ddi_detach_cmd_t);
@@ -709,7 +709,7 @@ static	struct	module_info	tl_minfo = {
 
 static	struct	qinit	tl_rinit = {
 	NULL,			/* qi_putp */
-	(int (*)())tl_rsrv,	/* qi_srvp */
+	tl_rsrv,		/* qi_srvp */
 	tl_open,		/* qi_qopen */
 	tl_close,		/* qi_qclose */
 	NULL,			/* qi_qadmin */
@@ -718,8 +718,8 @@ static	struct	qinit	tl_rinit = {
 };
 
 static	struct	qinit	tl_winit = {
-	(int (*)())tl_wput,	/* qi_putp */
-	(int (*)())tl_wsrv,	/* qi_srvp */
+	tl_wput,		/* qi_putp */
+	tl_wsrv,		/* qi_srvp */
 	NULL,			/* qi_qopen */
 	NULL,			/* qi_qclose */
 	NULL,			/* qi_qadmin */
@@ -1719,7 +1719,7 @@ tl_close_finish_ser(mblk_t *mp, tl_endpt_t *tep)
  *
  * The T_CONN_REQ is processed outside of serializer.
  */
-static void
+static int
 tl_wput(queue_t *wq, mblk_t *mp)
 {
 	tl_endpt_t		*tep = (tl_endpt_t *)wq->q_ptr;
@@ -1735,7 +1735,7 @@ tl_wput(queue_t *wq, mblk_t *mp)
 			    SL_TRACE|SL_ERROR,
 			    "tl_wput:M_DATA invalid for ticlts driver"));
 			tl_merror(wq, mp, EPROTO);
-			return;
+			return (0);
 		}
 		tl_proc = tl_wput_data_ser;
 		break;
@@ -1753,7 +1753,7 @@ tl_wput(queue_t *wq, mblk_t *mp)
 
 		default:
 			miocnak(wq, mp, 0, EINVAL);
-			return;
+			return (0);
 		}
 		break;
 
@@ -1771,7 +1771,7 @@ tl_wput(queue_t *wq, mblk_t *mp)
 		} else {
 			freemsg(mp);
 		}
-		return;
+		return (0);
 
 	case M_PROTO:
 		if (msz < sizeof (prim->type)) {
@@ -1779,7 +1779,7 @@ tl_wput(queue_t *wq, mblk_t *mp)
 			    SL_TRACE|SL_ERROR,
 			    "tl_wput:M_PROTO data too short"));
 			tl_merror(wq, mp, EPROTO);
-			return;
+			return (0);
 		}
 		switch (prim->type) {
 		case T_OPTMGMT_REQ:
@@ -1796,7 +1796,7 @@ tl_wput(queue_t *wq, mblk_t *mp)
 			 * and is consistent with BSD socket behavior).
 			 */
 			tl_optmgmt(wq, mp);
-			return;
+			return (0);
 		case O_T_BIND_REQ:
 		case T_BIND_REQ:
 			tl_proc = tl_bind_ser;
@@ -1804,10 +1804,10 @@ tl_wput(queue_t *wq, mblk_t *mp)
 		case T_CONN_REQ:
 			if (IS_CLTS(tep)) {
 				tl_merror(wq, mp, EPROTO);
-				return;
+				return (0);
 			}
 			tl_conn_req(wq, mp);
-			return;
+			return (0);
 		case T_DATA_REQ:
 		case T_OPTDATA_REQ:
 		case T_EXDATA_REQ:
@@ -1818,7 +1818,7 @@ tl_wput(queue_t *wq, mblk_t *mp)
 			if (IS_COTS(tep) ||
 			    (msz < sizeof (struct T_unitdata_req))) {
 				tl_merror(wq, mp, EPROTO);
-				return;
+				return (0);
 			}
 			if ((tep->te_state == TS_IDLE) && !wq->q_first) {
 				tl_proc = tl_unitdata_ser;
@@ -1850,12 +1850,12 @@ tl_wput(queue_t *wq, mblk_t *mp)
 			    SL_TRACE|SL_ERROR,
 			    "tl_wput:M_PCROTO data too short"));
 			tl_merror(wq, mp, EPROTO);
-			return;
+			return (0);
 		}
 		switch (prim->type) {
 		case T_CAPABILITY_REQ:
 			tl_capability_req(mp, tep);
-			return;
+			return (0);
 		case T_INFO_REQ:
 			tl_proc = tl_info_req_ser;
 			break;
@@ -1868,14 +1868,14 @@ tl_wput(queue_t *wq, mblk_t *mp)
 			    SL_TRACE|SL_ERROR,
 			    "tl_wput:unknown TPI msg primitive"));
 			tl_merror(wq, mp, EPROTO);
-			return;
+			return (0);
 		}
 		break;
 	default:
 		(void) (STRLOG(TL_ID, tep->te_minor, 1, SL_TRACE|SL_ERROR,
 		    "tl_wput:default:unexpected Streams message"));
 		freemsg(mp);
-		return;
+		return (0);
 	}
 
 	/*
@@ -1884,6 +1884,7 @@ tl_wput(queue_t *wq, mblk_t *mp)
 	ASSERT(tl_proc != NULL);
 	tl_refhold(tep);
 	tl_serializer_enter(tep, tl_proc, mp);
+	return (0);
 }
 
 /*
@@ -1989,7 +1990,7 @@ tl_wput_data_ser(mblk_t *mp, tl_endpt_t *tep)
  * messages that need processing may have arrived, so tl_wsrv repeats until
  * queue is empty or te_nowsrv is set.
  */
-static void
+static int
 tl_wsrv(queue_t *wq)
 {
 	tl_endpt_t *tep = (tl_endpt_t *)wq->q_ptr;
@@ -2012,6 +2013,7 @@ tl_wsrv(queue_t *wq)
 		cv_signal(&tep->te_srv_cv);
 		mutex_exit(&tep->te_srv_lock);
 	}
+	return (0);
 }
 
 /*
@@ -2060,7 +2062,7 @@ tl_wsrv_ser(mblk_t *ser_mp, tl_endpt_t *tep)
  * is possible that two instances of tl_rsrv will be running reusing the same
  * rsrv mblk.
  */
-static void
+static int
 tl_rsrv(queue_t *rq)
 {
 	tl_endpt_t *tep = (tl_endpt_t *)rq->q_ptr;
@@ -2079,6 +2081,7 @@ tl_rsrv(queue_t *rq)
 	}
 	cv_signal(&tep->te_srv_cv);
 	mutex_exit(&tep->te_srv_lock);
+	return (0);
 }
 
 /* ARGSUSED */
