@@ -6490,7 +6490,7 @@ st_start(struct scsi_tape *un)
 			    un->un_throttle, un->un_ncmds);
 			if (un->un_ncmds == 0) {
 				typedef void (*func)();
-				func fnc = (func)st_runout;
+				func fnc = (func)(uintptr_t)st_runout;
 
 				scsi_log(ST_DEVINFO, st_label, SCSI_DEBUG,
 				    "Sending delayed start to st_runout()\n");
