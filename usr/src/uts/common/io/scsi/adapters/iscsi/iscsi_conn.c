@@ -1049,7 +1049,7 @@ iscsi_conn_retry(iscsi_sess_t *isp, iscsi_conn_t *icp)
 	itp->t_arg = icp;
 	itp->t_blocking = B_FALSE;
 	if (ddi_taskq_dispatch(isp->sess_login_taskq,
-	    (void(*)())iscsi_login_start, itp, DDI_SLEEP) !=
+	    iscsi_taskq_cb, itp, DDI_SLEEP) !=
 	    DDI_SUCCESS) {
 		kmem_free(itp, sizeof (iscsi_task_t));
 		cmn_err(CE_WARN, "iscsi connection(%u) failure - "

@@ -1266,6 +1266,7 @@ void iscsi_enqueue_cmd_head(iscsi_cmd_t **, iscsi_cmd_t **,
     iscsi_cmd_t *);
 
 /* iscsi_login.c */
+void iscsi_taskq_cb(void *arg);
 iscsi_status_t iscsi_login_start(void *arg);
 void iscsi_login_update_state(iscsi_conn_t *icp,
     iscsi_login_state_t next_state);
