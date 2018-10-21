@@ -2005,7 +2005,7 @@ endpnt_repossess(void *a)
 	 */
 	if (endpnt_taskq != NULL)
 		(void) taskq_dispatch(endpnt_taskq,
-		    (task_func_t *)endpnt_reclaim, (void *)ALL_ZONES,
+		    (task_func_t *)(uintptr_t)endpnt_reclaim, (void *)ALL_ZONES,
 		    TQ_NOSLEEP);
 }
 
