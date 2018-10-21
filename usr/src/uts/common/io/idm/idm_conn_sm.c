@@ -1478,6 +1478,7 @@ idm_conn_sm_validate_pdu(idm_conn_t *ic, idm_conn_event_ctx_t *event_ctx,
 			goto validate_pdu_done;
 		}
 		/*NOTREACHED*/
+		break;
 	case ISCSI_OP_SCSI_CMD:
 	case ISCSI_OP_SCSI_RSP:
 	case ISCSI_OP_SCSI_TASK_MGT_MSG:
@@ -1504,6 +1505,7 @@ idm_conn_sm_validate_pdu(idm_conn_t *ic, idm_conn_event_ctx_t *event_ctx,
 			goto validate_pdu_done;
 		}
 		/*NOTREACHED*/
+		break;
 	case ISCSI_OP_LOGOUT_CMD:
 	case ISCSI_OP_LOGOUT_RSP:
 	case ISCSI_OP_REJECT_MSG:
@@ -1524,6 +1526,7 @@ idm_conn_sm_validate_pdu(idm_conn_t *ic, idm_conn_event_ctx_t *event_ctx,
 			goto validate_pdu_done;
 		}
 		/*NOTREACHED*/
+		break;
 	case ISCSI_OP_LOGIN_CMD:
 	case ISCSI_OP_LOGIN_RSP:
 		switch (ic->ic_state) {
