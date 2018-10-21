@@ -85,7 +85,8 @@ static KSSLMACDef mac_defs[] = { /* indexed by SSL3MACAlgorithm */
 	    (hashfinal_func_t)MD5Final},
 
 	{SHA1_HASH_LEN, SSL3_SHA1_PAD_LEN,
-	    (hashinit_func_t)SHA1Init, (hashupdate_func_t)SHA1Update,
+	    (hashinit_func_t)(uintptr_t)SHA1Init,
+	    (hashupdate_func_t)(uintptr_t)SHA1Update,
 	    (hashfinal_func_t)SHA1Final},
 };
 
