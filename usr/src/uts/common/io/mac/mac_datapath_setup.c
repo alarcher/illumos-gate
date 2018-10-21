@@ -388,7 +388,8 @@ mac_srs_client_poll_enable(mac_client_impl_t *mcip,
 		return;
 
 	mrf.mrf_receive = (mac_receive_t)mac_soft_ring_poll;
-	mrf.mrf_intr_enable = (mac_intr_enable_t)mac_soft_ring_intr_enable;
+	mrf.mrf_intr_enable = (mac_intr_enable_t)(uintptr_t)
+	    mac_soft_ring_intr_enable;
 	mrf.mrf_intr_disable = (mac_intr_disable_t)mac_soft_ring_intr_disable;
 	mac_srs->srs_type |= SRST_CLIENT_POLL_ENABLED;
 
@@ -1706,7 +1707,7 @@ mac_srs_create_proto_softrings(int id, uint16_t type, pri_t pri,
 	mrf.mrf_type = MAC_RX_FIFO;
 	mrf.mrf_receive = (mac_receive_t)mac_soft_ring_poll;
 	mrf.mrf_intr_enable =
-	    (mac_intr_enable_t)mac_soft_ring_intr_enable;
+	    (mac_intr_enable_t)(uintptr_t)mac_soft_ring_intr_enable;
 	mrf.mrf_intr_disable =
 	    (mac_intr_disable_t)mac_soft_ring_intr_disable;
 	mrf.mrf_flow_priority = pri;
