@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include <sys/types.h>
 #include <sys/systm.h>
 #include <sys/cred.h>
@@ -386,7 +384,7 @@ static int64_t portfs(int, uintptr_t, uintptr_t, uintptr_t, uintptr_t,
 static struct sysent port_sysent = {
 	6,
 	SE_ARGC | SE_64RVAL | SE_NOUNLOAD,
-	(int (*)())portfs,
+	(int (*)())(uintptr_t)portfs,
 };
 
 static struct modlsys modlsys = {
@@ -395,14 +393,14 @@ static struct modlsys modlsys = {
 
 #ifdef _SYSCALL32_IMPL
 
-static int64_t
+static int
 portfs32(uint32_t arg1, int32_t arg2, uint32_t arg3, uint32_t arg4,
     uint32_t arg5, uint32_t arg6);
 
 static struct sysent port_sysent32 = {
 	6,
 	SE_ARGC | SE_64RVAL | SE_NOUNLOAD,
-	(int (*)())portfs32,
+	portfs32,
 };
 
 static struct modlsys modlsys32 = {
@@ -523,11 +521,11 @@ _info(struct modinfo *modinfop)
  * System call wrapper for all port related system calls from 32-bit programs.
  */
 #ifdef _SYSCALL32_IMPL
-static int64_t
+static int
 portfs32(uint32_t opcode, int32_t a0, uint32_t a1, uint32_t a2, uint32_t a3,
     uint32_t a4)
 {
-	int64_t	error;
+	int	error;
 
 	switch (opcode & PORT_CODE_MASK) {
 	case PORT_GET:
