@@ -1542,7 +1542,7 @@ usbwcm_wput(queue_t *q, mblk_t *mp)
  * usbwcm_rput() :
  *	Put procedure for input from driver end of stream (read queue).
  */
-static void
+static int
 usbwcm_rput(queue_t *q, mblk_t *mp)
 {
 	usbwcm_state_t		*usbwcmp = q->q_ptr;
@@ -1552,7 +1552,7 @@ usbwcm_rput(queue_t *q, mblk_t *mp)
 
 	if (usbwcmp == 0) {
 		freemsg(mp);	/* nobody's listening */
-		return;
+		return (0);
 	}
 
 	switch (mp->b_datap->db_type) {
@@ -1564,7 +1564,7 @@ usbwcm_rput(queue_t *q, mblk_t *mp)
 			flushq(q, FLUSHDATA);
 
 		freemsg(mp);
-		return;
+		return (0);
 
 	case M_BREAK:
 		/*
@@ -1572,13 +1572,13 @@ usbwcm_rput(queue_t *q, mblk_t *mp)
 		 * because nothing is sent from the downstream
 		 */
 		freemsg(mp);
-		return;
+		return (0);
 
 	case M_DATA:
 		if (!(usbwcmp->usbwcm_flags & USBWCM_OPEN)) {
 			freemsg(mp);	/* not ready to listen */
 
-			return;
+			return (0);
 		}
 
 		/*
@@ -1598,18 +1598,19 @@ usbwcm_rput(queue_t *q, mblk_t *mp)
 
 	case M_CTL:
 		usbwcm_mctl(q, mp);
-		return;
+		return (0);
 
 	case M_ERROR:
 		/* REMOVE */
 		usbwcmp->usbwcm_flags &= ~USBWCM_QWAIT;
 
 		freemsg(mp);
-		return;
+		return (0);
 	default:
 		putnext(q, mp);
-		return;
+		return (0);
 	}
+	return (0);
 }
 
 
