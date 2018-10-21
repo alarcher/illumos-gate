@@ -132,7 +132,7 @@ static struct sysent ipcmsg_sysent = {
 #else
 	SE_ARGC | SE_NOUNLOAD | SE_32RVAL1,
 #endif
-	(int (*)())msgsys
+	(int (*)())(uintptr_t)msgsys
 };
 
 #ifdef	_SYSCALL32_IMPL
@@ -142,7 +142,7 @@ static ssize32_t msgsys32(int opcode, uint32_t a0, uint32_t a1, uint32_t a2,
 static struct sysent ipcmsg_sysent32 = {
 	6,
 	SE_ARGC | SE_NOUNLOAD | SE_32RVAL1,
-	(int (*)())msgsys32
+	msgsys32
 };
 #endif	/* _SYSCALL32_IMPL */
 
