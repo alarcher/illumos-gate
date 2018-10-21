@@ -97,9 +97,9 @@ _info(struct modinfo *modinfop)
 
 static int	pcktopen(queue_t *, dev_t *, int, int, cred_t *);
 static int	pcktclose(queue_t *, int, cred_t *);
-static void	pcktrput(queue_t *, mblk_t *);
-static void	pcktrsrv(queue_t *);
-static void	pcktwput(queue_t *, mblk_t *);
+static int	pcktrput(queue_t *, mblk_t *);
+static int	pcktrsrv(queue_t *);
+static int	pcktwput(queue_t *, mblk_t *);
 static mblk_t	*add_ctl_info(queue_t *, mblk_t *);
 static void	add_ctl_wkup(void *);
 
@@ -142,8 +142,8 @@ static struct module_info pcktoinfo = {
 };
 
 static struct qinit pcktrinit = {
-	(int (*)())pcktrput,
-	(int (*)())pcktrsrv,
+	pcktrput,
+	pcktrsrv,
 	pcktopen,
 	pcktclose,
 	NULL,
@@ -152,7 +152,7 @@ static struct qinit pcktrinit = {
 };
 
 static struct qinit pcktwinit = {
-	(int (*)())pcktwput,
+	pcktwput,
 	NULL,
 	NULL,
 	NULL,
@@ -311,7 +311,7 @@ pcktclose(
  *	This is called from the module or
  *	driver downstream.
  */
-static void
+static int
 pcktrput(
 	queue_t *q,	/* Pointer to the read queue */
 	mblk_t *mp)	/* Pointer to the current message block */
@@ -406,6 +406,7 @@ prefix_head:
 			putnext(q, mp);
 		break;
 	}
+	return (0);
 }
 
 /*
@@ -416,7 +417,7 @@ prefix_head:
  * The function will attempt to get the messages off the queue and
  * process them.
  */
-static void
+static int
 pcktrsrv(queue_t *q)
 {
 	mblk_t *mp;
@@ -435,7 +436,7 @@ pcktrsrv(queue_t *q)
 			if (!datamsg(mp->b_datap->db_type))
 				noenable(q);
 			(void) putbq(q, mp);
-			return;
+			return (0);
 		}
 
 		/*
@@ -460,7 +461,7 @@ pcktrsrv(queue_t *q)
 				/*
 				 * Running into memory or flow ctl problems.
 				 */
-				return;
+				return (0);
 			}
 			/* FALL THROUGH */
 
@@ -469,6 +470,7 @@ pcktrsrv(queue_t *q)
 			break;
 		}
 	}
+	return (0);
 }
 
 /*
@@ -476,12 +478,13 @@ pcktrsrv(queue_t *q)
  *	All messages are send downstream unchanged
  */
 
-static void
+static int
 pcktwput(
 	queue_t *q,	/* Pointer to the read queue */
 	mblk_t *mp)	/* Pointer to current message block */
 {
 	putnext(q, mp);
+	return (0);
 }
 
 #ifdef _MULTI_DATAMODEL
