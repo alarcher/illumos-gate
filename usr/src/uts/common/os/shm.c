@@ -185,14 +185,14 @@ static struct sysent ipcshm_sysent = {
 #else	/* _SYSCALL32_IMPL */
 	SE_ARGC | SE_NOUNLOAD | SE_32RVAL1,
 #endif	/* _SYSCALL32_IMPL */
-	(int (*)())shmsys
+	(int (*)())(uintptr_t)shmsys
 };
 
 #ifdef	_SYSCALL32_IMPL
 static struct sysent ipcshm_sysent32 = {
 	4,
 	SE_ARGC | SE_NOUNLOAD | SE_32RVAL1,
-	(int (*)())shmsys
+	(int (*)())(uintptr_t)shmsys
 };
 #endif	/* _SYSCALL32_IMPL */
 
