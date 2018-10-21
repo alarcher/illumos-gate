@@ -109,12 +109,12 @@ static void		usbms_ioctl(queue_t *, mblk_t *);
 static int		usbms_open();
 static int		usbms_close();
 static int		usbms_wput();
-static void		usbms_rput();
+static int		usbms_rput();
 static void		usbms_mctl_receive(
 				register queue_t	*q,
 				register mblk_t		*mp);
 
-static void		usbms_rserv(queue_t		*q);
+static int		usbms_rserv(queue_t		*q);
 static void		usbms_miocdata(
 				register queue_t 	*q,
 				register mblk_t 	*mp);
@@ -195,8 +195,8 @@ static struct module_info usbms_mod_info = {
 
 /* read side queue information structure */
 static struct qinit rinit = {
-	(int (*)())usbms_rput,	/* put procedure not needed */
-	(int (*)())usbms_rserv, /* service procedure */
+	usbms_rput,		/* put procedure not needed */
+	usbms_rserv,		/* service procedure */
 	usbms_open,		/* called on startup */
 	usbms_close,		/* called on finish */
 	NULL,			/* for future use */
@@ -476,7 +476,7 @@ usbms_close(queue_t			*q,
  *	Read queue service routine.
  *	Turn buffered mouse events into stream messages.
  */
-static void
+static int
 usbms_rserv(queue_t		*q)
 {
 	usbms_state_t		*usbmsp = q->q_ptr;
@@ -498,14 +498,14 @@ usbms_rserv(queue_t		*q)
 		switch (ms->ms_readformat) {
 
 		case MS_3BYTE_FORMAT: {
-			register char	*cp;
+			char	*cp;
 
 			if ((usbmsp->usbms_idf).xlen != 1) {
 				USB_DPRINTF_L3(PRINT_MASK_SERV,
 				    usbms_log_handle,
 				    "Can't set to 3 byte format. Length != 1");
 
-				return;
+				return (0);
 			}
 			if ((bp = allocb(3, BPRI_HI)) != NULL) {
 				cp = (char *)bp->b_wptr;
@@ -532,7 +532,7 @@ usbms_rserv(queue_t		*q)
 				    (void *) usbmsp);
 				if (usbmsp->usbms_resched_id == 0)
 
-					return;	/* try again later */
+					return (0);	/* try again later */
 				/* bufcall failed; just pitch this event */
 				/* or maybe flush queue? */
 			}
@@ -612,6 +612,7 @@ usbms_rserv(queue_t		*q)
 	}
 	USB_DPRINTF_L3(PRINT_MASK_SERV, usbms_log_handle,
 	    "usbms_rserv exiting");
+	return (0);
 }
 
 
@@ -1544,9 +1545,8 @@ usbms_flush(usbms_state_t		*usbmsp)
  * usbms_rput() :
  *	Put procedure for input from driver end of stream (read queue).
  */
-static void
-usbms_rput(queue_t		*q,
-		mblk_t		*mp)
+static int
+usbms_rput(queue_t *q, mblk_t *mp)
 {
 	usbms_state_t *usbmsp = q->q_ptr;
 	mblk_t	*tmp_mp;
@@ -1558,7 +1558,7 @@ usbms_rput(queue_t		*q,
 	if (usbmsp == 0) {
 		freemsg(mp);	/* nobody's listening */
 
-		return;
+		return (0);
 	}
 
 	switch (mp->b_datap->db_type) {
@@ -1570,7 +1570,7 @@ usbms_rput(queue_t		*q,
 			flushq(q, FLUSHDATA);
 		freemsg(mp);
 
-		return;
+		return (0);
 
 	case M_BREAK:
 		/*
@@ -1580,20 +1580,20 @@ usbms_rput(queue_t		*q,
 
 		freemsg(mp);
 
-		return;
+		return (0);
 
 	case M_DATA:
 		if (!(usbmsp->usbms_flags & USBMS_OPEN)) {
 			freemsg(mp);	/* not ready to listen */
 
-			return;
+			return (0);
 		}
 		break;
 
 	case M_CTL:
 		usbms_mctl_receive(q, mp);
 
-		return;
+		return (0);
 
 	case M_ERROR:
 		usbmsp->usbms_protoerr = 1;
@@ -1604,11 +1604,11 @@ usbms_rput(queue_t		*q,
 			freemsg(mp);
 		}
 
-		return;
+		return (0);
 	default:
 		putnext(q, mp);
 
-		return;
+		return (0);
 	}
 
 	/*
@@ -1618,14 +1618,14 @@ usbms_rput(queue_t		*q,
 	if ((MBLKL(tmp_mp) < limit) || ((MBLKL(tmp_mp) == limit) &&
 	    (usbmsp->usbms_rptid != HID_REPORT_ID_UNDEFINED))) {
 		freemsg(mp);
-		return;
+		return (0);
 	}
 	do {
 		if (usbmsp->usbms_rptid != HID_REPORT_ID_UNDEFINED) {
 			if (*(tmp_mp->b_rptr) != usbmsp->usbms_rptid) {
 				freemsg(mp);
 
-				return;
+				return (0);
 			} else {
 				/* We skip the report id prefix. */
 				tmp_mp->b_rptr++;
@@ -1636,6 +1636,7 @@ usbms_rput(queue_t		*q,
 	} while ((tmp_mp = tmp_mp->b_cont) != NULL);   /* next block, if any */
 
 	freemsg(mp);
+	return (0);
 }
 
 
