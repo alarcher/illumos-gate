@@ -805,18 +805,20 @@ gethrtime_again:
 
 /* apic NMI handler */
 /*ARGSUSED*/
-void
-apic_nmi_intr(caddr_t arg, struct regs *rp)
+uint_t
+apic_nmi_intr(caddr_t arg, caddr_t arg1)
 {
+	struct regs *rp = (struct regs *)arg1;
+
 	if (apic_shutdown_processors) {
 		apic_disable_local_apic();
-		return;
+		return (DDI_INTR_CLAIMED);
 	}
 
 	apic_error |= APIC_ERR_NMI;
 
 	if (!lock_try(&apic_nmi_lock))
-		return;
+		return (DDI_INTR_UNCLAIMED);
 	apic_num_nmis++;
 
 	if (apic_kmdb_on_nmi && psm_debugger()) {
@@ -834,6 +836,7 @@ apic_nmi_intr(caddr_t arg, struct regs *rp)
 	}
 
 	lock_clear(&apic_nmi_lock);
+	return (DDI_INTR_CLAIMED);
 }
 
 processorid_t
