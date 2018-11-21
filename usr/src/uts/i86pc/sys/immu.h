@@ -944,7 +944,7 @@ void immu_intrmap_destroy(list_t *immu_list);
 
 /* registers interrupt handler for IOMMU unit */
 void immu_intr_register(immu_t *immu);
-int immu_intr_handler(immu_t *immu);
+uint_t immu_intr_handler(caddr_t, caddr_t);
 
 
 /* immu_qinv.c interfaces */

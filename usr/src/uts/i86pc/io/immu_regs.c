@@ -481,7 +481,7 @@ immu_regs_resume(immu_t *immu)
 	immu_regs_intr_enable(immu, immu->immu_regs_intr_msi_addr,
 	    immu->immu_regs_intr_msi_data, immu->immu_regs_intr_uaddr);
 
-	(void) immu_intr_handler(immu);
+	(void) immu_intr_handler((caddr_t)immu, NULL);
 
 	immu_regs_intrmap_enable(immu, immu->immu_intrmap_irta_reg);
 
