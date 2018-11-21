@@ -637,9 +637,8 @@ xen_suspend_domain(void)
 	cmn_err(CE_NOTE, "domain restore/migrate completed");
 }
 
-/*ARGSUSED*/
-int
-xen_debug_handler(void *arg)
+uint_t
+xen_debug_handler(caddr_t arg __unused, caddr_t arg1 __unused)
 {
 	debug_enter("External debug event received");
 
@@ -712,7 +711,7 @@ retry:
 	 * harmless sysrq to the wrong domain...
 	 */
 	if (key == 'b')
-		(void) xen_debug_handler(NULL);
+		(void) xen_debug_handler(NULL, NULL);
 	else
 		cmn_err(CE_WARN, "Ignored sysrq %c", key);
 	return;
