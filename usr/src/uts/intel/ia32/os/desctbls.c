@@ -147,10 +147,10 @@ void (*(fasttable[]))(void) = {
 	fast_null,			/* T_FNULL routine */
 	fast_null,			/* T_FGETFP routine (initially null) */
 	fast_null,			/* T_FSETFP routine (initially null) */
-	(void (*)())get_hrtime,		/* T_GETHRTIME */
-	(void (*)())gethrvtime,		/* T_GETHRVTIME */
-	(void (*)())get_hrestime,	/* T_GETHRESTIME */
-	(void (*)())getlgrp		/* T_GETLGRP */
+	(void (*)())(uintptr_t)get_hrtime,	/* T_GETHRTIME */
+	(void (*)())(uintptr_t)gethrvtime,	/* T_GETHRVTIME */
+	(void (*)())(uintptr_t)get_hrestime,	/* T_GETHRESTIME */
+	(void (*)())(uintptr_t)getlgrp		/* T_GETLGRP */
 };
 
 /*
