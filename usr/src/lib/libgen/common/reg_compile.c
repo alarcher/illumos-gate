@@ -405,7 +405,7 @@ _compile(const char *sp, char *ep, char *endbuf, int viflag)
 			}
 
 	/* Drop through to default to use \ to turn off special chars */
-
+			/* FALLTHROUGH */
 		defchar:
 		default:
 			lastep = ep;
