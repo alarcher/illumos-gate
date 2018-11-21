@@ -435,7 +435,7 @@ segkmem_badop()
 	panic("segkmem_badop");
 }
 
-#define	SEGKMEM_BADOP(t)	(t(*)())segkmem_badop
+#define	SEGKMEM_BADOP(t)	(t(*)())(uintptr_t)segkmem_badop
 
 /*ARGSUSED*/
 static faultcode_t
