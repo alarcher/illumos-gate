@@ -1060,6 +1060,8 @@ dapls_ia_setup_callbacks(
 {
 	DAT_RETURN dat_status = DAT_SUCCESS;
 
+#if 0
+	/* Someone has to rethink this all */
 	/* unaffiliated handler */
 	dat_status =
 	    dapls_ib_setup_async_callback(
@@ -1104,7 +1106,7 @@ dapls_ia_setup_callbacks(
 		    dat_status);
 		goto bail;
 	}
-
+#endif
 bail:
 	return (dat_status);
 }

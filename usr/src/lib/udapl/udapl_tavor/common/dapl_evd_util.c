@@ -136,6 +136,7 @@ dapls_evd_internal_create(
 		goto bail;
 	}
 
+#if 0
 	dat_status = dapls_ib_setup_async_callback(
 	    ia_ptr,
 	    DAPL_ASYNC_CQ_COMPLETION,
@@ -145,6 +146,7 @@ dapls_evd_internal_create(
 	if (dat_status != DAT_SUCCESS) {
 		goto bail;
 	}
+#endif
 	/*
 	 * cq_notify is not required since when evd_wait is called
 	 * time we go and poll cq anyways.
