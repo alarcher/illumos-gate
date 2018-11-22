@@ -24,8 +24,6 @@
  * All rights reserved.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -60,7 +58,7 @@ static struct sockaddr_in *local_sin;	/* slpd addr, set on first use */
 static SLPError open_ipc();
 static void close_ipc();
 static void get_localhost_sin();
-static void ipc_manage_thr();
+static void *ipc_manage_thr(void *);
 
 /*
  * Locking should be handled by the caller
@@ -119,7 +117,7 @@ static SLPError open_ipc() {
 	if (!ipc_thr_running) {
 		if ((terr = thr_create(
 			0, NULL,
-			(void *(*)(void *)) ipc_manage_thr,
+			ipc_manage_thr,
 			NULL, 0, NULL)) != 0) {
 			slp_err(LOG_CRIT, 0, "slp_open_ipc",
 				"could not start thread: %s",
@@ -291,7 +289,9 @@ done:
  * and continues waiting for the next IPC call. After the FD has expired,
  * the thread closes IPC and shuts itself down.
  */
-static void ipc_manage_thr() {
+static void *
+ipc_manage_thr(void *arg __unused)
+{
 	timestruc_t timeout;
 
 	timeout.tv_nsec = 0;
@@ -316,4 +316,5 @@ static void ipc_manage_thr() {
 			ipc_used = 0;
 		}
 	}
+	return (NULL);
 }

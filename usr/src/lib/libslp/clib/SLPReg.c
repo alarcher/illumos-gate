@@ -118,7 +118,7 @@ static SLPError enqueue_reg(slp_handle_impl_t *, struct reg_msg *,
 			    void *, SLPRegReport *);
 static SLPError reg_impl(slp_handle_impl_t *, struct reg_msg *,
 				void *, SLPRegReport *);
-static void reg_thread();
+static void *reg_thread(void *);
 static SLPError start_reg_thr();
 static SLPError reg_common(slp_handle_impl_t *, struct reg_msg *,
 				void *, SLPRegReport *);
