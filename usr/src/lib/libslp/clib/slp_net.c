@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 /*
  * Module for all network transactions. SLP messages can be multicast,
  * unicast over UDP, or unicast over TCP; this module provides routines
@@ -85,7 +83,7 @@ struct bc_ifs {
  * Private utility routines
  */
 static SLPError start_tcp_thr();
-static void tcp_thread();
+static void *tcp_thread(void *);
 static SLPError make_header(slp_handle_impl_t *, char *, const char *);
 static void udp_make_msghdr(struct sockaddr_in *, struct iovec *, int,
 			    struct msghdr *);
@@ -403,7 +401,9 @@ void slp_mc_send(slp_handle_impl_t *hp, const char *scopes) {
 /*
  * Starts the tcp_thread and allocates any necessary resources.
  */
-static SLPError start_tcp_thr() {
+static SLPError
+start_tcp_thr(void)
+{
 	SLPError err;
 	int terr;
 
@@ -421,8 +421,7 @@ static SLPError start_tcp_thr() {
 	}
 
 	/* start the tcp thread */
-	if ((terr = thr_create(0, NULL, (void *(*)(void *)) tcp_thread,
-				NULL, 0, NULL)) != 0) {
+	if ((terr = thr_create(0, NULL, tcp_thread, NULL, 0, NULL)) != 0) {
 	    slp_err(LOG_CRIT, 0, "start_tcp_thr",
 		    "could not start thread: %s", strerror(terr));
 	    (void) mutex_unlock(&start_lock);
@@ -454,7 +453,9 @@ static void end_tcp_thr() {
  * on 'tcp_q' for new messages. If no message appear after 30 seconds,
  * this thread cleans up resources and shuts itself down.
  */
-static void tcp_thread() {
+static void *
+tcp_thread(void *arg __unused)
+{
 	struct tcp_rqst *rqst;
 	char *reply, header[SLP_DEFAULT_SENDMTU];
 	timestruc_t to[1];
@@ -565,6 +566,7 @@ transaction_complete:
 		if (free_target)
 			slp_free_target(targets);
 	}
+	return (NULL);
 }
 
 /*
