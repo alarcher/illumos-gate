@@ -133,19 +133,19 @@ xdr_sizeof(xdrproc_t func, void *data)
 #endif
 
 	ops.x_putlong = x_putlong;
-	ops.x_getlong =  (dummyfunc1) harmless;
+	ops.x_getlong =  (dummyfunc1)(uintptr_t) harmless;
 	ops.x_putbytes = x_putbytes;
 	ops.x_inline = x_inline;
 	ops.x_getpostn = x_getpostn;
 	ops.x_setpostn = x_setpostn;
 	ops.x_destroy = x_destroy;
 #if defined(_LP64)
-	ops.x_getint32 = (dummyfunc3) harmless;
+	ops.x_getint32 = (dummyfunc3)(uintptr_t) harmless;
 	ops.x_putint32 = x_putint32_t;
 #endif
 
 	/* the other harmless ones */
-	ops.x_getbytes = (dummyfunc2) harmless;
+	ops.x_getbytes = (dummyfunc2)(uintptr_t) harmless;
 
 	x.x_op = XDR_ENCODE;
 	x.x_ops = &ops;
