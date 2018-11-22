@@ -795,9 +795,10 @@ Pfindmap(struct ps_prochandle *P, map_info_t *mptr, char *s, size_t n)
 
 	/* Try /proc first to get the real object name */
 	if ((Pstate(P) != PS_DEAD) && (mptr->map_pmap.pr_mapname[0] != '\0')) {
-		(void) snprintf(buf, sizeof (buf), "%s/%d/path/%s",
+		char path[PATH_MAX];
+		(void) snprintf(path, sizeof (path), "%s/%d/path/%s",
 		    procfs_path, (int)P->pid, mptr->map_pmap.pr_mapname);
-		if ((len = readlink(buf, buf, sizeof (buf))) > 0) {
+		if ((len = readlink(path, buf, sizeof (buf))) > 0) {
 			buf[len] = '\0';
 			(void) Plofspath(buf, buf, sizeof (buf));
 			(void) strlcpy(s, buf, n);
