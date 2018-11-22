@@ -292,7 +292,7 @@ static struct ldap_extra_thread_fns
 #ifdef _WINDOWS
 		0
 #else
-		(void *(*)(void))pthread_self
+		(void *(*)(void))(uintptr_t)pthread_self
 #endif /* _WINDOWS */
 		};
 
