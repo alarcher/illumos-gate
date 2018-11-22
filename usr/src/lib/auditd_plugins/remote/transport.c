@@ -104,7 +104,7 @@ static void 		do_reset(int *, struct pollfd *, boolean_t);
 static void 		do_cleanup(int *, struct pollfd *, boolean_t);
 
 static void		init_recv_record(void);
-static void		recv_record();
+static void *		recv_record(void *);
 static int		connect_timeout(int, struct sockaddr *, int);
 static int		send_timeout(int, const char *, size_t);
 static int		recv_timeout(int, char *, size_t);
@@ -933,8 +933,7 @@ static void
 init_recv_record()
 {
 	DPRINT((dfile, "Initiating the recv thread\n"));
-	(void) pthread_create(&recv_tid, NULL, (void *(*)(void *))recv_record,
-	    (void *)NULL);
+	(void) pthread_create(&recv_tid, NULL, recv_record, NULL);
 
 }
 
@@ -942,8 +941,8 @@ init_recv_record()
 /*
  * recv_record() - the receiver thread routine
  */
-static void
-recv_record()
+static void *
+recv_record(void *arg __unused)
 {
 	OM_uint32		maj_stat, min_stat;
 	gss_qop_t		qop_state;
