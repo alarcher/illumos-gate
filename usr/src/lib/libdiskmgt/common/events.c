@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stropts.h>
@@ -81,11 +79,11 @@ static int			events_pending = 0;
 static int			sendevents = 0;
 
 static void		add_event_to_queue(nvlist_t *event);
-static void		cb_watch_events();
+static void		*cb_watch_events(void *);
 static void		event_handler(sysevent_t *ev);
 static void		print_nvlist(char *prefix, nvlist_t *list);
 static void		walk_devtree();
-static void		walker(void *arg);
+static void		*walker(void *arg);
 
 static void(*callback)(nvlist_t *, int) = NULL;
 
@@ -152,7 +150,7 @@ dm_init_event_queue(void (*cb)(nvlist_t *, int), int *errp)
 		    thread_t watch_thread;
 
 		    *errp = thr_create(NULL, NULL,
-			(void *(*)(void *))cb_watch_events, NULL, THR_DAEMON,
+			cb_watch_events, NULL, THR_DAEMON,
 			&watch_thread);
 		}
 	    }
@@ -172,7 +170,7 @@ dm_init_event_queue(void (*cb)(nvlist_t *, int), int *errp)
 		callback = cb;
 
 		*errp = thr_create(NULL, NULL,
-		    (void *(*)(void *))cb_watch_events, NULL, THR_DAEMON,
+		    cb_watch_events, NULL, THR_DAEMON,
 		    &watch_thread);
 	    }
 	}
@@ -307,8 +305,8 @@ add_event_to_queue(nvlist_t *event)
 	(void) sema_post(&semaphore);
 }
 
-static void
-cb_watch_events()
+static void *
+cb_watch_events(void *arg __unused)
 {
 	nvlist_t	*event;
 	int		error;
@@ -318,7 +316,7 @@ cb_watch_events()
 	    event = dm_get_event(&error);
 	    if (callback == NULL) {
 		/* end the thread */
-		return;
+		return (NULL);
 	    }
 	    callback(event, error);
 	}
@@ -445,7 +443,7 @@ walk_devtree()
 
 	switch (walker_state) {
 	case WALK_NONE:
-	    if (thr_create(NULL, NULL, (void *(*)(void *))walker, NULL,
+	    if (thr_create(NULL, NULL, walker, NULL,
 		THR_DAEMON, &walk_thread) == 0) {
 		walker_state = WALK_WAITING;
 	    }
@@ -464,7 +462,7 @@ walk_devtree()
 }
 
 /*ARGSUSED*/
-static void
+static void *
 walker(void *arg)
 {
 	int	walk_again = 0;
@@ -493,4 +491,5 @@ walker(void *arg)
 	    (void) mutex_unlock(&walker_lock);
 
 	} while (walk_again);
+	return (NULL);
 }
