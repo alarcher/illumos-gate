@@ -1088,7 +1088,7 @@ static struct PyMethodDef libbeMethods[] = {
 	    "Destroy a snapshot."},
 	{"beMount", (PyCFunction)beMount, METH_VARARGS, "Mount a BE."},
 	{"beUnmount", (PyCFunction)beUnmount, METH_VARARGS, "Unmount a BE."},
-	{"beList", (PyCFunction)beList, METH_VARARGS | METH_KEYWORDS,
+	{"beList", (PyCFunction)(uintptr_t)beList, METH_VARARGS | METH_KEYWORDS,
 	    "List BE info."},
 	{"beRename", (PyCFunction)beRename, METH_VARARGS, "Rename a BE."},
 	{"beActivate", (PyCFunction)beActivate, METH_VARARGS, "Activate a BE."},
