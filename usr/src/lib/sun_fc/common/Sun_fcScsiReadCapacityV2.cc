@@ -87,6 +87,7 @@ Sun_fcScsiReadCapacityV2(HBA_HANDLE handle, HBA_WWN portWWN,
 		return (HBA_STATUS_ERROR);
 	    }
 	}
+	return (HBA_STATUS_OK);
 }
 #ifdef	__cplusplus
 }

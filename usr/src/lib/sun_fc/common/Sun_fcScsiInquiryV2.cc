@@ -91,6 +91,7 @@ Sun_fcScsiInquiryV2(HBA_HANDLE handle, HBA_WWN portWWN, HBA_WWN targetPortWWN,
 		return (HBA_STATUS_ERROR);
 	    }
 	}
+	return (HBA_STATUS_OK);
 }
 #ifdef	__cplusplus
 }
