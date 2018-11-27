@@ -2020,6 +2020,7 @@ dyndns_update_core(char *fqdn)
 	smb_niciter_t ni;
 	int rc;
 	char fqhn[MAXHOSTNAMELEN];
+	char *restrict buf = fqhn;
 
 	if (fqdn == NULL || *fqdn == '\0')
 		return (0);
@@ -2033,7 +2034,7 @@ dyndns_update_core(char *fqdn)
 	 * To comply with RFC 4120 section 6.2.1, the fully-qualified hostname
 	 * must be set to lower case.
 	 */
-	(void) snprintf(fqhn, MAXHOSTNAMELEN, "%s.%s", fqhn, fqdn);
+	(void) snprintf(buf, MAXHOSTNAMELEN, "%s.%s", fqhn, fqdn);
 
 	error = 0;
 	forw_update_ok = 0;
@@ -2102,6 +2103,7 @@ dyndns_clear_rev_zone(char *fqdn)
 	smb_niciter_t ni;
 	int rc;
 	char fqhn[MAXHOSTNAMELEN];
+	char *restrict buf = fqhn;
 	const char *my_str;
 
 	if (!smb_config_getbool(SMB_CI_DYNDNS_ENABLE))
@@ -2114,7 +2116,7 @@ dyndns_clear_rev_zone(char *fqdn)
 	 * To comply with RFC 4120 section 6.2.1, the fully-qualified hostname
 	 * must be set to lower case.
 	 */
-	(void) snprintf(fqhn, MAXHOSTNAMELEN, "%s.%s", fqhn, fqdn);
+	(void) snprintf(buf, MAXHOSTNAMELEN, "%s.%s", fqhn, fqdn);
 
 	error = 0;
 
