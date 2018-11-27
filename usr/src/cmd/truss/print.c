@@ -1606,6 +1606,7 @@ void
 prt_psflags(private_t *pri, secflagset_t val)
 {
 	char str[1024];
+	char *buf = str;
 
 	if (val == 0) {
 		outstring(pri, "0x0");
@@ -1629,7 +1630,7 @@ prt_psflags(private_t *pri, secflagset_t val)
 	}
 
 	if (val != 0)
-		(void) snprintf(str, sizeof (str), "%s|%#x", str, val);
+		(void) snprintf(str, sizeof (str), "%s|%#x", buf, val);
 
 	outstring(pri, str + 1);
 }
