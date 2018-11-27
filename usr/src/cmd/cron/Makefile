@@ -146,6 +146,7 @@ crontab.xpg4 :=	LDLIBS += -lsecdb -lpam -lzoneinfo
 lint :=		LDLIBS += -lproject -lsecdb -lcontract -lpam
 
 $(XPG4) := CFLAGS += -DXPG4
+$(XPG4) := LDFLAGS += -_gcc8=-Wl,-zmuldefs
 $(XPG6) := CFLAGS += -DXPG6
 
 LINTFLAGS += -u
