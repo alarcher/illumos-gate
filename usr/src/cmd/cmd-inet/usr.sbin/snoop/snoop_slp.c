@@ -158,7 +158,9 @@ static char *slpv1_charset(unsigned short);
  * The only external entry point to the SLP interpreter. This function
  * simply dispatches the packet based on the version.
  */
-void interpret_slp(int flags, void *slp, int fraglen) {
+int
+interpret_slp(int flags, void *slp, int fraglen)
+{
 	extern int dst_port, curr_proto;
 	struct tcp_cont *tce = NULL;
 	char *s;
@@ -184,6 +186,7 @@ void interpret_slp(int flags, void *slp, int fraglen) {
 	    interpret_slp_v1(flags, slp, fraglen);
 
 	tcp_continuation = B_FALSE;
+	return (0);
 }
 
 /*
@@ -697,7 +700,7 @@ static int interpret_slp_v2(int flags, struct slpv2_hdr *slp, int fraglen) {
 	if (curr_proto == IPPROTO_UDP &&
 	    dst_port == 427 &&
 	    src_port != 427) {
-	    add_transient(src_port, (int (*)())interpret_slp);
+	    add_transient(src_port, interpret_slp);
 	}
 
 	/* parse the header */
@@ -1418,7 +1421,7 @@ static int interpret_slp_v1(int flags, struct slpv1_hdr *slp, int fraglen) {
 	if (curr_proto == IPPROTO_UDP &&
 	    dst_port == 427 &&
 	    src_port != 427)
-		add_transient(src_port, (int (*)())interpret_slp);
+		add_transient(src_port, interpret_slp);
 
 	/* parse the header */
 	if (v1_header(flags, slp, fraglen)) {
