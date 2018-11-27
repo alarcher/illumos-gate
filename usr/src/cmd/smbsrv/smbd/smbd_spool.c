@@ -418,13 +418,14 @@ smbd_load_printers(void)
 	pthread_t	tid;
 	pthread_attr_t	attr;
 	int		rc;
+	void		*arg = &tid;
 
 	if (!smb_config_getbool(SMB_CI_PRINT_ENABLE))
 		return;
 
 	(void) pthread_attr_init(&attr);
 	(void) pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	rc = pthread_create(&tid, &attr, smbd_share_printers, &tid);
+	rc = pthread_create(&tid, &attr, smbd_share_printers, arg);
 	(void) pthread_attr_destroy(&attr);
 
 	if (rc != 0)
