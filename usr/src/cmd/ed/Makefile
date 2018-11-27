@@ -48,7 +48,9 @@ CERRWARN += -_gcc=-Wno-uninitialized
 SMATCH=off
 
 $(XPG4) := CFLAGS += -DXPG4  
+$(XPG4) := LDFLAGS += -_gcc8=-Wl,-zmuldefs
 $(XPG6) := CFLAGS += -DXPG6 -I$(SRC)/lib/libc/inc 
+$(XPG6) := LDFLAGS += -_gcc8=-Wl,-zmuldefs
 lint := LDLIBS += -lgen -lcrypt
 LDLIBS += -lmapmalloc -lgen -lcrypt_i
 XGETFLAGS += -a -x ed.xcl
