@@ -24,7 +24,6 @@
  * Copyright 2005 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
 
 #include <stdio.h>
 #include <ctype.h>
@@ -678,6 +677,7 @@ mustwrite(char *base, int n, FILE *preciousfile)
 			return (0);
 		case Q_NO:
 		case Q_no:
+		default:
 			(void) mustwrite(base + nwrote, n - nwrote,
 			    preciousfile);
 			return (1);
