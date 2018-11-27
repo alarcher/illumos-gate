@@ -32,8 +32,6 @@
  * contributors.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include "def.h"
 
 /*
@@ -51,7 +49,7 @@
  * command procedures to expect an argument of type void *,
  * the following cast "makes it all work".  Yes, it's ugly.
  */
-#define	C	(int (*)(void *))
+#define	C	(int (*)(void *))(uintptr_t)
 
 const struct cmd cmdtab[] = {
 	"next",		C next,		NDMLIST,	0,	MMNDEL,

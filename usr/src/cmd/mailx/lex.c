@@ -38,8 +38,6 @@
  * contributors.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include "rcv.h"
 #include <locale.h>
 
@@ -518,7 +516,7 @@ execute(char linebuf[], int contxt)
 	 * If we are in a source file, just unstack.
 	 */
 
-	if (com->c_func == (int (*)(void *))edstop) {
+	if ((uintptr_t)com->c_func == (uintptr_t)edstop) {
 		if (sourcing) {
 			if (loading)
 				return (1);
@@ -668,7 +666,7 @@ execute(char linebuf[], int contxt)
 		return (1);
 	if (e && sourcing)
 		unstack();
-	if (com->c_func == (int (*)(void *))edstop)
+	if ((uintptr_t)com->c_func == (uintptr_t)edstop)
 		return (1);
 	if (value("autoprint") != NOSTR && com->c_argtype & P)
 		if ((dot->m_flag & MDELETED) == 0) {
