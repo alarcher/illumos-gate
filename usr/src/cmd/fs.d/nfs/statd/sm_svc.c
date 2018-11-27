@@ -210,7 +210,7 @@ sm_prog_1(struct svc_req *rqstp, SVCXPRT *transp)
 	} result;
 
 	bool_t (*xdr_argument)(), (*xdr_result)();
-	char *(*local)();
+	void (*local)(void *, void *);
 
 	/*
 	 * Dispatch according to which protocol is being used:
@@ -227,7 +227,7 @@ sm_prog_1(struct svc_req *rqstp, SVCXPRT *transp)
 		case NSMADDRPROC1_REG:
 			xdr_argument = xdr_reg1args;
 			xdr_result = xdr_reg1res;
-			local = (char *(*)()) nsmaddrproc1_reg;
+			local = nsmaddrproc1_reg;
 			break;
 
 		case NSMADDRPROC1_UNREG: /* Not impl. */
@@ -245,37 +245,37 @@ sm_prog_1(struct svc_req *rqstp, SVCXPRT *transp)
 		case SM_STAT:
 			xdr_argument = xdr_sm_name;
 			xdr_result = xdr_sm_stat_res;
-			local = (char *(*)()) sm_stat_svc;
+			local = sm_stat_svc;
 			break;
 
 		case SM_MON:
 			xdr_argument = xdr_mon;
 			xdr_result = xdr_sm_stat_res;
-			local = (char *(*)()) sm_mon_svc;
+			local = sm_mon_svc;
 			break;
 
 		case SM_UNMON:
 			xdr_argument = xdr_mon_id;
 			xdr_result = xdr_sm_stat;
-			local = (char *(*)()) sm_unmon_svc;
+			local = sm_unmon_svc;
 			break;
 
 		case SM_UNMON_ALL:
 			xdr_argument = xdr_my_id;
 			xdr_result = xdr_sm_stat;
-			local = (char *(*)()) sm_unmon_all_svc;
+			local = sm_unmon_all_svc;
 			break;
 
 		case SM_SIMU_CRASH:
 			xdr_argument = xdr_void;
 			xdr_result = xdr_void;
-			local = (char *(*)()) sm_simu_crash_svc;
+			local = sm_simu_crash_svc;
 			break;
 
 		case SM_NOTIFY:
 			xdr_argument = xdr_stat_chge;
 			xdr_result = xdr_void;
-			local = (char *(*)()) sm_notify_svc;
+			local = sm_notify_svc;
 			break;
 
 		default:
