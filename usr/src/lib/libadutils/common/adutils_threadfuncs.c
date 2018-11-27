@@ -70,7 +70,7 @@ static struct ldap_thread_fns thread_fns = {
 };
 
 struct ldap_extra_thread_fns extra_thread_fns = {
-	.ltf_threadid_fn = (void * (*)(void))pthread_self
+	.ltf_threadid_fn = (void * (*)(void))(uintptr_t)pthread_self
 };
 
 
