@@ -1953,8 +1953,8 @@ transport_queued_events()
 }
 
 
-static void
-queue_flush_thr()
+static void *
+queue_flush_thr(void *arg __unused)
 {
 	int	n;
 
@@ -2207,8 +2207,8 @@ slm_init()
 	/*
 	 * Create thread to flush cmd queue
 	 */
-	if ((err = thr_create(NULL, NULL, (void *(*)(void*))queue_flush_thr,
-	    (void *)NULL, 0, &cmdq_thr_id)) != 0) {
+	if ((err = thr_create(NULL, NULL, queue_flush_thr,
+	    NULL, 0, &cmdq_thr_id)) != 0) {
 		syslog(LOG_ERR, THR_CREATE_ERR, strerror(err));
 		sysevent_close_channel(confd_handle);
 		confd_handle = NULL;

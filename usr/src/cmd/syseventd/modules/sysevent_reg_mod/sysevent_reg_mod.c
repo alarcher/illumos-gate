@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -176,8 +174,8 @@ deliver_event(sysevent_t *ev, int flag)
 	return (0);
 }
 
-void
-subscriber_deliver_thr()
+void *
+subscriber_deliver_thr(void *arg __unused)
 {
 	ev_queue_t *evqp;
 
