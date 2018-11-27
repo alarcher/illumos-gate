@@ -2438,8 +2438,8 @@ tar_backup_v3(ndmpd_session_t *session, ndmpd_module_params_t *params,
 
 		(void) pthread_barrier_init(&arg.br_barrier, 0, 2);
 
-		err = pthread_create(&rdtp, NULL, (funct_t)backup_reader_v3,
-		    (void *)&arg);
+		err = pthread_create(&rdtp, NULL,
+		    (funct_t)(uintptr_t)backup_reader_v3, &arg);
 		if (err == 0) {
 			(void) pthread_barrier_wait(&arg.br_barrier);
 			(void) pthread_barrier_destroy(&arg.br_barrier);
@@ -3186,8 +3186,8 @@ ndmpd_dar_tar_v3(ndmpd_session_t *session, ndmpd_module_params_t *params,
 		arg.tr_mod_params = params;
 		arg.tr_cmds = cmds;
 
-		err = pthread_create(&rdtp, NULL, (funct_t)ndmp_tar_reader,
-		    (void *)&arg);
+		err = pthread_create(&rdtp, NULL,
+		    (funct_t)(uintptr_t)ndmp_tar_reader, &arg);
 		if (err == 0) {
 			tlm_cmd_wait(cmds->tcs_command, TLM_TAR_READER);
 		} else {
@@ -3548,8 +3548,8 @@ ndmpd_rs_sar_tar_v3(ndmpd_session_t *session, ndmpd_module_params_t *params,
 		arg.tr_session = session;
 		arg.tr_mod_params = params;
 		arg.tr_cmds = cmds;
-		err = pthread_create(&rdtp, NULL, (funct_t)ndmp_tar_reader,
-		    (void *)&arg);
+		err = pthread_create(&rdtp, NULL,
+		    (funct_t)(uintptr_t)ndmp_tar_reader, &arg);
 		if (err == 0) {
 			tlm_cmd_wait(cmds->tcs_command, TLM_TAR_READER);
 		} else {
@@ -3780,8 +3780,8 @@ ndmpd_tar_backup_starter_v3(void *arg)
 		sarg.bs_path = nlp->nlp_backup_path;
 
 		/* Get an estimate of the data size */
-		if (pthread_create(&tid, NULL, (funct_t)get_backup_size,
-		    (void *)&sarg) == 0)
+		if (pthread_create(&tid, NULL,
+		    (funct_t)(uintptr_t)get_backup_size, &sarg) == 0)
 			(void) pthread_detach(tid);
 
 		err = ndmp_get_cur_bk_time(nlp, &nlp->nlp_cdate, jname);

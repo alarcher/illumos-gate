@@ -1314,8 +1314,8 @@ ndmpd_tar_restore(ndmpd_session_t *session, ndmpd_module_params_t *mod_params,
 		arg.tr_mod_params = mod_params;
 		arg.tr_cmds = cmds;
 
-		err = pthread_create(&rdtp, NULL, (funct_t)ndmp_tar_reader,
-		    (void *)&arg);
+		err = pthread_create(&rdtp, NULL,
+		    (funct_t)(uintptr_t)ndmp_tar_reader, &arg);
 		if (err == 0) {
 			tlm_cmd_wait(cmds->tcs_command, TLM_TAR_READER);
 		} else {
@@ -1347,7 +1347,8 @@ ndmpd_tar_restore(ndmpd_session_t *session, ndmpd_module_params_t *mod_params,
 
 		if (tm_tar_ops.tm_getfile != NULL) {
 			err = pthread_create(&wrtp, NULL,
-			    (funct_t)tm_tar_ops.tm_getfile, (void *)&tlm_arg);
+			    (funct_t)(uintptr_t)tm_tar_ops.tm_getfile,
+			    &tlm_arg);
 		} else {
 			(void) pthread_barrier_destroy(&tlm_arg.ba_barrier);
 			NDMP_LOG(LOG_DEBUG,
