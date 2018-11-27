@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include <fmd_alloc.h>
 #include <fmd_string.h>
 #include <fmd_subr.h>
@@ -253,7 +251,7 @@ fmd_serd_eng_reset(fmd_serd_eng_t *sgp)
 }
 
 void
-fmd_serd_eng_gc(fmd_serd_eng_t *sgp)
+fmd_serd_eng_gc(fmd_serd_eng_t *sgp, void *arg __unused)
 {
 	fmd_serd_elem_t *sep, *nep;
 	hrtime_t hrt;
@@ -275,7 +273,7 @@ fmd_serd_eng_gc(fmd_serd_eng_t *sgp)
 }
 
 void
-fmd_serd_eng_commit(fmd_serd_eng_t *sgp)
+fmd_serd_eng_commit(fmd_serd_eng_t *sgp, void *arg __unused)
 {
 	fmd_serd_elem_t *sep;
 
@@ -290,7 +288,7 @@ fmd_serd_eng_commit(fmd_serd_eng_t *sgp)
 }
 
 void
-fmd_serd_eng_clrdirty(fmd_serd_eng_t *sgp)
+fmd_serd_eng_clrdirty(fmd_serd_eng_t *sgp, void *arg __unused)
 {
 	sgp->sg_flags &= ~FMD_SERD_DIRTY;
 }

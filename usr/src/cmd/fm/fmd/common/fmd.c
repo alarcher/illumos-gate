@@ -169,7 +169,7 @@ fmd_trmode_set(fmd_conf_param_t *pp, const char *value)
 	else
 		return (fmd_set_errno(EFMD_CONF_INVAL));
 
-	fmd.d_thr_trace = (void (*)())func;
+	fmd.d_thr_trace = (void (*)())(uintptr_t)func;
 	pp->cp_value.cpv_ptr = (void *)func;
 	return (0);
 }

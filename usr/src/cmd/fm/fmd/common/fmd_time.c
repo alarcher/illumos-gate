@@ -366,6 +366,11 @@ fmd_native_cancel(pthread_t tid)
 	(void) pthread_kill(tid, SIGALRM);
 }
 
+static void
+fmd_time_vnop(void)
+{
+}
+
 static void *
 fmd_time_nop(void)
 {
@@ -374,10 +379,10 @@ fmd_time_nop(void)
 
 const fmd_timeops_t fmd_timeops_native = {
 	(void *(*)())fmd_time_nop,	/* fto_init */
-	(void (*)())fmd_time_nop,	/* fto_fini */
+	(void (*)())fmd_time_vnop,	/* fto_fini */
 	gettimeofday,			/* fto_gettimeofday */
 	gethrtime,			/* fto_gethrtime */
-	(void (*)())fmd_time_nop,	/* fto_addhrtime */
+	(void (*)())fmd_time_vnop,	/* fto_addhrtime */
 	fmd_native_wait,		/* fto_waithrtime */
 	fmd_native_cancel,		/* fto_waitcancel */
 };

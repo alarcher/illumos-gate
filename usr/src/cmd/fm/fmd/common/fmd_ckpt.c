@@ -1050,10 +1050,12 @@ fmd_ckpt_restore_case(fmd_ckpt_t *ckp, fmd_module_t *mp, const fcf_sec_t *sp)
 	}
 
 	fmd_ckpt_restore_events(ckp, fcfc->fcfc_principal,
-	    (void (*)(void *, fmd_event_t *))fmd_case_insert_principal, cp);
+	    (void (*)(void *, fmd_event_t *))
+	    (uintptr_t)fmd_case_insert_principal, cp);
 
 	fmd_ckpt_restore_events(ckp, fcfc->fcfc_events,
-	    (void (*)(void *, fmd_event_t *))fmd_case_insert_event, cp);
+	    (void (*)(void *, fmd_event_t *))
+	    (uintptr_t)fmd_case_insert_event, cp);
 
 	/*
 	 * Once solved, treat suspects from resource cache as master copy.
@@ -1105,7 +1107,8 @@ fmd_ckpt_restore_serd(fmd_ckpt_t *ckp, fmd_module_t *mp, const fcf_sec_t *sp)
 		fmd_module_lock(mp);
 
 		fmd_ckpt_restore_events(ckp, fcfd->fcfd_events,
-		    (void (*)(void *, fmd_event_t *))fmd_serd_eng_record,
+		    (void (*)(void *, fmd_event_t *))
+		    (uintptr_t)fmd_serd_eng_record,
 		    fmd_serd_eng_lookup(&mp->mod_serds, s));
 
 		fmd_module_unlock(mp);

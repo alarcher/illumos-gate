@@ -156,6 +156,11 @@ fmd_scheme_notsup(void)
 	return (fmd_set_errno(EFMD_FMRI_NOTSUP));
 }
 
+static void
+fmd_scheme_vnop(void)
+{
+}
+
 static int
 fmd_scheme_nop(void)
 {
@@ -168,7 +173,7 @@ fmd_scheme_nop(void)
  */
 static const fmd_scheme_ops_t _fmd_scheme_default_ops = {
 	(int (*)())fmd_scheme_nop,		/* sop_init */
-	(void (*)())fmd_scheme_nop,		/* sop_fini */
+	(void (*)())fmd_scheme_vnop,		/* sop_fini */
 	(ssize_t (*)())fmd_scheme_notsup,	/* sop_nvl2str */
 	(int (*)())fmd_scheme_nop,		/* sop_expand */
 	(int (*)())fmd_scheme_notsup,		/* sop_present */
@@ -181,7 +186,7 @@ static const fmd_scheme_ops_t _fmd_scheme_default_ops = {
 
 static const fmd_scheme_ops_t _fmd_scheme_builtin_ops = {
 	(int (*)())fmd_scheme_nop,		/* sop_init */
-	(void (*)())fmd_scheme_nop,		/* sop_fini */
+	(void (*)())fmd_scheme_vnop,		/* sop_fini */
 	fmd_scheme_fmd_nvl2str,			/* sop_nvl2str */
 	(int (*)())fmd_scheme_nop,		/* sop_expand */
 	fmd_scheme_fmd_present,			/* sop_present */
