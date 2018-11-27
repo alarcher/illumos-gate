@@ -389,8 +389,7 @@ main(int argc, char *argv[])
 			/* start the minor_fini_thread */
 			(void) mutex_init(&minor_fini_mutex, USYNC_THREAD, 0);
 			(void) cond_init(&minor_fini_cv, USYNC_THREAD, 0);
-			if (thr_create(NULL, NULL,
-			    (void *(*)(void *))minor_fini_thread,
+			if (thr_create(NULL, NULL, minor_fini_thread,
 			    NULL, THR_DETACHED, NULL)) {
 				err_print(CANT_CREATE_THREAD, "minor_fini",
 				    strerror(errno));
@@ -2399,7 +2398,7 @@ load_module(char *mname, char *cdir)
  * so that we still call the minor_fini routines.
  */
 /*ARGSUSED*/
-static void
+static void *
 minor_fini_thread(void *arg)
 {
 	timestruc_t	abstime;
@@ -2433,6 +2432,7 @@ minor_fini_thread(void *arg)
 
 		(void) mutex_lock(&minor_fini_mutex);
 	}
+	return (NULL);
 }
 
 
@@ -4308,11 +4308,11 @@ hot_cleanup(char *node_path, char *minor_name, char *ev_subclass,
 				(void) snprintf(rmlink, sizeof (rmlink),
 				    "%s", link->devlink);
 				if (rm->remove->flags & RM_NOINTERPOSE) {
-					((void (*)(char *))
-					    (rm->remove->callback_fcn))(rmlink);
+					(void)
+					    (rm->remove->callback_fcn)(rmlink);
 				} else {
-					ret = ((int (*)(char *))
-					    (rm->remove->callback_fcn))(rmlink);
+					ret =
+					    (rm->remove->callback_fcn)(rmlink);
 					if (ret == DEVFSADM_TERMINATE)
 						nfphash_insert(rmlink);
 				}
@@ -4452,11 +4452,11 @@ matching_dev(char *devpath, void *data)
 
 		vprint(RECURSEDEV_MID, "%scalling callback %s\n", fcn, devpath);
 		if (cleanup_data->rm->remove->flags & RM_NOINTERPOSE)
-			((void (*)(char *))
-			    (cleanup_data->rm->remove->callback_fcn))(devpath);
+			(void)
+			    (cleanup_data->rm->remove->callback_fcn)(devpath);
 		else {
-			ret = ((int (*)(char *))
-			    (cleanup_data->rm->remove->callback_fcn))(devpath);
+			ret =
+			    (cleanup_data->rm->remove->callback_fcn)(devpath);
 			if (ret == DEVFSADM_TERMINATE) {
 				/*
 				 * We want no further remove processing for
