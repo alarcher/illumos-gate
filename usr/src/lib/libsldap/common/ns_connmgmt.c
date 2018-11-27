@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include <string.h>
 #include <errno.h>
 #include <syslog.h>
@@ -352,7 +350,7 @@ setup_mt_conn(LDAP *ld)
 	 */
 	(void) memset(&extrafns, '\0',
 	    sizeof (struct ldap_extra_thread_fns));
-	extrafns.ltf_threadid_fn = (void * (*)(void))thr_self;
+	extrafns.ltf_threadid_fn = (void * (*)(void))(uintptr_t)thr_self;
 	extrafns.ltf_mutex_trylock = NULL;
 	extrafns.ltf_sema_alloc = NULL;
 	extrafns.ltf_sema_free = NULL;
