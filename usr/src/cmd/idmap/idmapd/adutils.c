@@ -128,8 +128,8 @@ static pthread_t	reaperid = 0;
  */
 /*ARGSUSED*/
 static
-void
-adreaper(void *arg)
+void *
+adreaper(void *arg __unused)
 {
 	timespec_t	ts;
 
@@ -144,6 +144,7 @@ adreaper(void *arg)
 		(void) nanosleep(&ts, NULL);
 		adutils_reap_idle_connections();
 	}
+	return (NULL);
 }
 
 /*
@@ -161,8 +162,7 @@ idmap_add_ds(adutils_ad_t *ad, const char *host, int port)
 
 	/* Start reaper if it doesn't exist */
 	if (ret == 0 && reaperid == 0)
-		(void) pthread_create(&reaperid, NULL,
-		    (void *(*)(void *))adreaper, (void *)NULL);
+		(void) pthread_create(&reaperid, NULL, adreaper, NULL);
 	return (ret);
 }
 
