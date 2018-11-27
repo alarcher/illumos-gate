@@ -23,8 +23,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 /*LINTLIBRARY*/
 
 #include <stdio.h>
@@ -66,9 +64,11 @@ ns_kvp_create(const char *key, const char *value)
 	return (kvp);
 }
 
-void
-ns_kvp_destroy(ns_kvp_t *kvp)
+int
+ns_kvp_destroy(void *arg, __va_list arg1 __unused)
 {
+	ns_kvp_t *kvp = arg;
+
 	if (kvp != NULL) {
 		if (kvp->key != NULL)
 			free(kvp->key);
@@ -76,6 +76,7 @@ ns_kvp_destroy(ns_kvp_t *kvp)
 			free(kvp->value);
 		free(kvp);
 	}
+	return (0);
 }
 
 
@@ -239,8 +240,7 @@ ns_set_value_from_string(const char *key, const char *string,
 		return (-1);
 
 	if (key == NULL)
-		list_iterate((void **)printer->attributes,
-				(VFUNC_T)ns_kvp_destroy);
+		list_iterate((void **)printer->attributes, ns_kvp_destroy);
 	else {
 		ns_kvp_t *kvp;
 
