@@ -2353,7 +2353,7 @@ iscsi_print_iscsit_task_data(idm_task_t *idt)
 		    scsi_task.task_cdb_length,
 		    MDB_DUMP_RELATIVE | MDB_DUMP_TRIM |
 		    MDB_DUMP_GROUP(1),
-		    (mdb_dumpptr_cb_t)mdb_vread, NULL)) {
+		    (mdb_dumpptr_cb_t)(uintptr_t)mdb_vread, NULL)) {
 			mdb_printf("** Invalid CDB addr (%p)\n",
 			    scsi_task.task_cdb);
 		}

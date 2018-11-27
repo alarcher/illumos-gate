@@ -684,7 +684,7 @@ msgprint(uintptr_t addr, uint_t flags, int argc, const mdb_arg_t *argv)
 			    MDB_DUMP_RELATIVE | MDB_DUMP_TRIM |
 			    MDB_DUMP_ASCII | MDB_DUMP_HEADER |
 			    MDB_DUMP_GROUP(4),
-			    (mdb_dumpptr_cb_t)mdb_vread, NULL)) {
+			    (mdb_dumpptr_cb_t)(uintptr_t)mdb_vread, NULL)) {
 				mdb_dec_indent(CMN_INDENT);
 				return (DCMD_ERR);
 			}
