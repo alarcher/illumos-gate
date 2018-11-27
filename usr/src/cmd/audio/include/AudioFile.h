@@ -55,9 +55,11 @@ public:
 	    { return (type); }
 	inline operator int() {				// Cast to integer
 	    switch (type) {
-	    case NormalAccess: return (MADV_NORMAL);
 	    case RandomAccess: return (MADV_RANDOM);
 	    case SequentialAccess: return (MADV_SEQUENTIAL);
+	    case NormalAccess:
+	    default:
+		return (MADV_NORMAL);
 	    }
 	}
 };

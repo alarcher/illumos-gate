@@ -108,12 +108,14 @@ public:
 	    { return (mode); }
 	inline operator int() {				// Cast to integer
 	    switch (mode) {
-	    case NoAccess: return (-1);
 	    case ReadOnly: return (O_RDONLY);
 	    case WriteOnly: return (O_WRONLY);
 	    case ReadWrite: return (O_RDWR);
 	    case AppendOnly: return (O_WRONLY | O_APPEND);
 	    case ReadAppend: return (O_RDWR | O_APPEND);
+	    case NoAccess:
+	    default:
+		return (-1);
 	    }
 	}
 	// These tests depend on the actual enum values
