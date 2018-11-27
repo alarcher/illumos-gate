@@ -24,8 +24,6 @@
  * Use is subject to license terms.
  */
 
-#pragma ident	"%Z%%M%	%I%	%E% SMI"
-
 #include "initialize.h"
 
 #ifndef TEXT_DOMAIN
@@ -124,7 +122,7 @@ initialize_post(sort_t *S)
 	field_initialize(S);
 
 	if (S->m_single_byte_locale) {
-		S->m_compare_fn = (cmp_fcn_t)strcoll;
+		S->m_compare_fn = (cmp_fcn_t)(uintptr_t)strcoll;
 		S->m_coll_convert = field_convert;
 		F = S->m_fields_head;
 
@@ -153,7 +151,7 @@ initialize_post(sort_t *S)
 			F = F->f_next;
 		}
 	} else {
-		S->m_compare_fn = (cmp_fcn_t)wcscoll;
+		S->m_compare_fn = (cmp_fcn_t)(uintptr_t)wcscoll;
 		S->m_coll_convert = field_convert_wide;
 
 		F = S->m_fields_head;
