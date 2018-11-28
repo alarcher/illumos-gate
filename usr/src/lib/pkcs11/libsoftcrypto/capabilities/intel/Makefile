@@ -42,6 +42,6 @@ all clean clobber install: \
 lint:
 
 $(SUBDIRS):	FRC
-		@cd $@; pwd; $(MAKE) $(TARGET)
+		@cd $@; pwd; $(MAKE) PRIMARY_CC=gcc4,/opt/gcc/4.4.4/bin/gcc,gnu $(TARGET)
 
 FRC:
