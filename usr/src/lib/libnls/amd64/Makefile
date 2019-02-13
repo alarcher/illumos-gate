@@ -26,7 +26,7 @@
 include ../Makefile.com
 include ../../Makefile.lib.64
 
-LDLIBS += ../../crt/amd64/values-Xa.o
+#LDLIBS += ../../crt/amd64/values-Xa.o
 LIBS=	$(DYNLIB) $(LINTLIB)
 
 .KEEP_STATE:

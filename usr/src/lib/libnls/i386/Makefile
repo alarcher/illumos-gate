@@ -25,7 +25,7 @@
 
 include ../Makefile.com
 
-LDLIBS += ../../crt/i386/values-Xa.o
+#LDLIBS += ../../crt/i386/values-Xa.o
 
 .KEEP_STATE:
 
